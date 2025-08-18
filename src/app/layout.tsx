@@ -1,6 +1,7 @@
 import './globals.css';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { AuthStatus } from '../components/AuthStatus.tsx';
 
 export const metadata = {
   title: 'Stylesync',
@@ -10,7 +11,8 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
+      {/* suppressHydrationWarning on body to ignore extension-injected attrs (e.g. Grammarly) */}
+      <body suppressHydrationWarning>
         <header className="fixed top-0 inset-x-0 z-40 backdrop-blur-xl bg-slate-950/70 border-b border-white/10">
           <nav className="mx-auto max-w-6xl px-6 py-3 flex items-center gap-8">
             <Link href="/" className="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">Stylesync</Link>
@@ -19,8 +21,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Link href="/paraphrase" className="hover:text-white transition">Paraphrase</Link>
               <Link href="/about" className="hover:text-white transition">About</Link>
             </div>
-            <div className="ml-auto flex gap-3">
-              <button className="px-4 py-2 rounded-lg bg-brand-500/90 hover:bg-brand-400 text-slate-900 font-semibold shadow-subtle-glow transition">Sign In</button>
+            <div className="ml-auto flex gap-3 items-center">
+              <AuthStatus />
             </div>
           </nav>
         </header>

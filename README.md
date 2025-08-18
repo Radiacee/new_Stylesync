@@ -46,12 +46,34 @@ src/lib
 
 ## Extending
 
-Add an API route (`src/app/api/paraphrase/route.ts`) that calls an LLM with a system prompt including style knobs. Ensure you:
+The project now includes an API route (`/api/paraphrase`) that will call OpenAI if `OPENAI_API_KEY` is set, otherwise it falls back to the heuristic engine. Configure environment via `.env` (see `.env.example`).
 
-- Log & audit usage
-- Rate limit & authenticate
-- Provide user transparency & opt-out
-- Avoid claims about bypassing detection
+Supabase auth + persistence (optional):
+1. Create a Supabase project, copy `SUPABASE_URL` & `SUPABASE_ANON_KEY` into `.env`.
+2. Run SQL (SQL editor):
+```
+create extension if not exists pgcrypto;
+create table if not exists public.style_profiles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  tone text not null,
+  formality real not null,
+  pacing real not null,
+  descriptiveness real not null,
+  directness real not null,
+  sample_excerpt text,
+  custom_lexicon text[] default '{}',
+  notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+alter table style_profiles enable row level security;
+create policy "own read" on style_profiles for select using (auth.uid() = user_id);
+create policy "own upsert" on style_profiles for insert with check (auth.uid() = user_id);
+create policy "own update" on style_profiles for update using (auth.uid() = user_id);
+```
+
+Ethics: log & audit usage, rate limit, provide transparency & opt-out, and avoid claims about bypassing detection.
 
 ## License
 

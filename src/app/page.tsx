@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+const hasModel = !!process.env.GROQ_API_KEY;
+
 export default function LandingPage() {
   return (
     <div className="relative">
@@ -17,8 +19,8 @@ export default function LandingPage() {
           </div>
           <ul className="grid gap-3 text-sm text-slate-400 list-disc pl-5 max-w-md">
             <li>Transparent & responsible use</li>
-            <li>Local, lightweight style profile (no server storage yet)</li>
-            <li>Open structure for future custom ML integration</li>
+            <li>Style profiles & paraphrase history synced to your account (with Supabase)</li>
+            <li>{hasModel ? 'Optional Groq model paraphrasing (with fallback heuristic)' : 'Heuristic paraphrasing with optional model support if you add a Groq API key'}</li>
           </ul>
         </div>
         <div className="relative">
@@ -31,8 +33,13 @@ export default function LandingPage() {
                 <li>Paraphrase drafts with gentle rewrites reflecting your profile.</li>
               </ol>
             </div>
-            <div className="mt-6 text-xs text-slate-500">
-              Note: This prototype uses heuristic paraphrasing (no model call). Add your own API logic in <code className="text-slate-300">/src/app/api/paraphrase/route.ts</code>.
+            <div className="mt-6 text-xs text-slate-500 space-y-1">
+              {!hasModel && (
+                <p>Currently running in heuristic mode. Add a Groq API key (GROQ_API_KEY + optional GROQ_MODEL) and set STYLESYNC_API_KEY for authorized model paraphrasing in <code className="text-slate-300">/src/app/api/paraphrase/route.ts</code>.</p>
+              )}
+              {hasModel && (
+                <p>Model paraphrasing enabled (Groq). Unauthorized or disabled requests gracefully fall back to heuristic rewrites.</p>
+              )}
             </div>
           </div>
         </div>
