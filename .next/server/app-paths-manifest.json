@@ -1,6 +1,0 @@
-{
-  "/style/onboarding/page": "app/style/onboarding/page.js",
-  "/page": "app/page.js",
-  "/auth/sign-in/page": "app/auth/sign-in/page.js",
-  "/paraphrase/page": "app/paraphrase/page.js"
-}
