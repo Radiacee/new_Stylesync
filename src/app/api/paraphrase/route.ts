@@ -32,7 +32,9 @@ export async function POST(req: NextRequest) {
     const authorized = !!(serverApiKey && apiKeyHeader && apiKeyHeader === serverApiKey);
     
     // Allow AI model in development mode or when properly authorized
+    // For production deployment, allow model if GROQ key exists (remove STYLESYNC_API_KEY requirement temporarily)
     const isDevelopment = process.env.NODE_ENV !== 'production';
+    const hasGroqKey = !!process.env.GROQ_API_KEY;
     
     console.log('=== AUTHORIZATION DEBUG ===');
     console.log('Environment:', process.env.NODE_ENV);
@@ -40,9 +42,10 @@ export async function POST(req: NextRequest) {
     console.log('Has server API key:', !!serverApiKey);
     console.log('Has client API key header:', !!apiKeyHeader);
     console.log('Keys match:', authorized);
-    console.log('Has GROQ key:', !!process.env.GROQ_API_KEY);
+    console.log('Has GROQ key:', hasGroqKey);
 
-    const allowModel = (isDevelopment || authorized) && process.env.GROQ_API_KEY;
+    // Allow model usage if: development mode OR production with GROQ key available
+    const allowModel = (isDevelopment || hasGroqKey) && hasGroqKey;
     console.log('allowModel result:', allowModel);
     console.log('useModel from request:', useModel);
     
