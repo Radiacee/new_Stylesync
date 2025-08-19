@@ -120,45 +120,66 @@ function OnboardingInner() {
   function handleApplyAnalysis() {
     if (!analysisResult) return;
     
-    // Apply insights from analysis to the profile
+    // Apply insights from analysis to the profile - calculate directly from analysis, not from current profile
     const updates: Partial<StyleProfile> = {};
     
     // ALWAYS start with empty customLexicon to ensure clean slate
     updates.customLexicon = [];
     
-    // Set formality based on contractions usage
+    // Set formality based on contractions usage and vocabulary complexity
     if (analysisResult.usesContractions) {
-      updates.formality = Math.max(0.1, Math.min(0.4, profile.formality * 0.7)); // More casual
+      // More casual - combine contractions with vocabulary complexity
+      const casualScore = 0.2 + (1 - analysisResult.vocabularyComplexity) * 0.3;
+      updates.formality = Math.max(0.1, Math.min(0.4, casualScore));
     } else {
-      updates.formality = Math.min(0.9, Math.max(0.6, profile.formality * 1.3)); // More formal  
+      // More formal - use vocabulary complexity and average word length
+      const formalScore = 0.5 + (analysisResult.vocabularyComplexity * 0.3) + ((analysisResult.avgWordLength - 4) * 0.05);
+      updates.formality = Math.min(0.9, Math.max(0.6, formalScore));
     }
     
-    // Set descriptiveness based on adjective density
-    if (analysisResult.adjectiveDensity > 0.15) {
-      updates.descriptiveness = Math.min(0.9, Math.max(0.6, analysisResult.adjectiveDensity * 4)); // More descriptive
-    } else if (analysisResult.adjectiveDensity < 0.05) {
-      updates.descriptiveness = Math.max(0.1, analysisResult.adjectiveDensity * 6); // Less descriptive
+    // Set descriptiveness directly from adjective density (scale it appropriately)
+    const descriptiveScore = Math.min(0.9, Math.max(0.1, analysisResult.adjectiveDensity * 6));
+    updates.descriptiveness = descriptiveScore;
+    
+    // Set pacing based on sentence length and conjunction density
+    const avgLength = analysisResult.avgSentenceLength;
+    const conjunctionFactor = Math.min(0.3, analysisResult.conjunctionDensity * 0.2);
+    
+    if (avgLength > 20) {
+      // Longer sentences = slower pacing
+      const lengthFactor = Math.min(0.4, (avgLength - 15) * 0.02);
+      updates.pacing = Math.max(0.1, 0.3 - lengthFactor + conjunctionFactor);
+    } else if (avgLength < 12) {
+      // Shorter sentences = faster pacing
+      const lengthFactor = Math.min(0.5, (15 - avgLength) * 0.04);
+      updates.pacing = Math.min(0.9, 0.4 + lengthFactor - conjunctionFactor);
     } else {
-      updates.descriptiveness = Math.min(0.8, Math.max(0.2, analysisResult.adjectiveDensity * 5)); // Balanced
+      // Average length = balanced pacing with conjunction influence
+      updates.pacing = 0.5 + conjunctionFactor;
     }
     
-    // Set pacing based on sentence length
-    if (analysisResult.avgSentenceLength > 20) {
-      updates.pacing = Math.max(0.1, Math.min(0.4, 0.8 - (analysisResult.avgSentenceLength - 20) * 0.02)); // Slower pacing for longer sentences
-    } else if (analysisResult.avgSentenceLength < 12) {
-      updates.pacing = Math.min(0.9, Math.max(0.6, 0.3 + (12 - analysisResult.avgSentenceLength) * 0.05)); // Faster pacing for shorter sentences
-    } else {
-      updates.pacing = 0.5; // Balanced for average length
+    // Set directness based on question ratio, personal voice, and sentence complexity
+    let directnessScore = 0.5; // Start with neutral
+    
+    // Questions and second-person = more direct
+    if (analysisResult.questionRatio > 0.1) {
+      directnessScore += analysisResult.questionRatio * 3; // Questions boost directness
     }
     
-    // Set directness based on question ratio and personal voice
-    if (analysisResult.questionRatio > 0.1 || analysisResult.personalVoice === 'second-person') {
-      updates.directness = Math.min(0.9, Math.max(0.6, 0.7 + analysisResult.questionRatio * 2)); // More direct
+    if (analysisResult.personalVoice === 'second-person') {
+      directnessScore += 0.2; // "You" voice is more direct
+    } else if (analysisResult.personalVoice === 'first-person') {
+      directnessScore += 0.1; // "I" voice is somewhat direct
     } else if (analysisResult.personalVoice === 'third-person') {
-      updates.directness = Math.max(0.1, Math.min(0.5, 0.4 - analysisResult.questionRatio)); // Less direct
-    } else {
-      updates.directness = 0.5; // Balanced
+      directnessScore -= 0.1; // Third-person is less direct
     }
+    
+    // Complex sentences reduce directness
+    if (analysisResult.avgSentenceLength > 18) {
+      directnessScore -= (analysisResult.avgSentenceLength - 18) * 0.02;
+    }
+    
+    updates.directness = Math.max(0.1, Math.min(0.9, directnessScore));
     
     // Update tone based on analysis - be more specific
     if (analysisResult.toneBalance === 'positive') {
