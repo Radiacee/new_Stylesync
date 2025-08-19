@@ -276,8 +276,8 @@ function OnboardingInner() {
     <div className="grid gap-10 lg:grid-cols-5">
       <div className="lg:col-span-3 space-y-8">
         <div className="glass-panel p-6 space-y-4">
-          <h1 className="text-2xl font-semibold">Create your style profile</h1>
-          <p className="text-sm text-slate-300">Adjust sliders & provide a short sample (150+ words) of your own writing. {supabase ? 'If signed in, your profile is saved to your account.' : 'Data stays local unless you sign in.'}</p>
+          <h1 className="text-2xl font-semibold">Create Style Profile</h1>
+          <p className="text-sm text-slate-300">Define your writing style with sample text and preferences.</p>
           {remoteTableMissing && (
             <div className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded p-2">
               Remote table <code>style_profiles</code> not found. Run the provided SQL in your Supabase project then refresh this page.
@@ -427,7 +427,7 @@ function OnboardingInner() {
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Overall tone keywords (comma separated words you often use)</label>
+              <label className="text-sm font-medium">Keywords (optional)</label>
               {profile.customLexicon.length > 0 && (
                 <button 
                   onClick={clearCustomLexicon}
@@ -442,16 +442,16 @@ function OnboardingInner() {
                 value={profile.customLexicon.join(',')} 
                 onChange={e => update('customLexicon', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} 
                 className="flex-1 rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2 text-sm" 
-                placeholder="e.g. nuance, scaffold, iterate" 
+                placeholder="e.g. innovative, strategic, efficient" 
               />
             </div>
-            <p className="text-xs text-slate-400">Start with empty keywords - use "Analyze" to automatically extract keywords from your sample text</p>
+            <p className="text-xs text-slate-400">Use "Analyze" to extract keywords from your sample text</p>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Notes / nuance descriptors</label>
-            <textarea value={profile.notes} onChange={e => update('notes', e.target.value)} rows={3} className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2 text-sm" placeholder="e.g. Avoid hype; prefer concrete verbs; light humor acceptable." />
+            <label className="text-sm font-medium">Notes (optional)</label>
+            <textarea value={profile.notes} onChange={e => update('notes', e.target.value)} rows={3} className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2 text-sm" placeholder="e.g. Professional tone, avoid jargon" />
           </div>
-          <button onClick={handleSave} className="px-5 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold transition disabled:opacity-50" disabled={!profile.sampleExcerpt.trim() || busy}>{busy ? 'Saving…' : 'Save profile'}</button>
+          <button onClick={handleSave} className="px-5 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold transition disabled:opacity-50" disabled={!profile.sampleExcerpt.trim() || busy}>{busy ? 'Saving…' : 'Create Profile'}</button>
           <div className="space-y-1">
             {saved && (
               <p className="text-xs text-emerald-400 flex items-center gap-2">
@@ -497,12 +497,11 @@ create policy if not exists "Allow user delete own" on public.style_profiles for
       </div>
       <aside className="lg:col-span-2 flex flex-col gap-6">
         <div className="glass-panel p-5 text-sm space-y-3">
-          <h2 className="font-semibold text-brand-300">Why these sliders?</h2>
-            <p>They capture surface-level style signals used to steer paraphrasing heuristics. More advanced versions could learn vector embeddings of your samples.</p>
-            <p className="text-xs text-slate-400">Privacy: Data is stored in <code>localStorage</code>. Clear it anytime via browser dev tools.</p>
+          <h2 className="font-semibold text-brand-300">Style Parameters</h2>
+            <p>These settings help define your unique writing style for consistent text transformation.</p>
         </div>
         <div className="glass-panel p-5 text-xs text-slate-400 space-y-2">
-          <p>Ethics: This tool is not for evading detection or misrepresenting authorship. Always cite original sources and disclose AI assistance.</p>
+          <p>Remember to always cite sources and disclose AI assistance when appropriate.</p>
         </div>
       </aside>
   {busy && <FullScreenSpinner label="Saving style profile" />}

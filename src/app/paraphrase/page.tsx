@@ -26,6 +26,7 @@ export default function ParaphrasePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     // Check authentication first
@@ -198,8 +199,142 @@ export default function ParaphrasePage() {
     setDiffStats({ changed: diff.changed, total: diff.total });
   }, [output, input]);
 
+  // Helper function for percentage display
+  const pct = (v: number) => Math.round(v * 100) + '%';
+
+  // Simple word-level diff
+  const wordDiff = (a: string, b: string) => {
+    const aTokens = a.split(/(\s+)/); // keep whitespace separators
+    const bTokens = b.split(/(\s+)/);
+    const aWords = new Set(a.toLowerCase().split(/\s+/).filter(Boolean));
+    const tokens = bTokens.map(tok => {
+      if (/^\s+$/.test(tok)) return { value: tok, changed: false };
+      const changed = !aWords.has(tok.toLowerCase());
+      return { value: tok, changed };
+    });
+    const total = tokens.filter(t => !/^\s+$/.test(t.value)).length;
+    const changed = tokens.filter(t => t.changed).length;
+    return { tokens, total, changed };
+  };
+
   return (
-  <div className="grid gap-10 lg:grid-cols-5">
+    <div className="min-h-screen pt-20 pb-16 px-6 max-w-6xl mx-auto">
+      {/* History Toggle Button */}
+      {history.length > 0 && (
+        <button
+          onClick={() => setHistoryOpen(!historyOpen)}
+          className={`fixed z-50 glass-panel p-3 text-brand-400 hover:text-brand-300 transition-all duration-300 ${
+            historyOpen 
+              ? 'top-4 right-4 bg-slate-800/80 hover:bg-slate-700/80' // When open, overlay style on sidebar
+              : 'top-24 right-6 hover:bg-white/10' // When closed, normal style
+          }`}
+          title={historyOpen ? "Close History" : "Open History"}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {historyOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            )}
+          </svg>
+        </button>
+      )}
+
+      {/* History Side Navigation */}
+      {history.length > 0 && (
+        <div className={`fixed top-0 right-0 h-full w-80 bg-slate-900/95 backdrop-blur-xl border-l border-white/10 transform transition-transform duration-300 ease-in-out z-40 ${
+          historyOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}>
+          <div className="p-6 pt-16 h-full flex flex-col">
+            {/* Header with extra top padding to avoid close button overlap */}
+            <div className="flex items-center justify-between mb-4 pt-2">
+              <h2 className="font-semibold text-brand-300 text-lg">History</h2>
+              {userId && (
+                <button 
+                  onClick={handleDeleteAllHistory}
+                  className="text-xs px-3 py-1.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-colors"
+                  title="Delete all history"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 mb-4">{userId ? 'Synced to account' : 'Local only (sign in to sync)'} · {history.length} entries</p>
+            
+            <div className="flex-1 overflow-auto pr-2">
+              <ul className="space-y-3">
+                {history.map(h => (
+                  <li key={h.id} className="border border-white/10 rounded-lg p-3 bg-slate-800/40 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-slate-500">
+                        {new Date(h.createdAt).toLocaleString()} 
+                        {h.usedModel && <span className="ml-1 text-brand-400">●</span>} 
+                        {h.pending && <span className="ml-1 text-amber-400">…</span>}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => { 
+                            setInput(h.input); 
+                            setOutput(h.output); 
+                            setHistoryOpen(false); // Close history when loading
+                          }} 
+                          className="text-xs px-2 py-1 rounded bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 hover:text-brand-300 transition-colors"
+                        >
+                          Load
+                        </button>
+                        {userId && !h.localOnly && !h.pending && (
+                          <button 
+                            onClick={() => handleDeleteHistoryEntry(h.id)}
+                            className="text-xs px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-colors"
+                            title="Delete this entry"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <div className="text-xs text-slate-400">
+                        <div className="font-medium text-slate-300 mb-1">Input:</div>
+                        <div className="line-clamp-3 whitespace-pre-wrap bg-slate-900/40 rounded p-2">{h.input}</div>
+                      </div>
+                      <div className="text-xs text-slate-200">
+                        <div className="font-medium text-brand-300 mb-1">Output:</div>
+                        <div className="line-clamp-3 whitespace-pre-wrap bg-slate-900/40 rounded p-2 border-l-2 border-brand-500/40">{h.output}</div>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <textarea
+                        placeholder="Add note..."
+                        value={h.note}
+                        onChange={e => {
+                          const v = e.target.value; 
+                          setHistory(list => list.map(item => item.id === h.id ? { ...item, note: v } : item));
+                        }}
+                        onBlur={e => { 
+                          if (userId && !h.pending && !h.localOnly) updateHistoryNote(h.id, e.target.value); 
+                        }}
+                        rows={2}
+                        className="w-full bg-slate-900/60 border border-white/10 rounded p-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-200"
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay */}
+      {historyOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30"
+          onClick={() => setHistoryOpen(false)}
+        />
+      )}
+
+    <div className="grid gap-10 lg:grid-cols-5">
       <div className="lg:col-span-3 space-y-6">
         <div className="glass-panel p-5 space-y-4">
           <h1 className="text-2xl font-semibold">Paraphrase</h1>
@@ -272,7 +407,7 @@ export default function ParaphrasePage() {
                 <div>Repeated starts ratio: {metrics.repeatedStartsRatio?.toFixed?.(2)}</div>
               </div>
             )}
-            <p className="text-[10px] text-slate-500">Review carefully; ensure meaning fidelity & cite sources. Disclose assistance.</p>
+            <p className="text-[10px] text-slate-500">Review output carefully. Cite sources and disclose AI assistance.</p>
             {diffTokens.length > 0 && (
               <div className="mt-4 space-y-2">
                 <div className="text-[10px] text-slate-500">Changed words: {diffStats.changed}/{diffStats.total} ({diffStats.total ? Math.round(diffStats.changed / diffStats.total * 100) : 0}%)</div>
@@ -303,83 +438,13 @@ export default function ParaphrasePage() {
             </ul>
           ) : <p className="text-xs text-slate-400">No profile loaded.</p>}
         </div>
-        {history.length > 0 && (
-          <div className="glass-panel p-5 space-y-4 text-xs">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-brand-300 text-sm">History</h2>
-              {userId && (
-                <button 
-                  onClick={handleDeleteAllHistory}
-                  className="text-[10px] px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-colors"
-                  title="Delete all history"
-                >
-                  Clear All
-                </button>
-              )}
-            </div>
-            <p className="text-[10px] text-slate-500">{userId ? 'Synced to account' : 'Local only (sign in to sync)'} · Showing {history.length}</p>
-            <ul className="space-y-3 max-h-80 overflow-auto pr-1">
-              {history.map(h => (
-                <li key={h.id} className="border border-white/10 rounded-lg p-3 bg-slate-800/40 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-slate-500">{new Date(h.createdAt).toLocaleTimeString()} {h.usedModel && <span className="ml-1 text-brand-400">●</span>} {h.pending && <span className="ml-1 text-amber-400">…</span>}</span>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => { setInput(h.input); setOutput(h.output); }} className="text-[10px] underline text-brand-400 hover:text-brand-300 transition-colors">Load</button>
-                      {userId && !h.localOnly && !h.pending && (
-                        <button 
-                          onClick={() => handleDeleteHistoryEntry(h.id)}
-                          className="text-[10px] px-1 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-colors"
-                          title="Delete this entry"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="grid gap-1">
-                    <div className="line-clamp-3 whitespace-pre-wrap text-slate-400">{h.input}</div>
-                    <div className="line-clamp-3 whitespace-pre-wrap text-slate-200 border-l border-brand-500/40 pl-2">{h.output}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <textarea
-                      placeholder="Add note..."
-                      value={h.note}
-                      onChange={e => {
-                        const v = e.target.value; setHistory(list => list.map(item => item.id === h.id ? { ...item, note: v } : item));
-                      }}
-                      onBlur={e => { if (userId && !h.pending && !h.localOnly) updateHistoryNote(h.id, e.target.value); }}
-                      rows={2}
-                      className="w-full bg-slate-900/40 border border-white/10 rounded p-2 text-[11px] resize-none focus:outline-none focus:ring-1 focus:ring-brand-500"
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
         <div className="glass-panel p-5 text-xs text-slate-400 space-y-2">
-          <p>Prototype uses heuristic lexical & sentence-level rewrites. Swap in a secure API for production. Never misrepresent authorship.</p>
+          <p>AI-powered text transformation. Always cite sources and disclose AI assistance.</p>
         </div>
       </aside>
-  {busy && <FullScreenSpinner label="Generating paraphrase" />}
-  {!authChecked && <FullScreenSpinner label="Checking authentication" />}
-  </div>
+    </div>
+    {busy && <FullScreenSpinner label="Generating paraphrase" />}
+    {!authChecked && <FullScreenSpinner label="Checking authentication" />}
+    </div>
   );
-}
-
-function pct(v: number) { return Math.round(v * 100) + '%'; }
-
-// Simple word-level diff (not Levenshtein; token presence comparison)
-function wordDiff(a: string, b: string) {
-  const aTokens = a.split(/(\s+)/); // keep whitespace separators
-  const bTokens = b.split(/(\s+)/);
-  const aWords = new Set(a.toLowerCase().split(/\s+/).filter(Boolean));
-  const tokens = bTokens.map(tok => {
-    if (/^\s+$/.test(tok)) return { value: tok, changed: false };
-    const changed = !aWords.has(tok.toLowerCase());
-    return { value: tok, changed };
-  });
-  const total = tokens.filter(t => !/^\s+$/.test(t.value)).length;
-  const changed = tokens.filter(t => t.changed).length;
-  return { tokens, total, changed };
 }
