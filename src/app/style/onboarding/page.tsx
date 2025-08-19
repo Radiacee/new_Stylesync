@@ -273,30 +273,35 @@ function OnboardingInner() {
   }
 
   return (
-    <div className="grid gap-10 lg:grid-cols-5">
-      <div className="lg:col-span-3 space-y-8">
-        <div className="glass-panel p-6 space-y-4">
-          <h1 className="text-2xl font-semibold">Create Style Profile</h1>
-          <p className="text-sm text-slate-300">Define your writing style with sample text and preferences.</p>
-          {remoteTableMissing && (
-            <div className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded p-2">
-              Remote table <code>style_profiles</code> not found. Run the provided SQL in your Supabase project then refresh this page.
+    <div className="py-8">
+      <div className="grid gap-12 lg:grid-cols-5">
+        <div className="lg:col-span-3 space-y-8">
+          <div className="glass-panel p-8 space-y-6">
+            <div className="space-y-3">
+              <h1 className="text-3xl font-bold">Create Style Profile</h1>
+              <p className="text-slate-300">Define your writing style with sample text and preferences.</p>
             </div>
-          )}
-          <div className="grid gap-6">
-            <SliderField label="Formality" value={profile.formality} onChange={v => update('formality', v)} helper="Casual ↔ Academic" />
-            <SliderField label="Pacing" value={profile.pacing} onChange={v => update('pacing', v)} helper="Measured ↔ Rapid" />
-            <SliderField label="Descriptiveness" value={profile.descriptiveness} onChange={v => update('descriptiveness', v)} helper="Minimal ↔ Vivid" />
-            <SliderField label="Directness" value={profile.directness} onChange={v => update('directness', v)} helper="Implicit ↔ Straightforward" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Profile name</label>
-            <input value={profile.name || ''} onChange={e => update('name', e.target.value)} className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="e.g. Academic Concise" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Overall tone keyword</label>
-            <input value={profile.tone} onChange={e => update('tone', e.target.value)} className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          </div>
+            {remoteTableMissing && (
+              <div className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded p-3">
+                Remote table <code>style_profiles</code> not found. Run the provided SQL in your Supabase project then refresh this page.
+              </div>
+            )}
+            <div className="grid gap-8">
+              <SliderField label="Formality" value={profile.formality} onChange={v => update('formality', v)} helper="Casual ↔ Academic" />
+              <SliderField label="Pacing" value={profile.pacing} onChange={v => update('pacing', v)} helper="Measured ↔ Rapid" />
+              <SliderField label="Descriptiveness" value={profile.descriptiveness} onChange={v => update('descriptiveness', v)} helper="Minimal ↔ Vivid" />
+              <SliderField label="Directness" value={profile.directness} onChange={v => update('directness', v)} helper="Implicit ↔ Straightforward" />
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Profile name</label>
+                <input value={profile.name || ''} onChange={e => update('name', e.target.value)} className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" placeholder="e.g. Academic Concise" />
+              </div>
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Overall tone keyword</label>
+                <input value={profile.tone} onChange={e => update('tone', e.target.value)} className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              </div>
+            </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium flex items-center gap-2">
@@ -496,17 +501,18 @@ create policy if not exists "Allow user delete own" on public.style_profiles for
         </div>
       </div>
       <aside className="lg:col-span-2 flex flex-col gap-6">
-        <div className="glass-panel p-5 text-sm space-y-3">
-          <h2 className="font-semibold text-brand-300">Style Parameters</h2>
-            <p>These settings help define your unique writing style for consistent text transformation.</p>
+        <div className="glass-panel p-6 text-sm space-y-4">
+          <h2 className="font-semibold text-brand-300 text-lg">Style Parameters</h2>
+          <p>These settings help define your unique writing style for consistent text transformation.</p>
         </div>
-        <div className="glass-panel p-5 text-xs text-slate-400 space-y-2">
+        <div className="glass-panel p-6 text-xs text-slate-400 space-y-2">
           <p>Remember to always cite sources and disclose AI assistance when appropriate.</p>
         </div>
       </aside>
-  {busy && <FullScreenSpinner label="Saving style profile" />}
-  {!authChecked && <FullScreenSpinner label="Checking authentication" />}
-  </div>
+      </div>
+      {busy && <FullScreenSpinner label="Saving style profile" />}
+      {!authChecked && <FullScreenSpinner label="Checking authentication" />}
+    </div>
   );
 }
 

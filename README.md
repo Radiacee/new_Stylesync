@@ -1,4 +1,4 @@
-# Stylesync
+# StyleSync
 
 Prototype web app for creating a lightweight personal writing style profile and applying it to paraphrasing (ethical use focus).
 

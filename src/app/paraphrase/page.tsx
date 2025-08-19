@@ -218,18 +218,19 @@ export default function ParaphrasePage() {
   };
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-6 max-w-6xl mx-auto">
-      {/* History Toggle Button */}
-      {history.length > 0 && (
-        <button
-          onClick={() => setHistoryOpen(!historyOpen)}
-          className={`fixed z-50 glass-panel p-3 text-brand-400 hover:text-brand-300 transition-all duration-300 ${
-            historyOpen 
-              ? 'top-4 right-4 bg-slate-800/80 hover:bg-slate-700/80' // When open, overlay style on sidebar
-              : 'top-24 right-6 hover:bg-white/10' // When closed, normal style
-          }`}
-          title={historyOpen ? "Close History" : "Open History"}
-        >
+    <div className="py-8">
+      <div className="min-h-screen">
+        {/* History Toggle Button */}
+        {history.length > 0 && (
+          <button
+            onClick={() => setHistoryOpen(!historyOpen)}
+            className={`fixed z-50 glass-panel p-3 text-brand-400 hover:text-brand-300 transition-all duration-300 ${
+              historyOpen 
+                ? 'top-4 right-4 bg-slate-800/80 hover:bg-slate-700/80' // When open, overlay style on sidebar
+                : 'top-24 right-6 hover:bg-white/10' // When closed, normal style
+            }`}
+            title={historyOpen ? "Close History" : "Open History"}
+          >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {historyOpen ? (
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -334,12 +335,15 @@ export default function ParaphrasePage() {
         />
       )}
 
-    <div className="grid gap-10 lg:grid-cols-5">
-      <div className="lg:col-span-3 space-y-6">
-        <div className="glass-panel p-5 space-y-4">
-          <h1 className="text-2xl font-semibold">Paraphrase</h1>
+    <div className="grid gap-12 lg:grid-cols-5">
+      <div className="lg:col-span-3 space-y-8">
+        <div className="glass-panel p-8 space-y-6">
+          <div className="space-y-3">
+            <h1 className="text-3xl font-bold">Paraphrase</h1>
+            <p className="text-slate-300">Transform text to match your writing style</p>
+          </div>
           {isParaphraseHistoryTableMissing() && (
-            <div className="rounded border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300 space-y-2">
+            <div className="rounded border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-300 space-y-2">
               <p className="font-semibold">History table not found in Supabase.</p>
               <p>Run the following SQL in your Supabase project (SQL editor) to create it:</p>
               <details className="select-text">
@@ -348,19 +352,41 @@ export default function ParaphrasePage() {
               </details>
             </div>
           )}
-          {!profile && <p className="text-xs text-amber-400">No style profile found. Create one for better alignment.</p>}
-          <textarea value={input} onChange={e => setInput(e.target.value)} placeholder="Paste text to paraphrase..." rows={10} className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" />
-          <div className="flex flex-wrap gap-4 items-center">
-            <button onClick={handleParaphrase} disabled={!input.trim() || busy} className="px-5 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold disabled:opacity-40 transition min-w-[140px]">{busy ? 'Processing…' : 'Paraphrase'}</button>
-            <button onClick={() => { setInput(''); setOutput(''); setError(null); setUsedModel(false); }} className="px-5 py-2 rounded-lg border border-white/10 hover:border-brand-400/60 text-slate-200 text-sm">Reset</button>
-            <label className="flex items-center gap-2 text-xs text-slate-300 select-none">
-              <input type="checkbox" className="accent-brand-500" checked={useModel} onChange={e=>setUseModel(e.target.checked)} />
-              Use model (Groq)
-            </label>
-            <label className="flex items-center gap-2 text-xs text-slate-500 select-none">
-              <input type="checkbox" className="accent-brand-500" checked={debug} onChange={e=>setDebug(e.target.checked)} />
-              Debug
-            </label>
+          {!profile && <p className="text-sm text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded p-3">No style profile found. Create one for better alignment.</p>}
+          <div className="space-y-4">
+            <label className="text-sm font-medium">Input Text</label>
+            <textarea 
+              value={input} 
+              onChange={e => setInput(e.target.value)} 
+              placeholder="Paste text to paraphrase..." 
+              rows={10} 
+              className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed" 
+            />
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <button 
+              onClick={handleParaphrase} 
+              disabled={!input.trim() || busy} 
+              className="px-8 py-3 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold disabled:opacity-40 transition min-w-[160px]"
+            >
+              {busy ? 'Processing…' : 'Paraphrase'}
+            </button>
+            <button 
+              onClick={() => { setInput(''); setOutput(''); setError(null); setUsedModel(false); }} 
+              className="px-6 py-3 rounded-lg border border-white/10 hover:border-brand-400/60 text-slate-200 text-sm transition"
+            >
+              Reset
+            </button>
+            <div className="flex flex-wrap gap-4 text-xs">
+              <label className="flex items-center gap-2 text-slate-300 select-none">
+                <input type="checkbox" className="accent-brand-500" checked={useModel} onChange={e=>setUseModel(e.target.checked)} />
+                Use AI Model
+              </label>
+              <label className="flex items-center gap-2 text-slate-500 select-none">
+                <input type="checkbox" className="accent-brand-500" checked={debug} onChange={e=>setDebug(e.target.checked)} />
+                Debug Mode
+              </label>
+            </div>
           </div>
         </div>
         {(error || output) && (
@@ -422,29 +448,39 @@ export default function ParaphrasePage() {
           </div>
         )}
       </div>
-      <aside className="lg:col-span-2 space-y-6">
-        <div className="glass-panel p-5"><StyleProfileManager onSelect={p => setProfile(p)} /></div>
-        <div className="glass-panel p-5 text-sm space-y-2">
-          <h2 className="font-semibold text-brand-300">Current Style Snapshot</h2>
+      <aside className="lg:col-span-2 space-y-8">
+        <div className="glass-panel p-6"><StyleProfileManager onSelect={p => setProfile(p)} /></div>
+        <div className="glass-panel p-6 text-sm space-y-4">
+          <h2 className="font-semibold text-brand-300 text-lg">Current Style Profile</h2>
           {profile ? (
-            <ul className="text-xs grid gap-1 text-slate-300">
-              <li><strong>Tone:</strong> {profile.tone}</li>
-              <li><strong>Formality:</strong> {pct(profile.formality)}</li>
-              <li><strong>Pacing:</strong> {pct(profile.pacing)}</li>
-              <li><strong>Descriptiveness:</strong> {pct(profile.descriptiveness)}</li>
-              <li><strong>Directness:</strong> {pct(profile.directness)}</li>
-              {profile.customLexicon.length > 0 && <li><strong>Lexicon:</strong> {profile.customLexicon.join(', ')}</li>}
-              {profile.notes && <li><strong>Notes:</strong> {profile.notes}</li>}
+            <ul className="text-sm space-y-2 text-slate-300">
+              <li className="flex justify-between"><span>Tone:</span> <span className="text-white">{profile.tone}</span></li>
+              <li className="flex justify-between"><span>Formality:</span> <span className="text-white">{pct(profile.formality)}</span></li>
+              <li className="flex justify-between"><span>Pacing:</span> <span className="text-white">{pct(profile.pacing)}</span></li>
+              <li className="flex justify-between"><span>Descriptiveness:</span> <span className="text-white">{pct(profile.descriptiveness)}</span></li>
+              <li className="flex justify-between"><span>Directness:</span> <span className="text-white">{pct(profile.directness)}</span></li>
+              {profile.customLexicon.length > 0 && (
+                <li className="pt-2 border-t border-white/10">
+                  <div className="text-xs text-slate-400 mb-1">Keywords:</div>
+                  <div className="flex flex-wrap gap-1">
+                    {profile.customLexicon.map(word => (
+                      <span key={word} className="px-2 py-1 bg-brand-500/20 text-brand-300 rounded text-xs">{word}</span>
+                    ))}
+                  </div>
+                </li>
+              )}
+              {profile.notes && <li className="pt-2 border-t border-white/10"><div className="text-xs text-slate-400 mb-1">Notes:</div><div className="text-sm">{profile.notes}</div></li>}
             </ul>
-          ) : <p className="text-xs text-slate-400">No profile loaded.</p>}
+          ) : <p className="text-slate-400">No profile loaded.</p>}
         </div>
-        <div className="glass-panel p-5 text-xs text-slate-400 space-y-2">
+        <div className="glass-panel p-6 text-xs text-slate-400 space-y-2">
           <p>AI-powered text transformation. Always cite sources and disclose AI assistance.</p>
         </div>
       </aside>
-    </div>
-    {busy && <FullScreenSpinner label="Generating paraphrase" />}
-    {!authChecked && <FullScreenSpinner label="Checking authentication" />}
+        </div>
+        {busy && <FullScreenSpinner label="Generating paraphrase" />}
+        {!authChecked && <FullScreenSpinner label="Checking authentication" />}
+      </div>
     </div>
   );
 }
