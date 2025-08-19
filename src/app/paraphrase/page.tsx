@@ -7,6 +7,7 @@ import { FullScreenSpinner } from '../../components/FullScreenSpinner';
 import { StyleProfileManager } from '../../components/StyleProfileManager';
 import { fetchHistory, addHistoryEntry, updateHistoryNote, deleteHistoryEntry, deleteAllHistory, type ParaphraseEntry, isParaphraseHistoryTableMissing, PARAPHRASE_HISTORY_SQL } from '../../lib/paraphraseHistory.ts';
 import { supabase } from '../../lib/supabaseClient.ts';
+import AITransparencyPanel from '../../components/AITransparencyPanel';
 
 export default function ParaphrasePage() {
   const router = useRouter();
@@ -446,6 +447,17 @@ export default function ParaphrasePage() {
               </div>
             )}
           </div>
+        )}
+        
+        {/* AI Transparency Panel - Show how AI applied the user's style */}
+        {output && profile && usedModel && (
+          <AITransparencyPanel 
+            profile={profile}
+            originalText={input}
+            paraphrasedText={output}
+            usedModel={usedModel}
+            className="mt-6"
+          />
         )}
       </div>
       <aside className="lg:col-span-2 space-y-8">
