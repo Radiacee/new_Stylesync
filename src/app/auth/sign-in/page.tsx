@@ -34,13 +34,23 @@ export default function SignInPage() {
     setLoading(true); setMsg('');
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password: pw });
-        if (error) throw error; setMsg('Check your email to confirm.');
+        // Get the current origin for redirect URL
+        const redirectUrl = `${window.location.origin}/auth/callback`;
+        
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password: pw,
+          options: {
+            emailRedirectTo: redirectUrl
+          }
+        });
+        if (error) throw error; 
+        setMsg('Check your email to confirm your account.');
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
         if (error) throw error; setMsg('Signed in. Redirecting...');
         // Redirect quickly (allow short user feedback)
-        setTimeout(() => router.replace('/'), 300);
+        setTimeout(() => router.replace('/paraphrase'), 300);
       }
     } catch (err: any) { setMsg(err.message); }
     finally { setLoading(false); }
