@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabaseClient';
 
+const ADMIN_EMAILS = [
+  'banlutachristiandave2@gmail.com',
+  'admin@stylesync.com',
+];
+
 export default function AuthConfirmPage() {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -51,9 +56,13 @@ export default function AuthConfirmPage() {
             setStatus('success');
             setMessage('Authentication successful! Redirecting...');
             
+            // Check if user is admin and redirect accordingly
+            const isAdmin = ADMIN_EMAILS.includes(data.user.email || '');
+            const redirectPath = isAdmin ? '/admin' : '/paraphrase';
+            
             // Wait a moment then redirect
             setTimeout(() => {
-              router.push('/paraphrase');
+              router.push(redirectPath);
             }, 2000);
           } else {
             setStatus('error');
@@ -66,8 +75,14 @@ export default function AuthConfirmPage() {
           if (data.session) {
             setStatus('success');
             setMessage('Already authenticated! Redirecting...');
+            
+            // Check if user is admin and redirect accordingly
+            const { data: { user } } = await supabase.auth.getUser();
+            const isAdmin = user && ADMIN_EMAILS.includes(user.email || '');
+            const redirectPath = isAdmin ? '/admin' : '/paraphrase';
+            
             setTimeout(() => {
-              router.push('/paraphrase');
+              router.push(redirectPath);
             }, 1000);
           } else {
             setStatus('error');

@@ -25,7 +25,7 @@ export default function AdminDashboard() {
       title: 'Style Profiles',
       description: 'Manage user style profiles and settings',
       icon: '🎨',
-      path: '/admin/profiles',
+      path: '/admin/users',
       color: 'from-purple-500 to-pink-500'
     },
     {
@@ -160,7 +160,7 @@ export default function AdminDashboard() {
               View All Users
             </button>
             <button
-              onClick={() => router.push('/admin/profiles')}
+              onClick={() => router.push('/admin/users')}
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               Manage Profiles

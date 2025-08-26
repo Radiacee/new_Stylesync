@@ -6,6 +6,11 @@ import { clearLocalParaphraseHistory } from '../lib/paraphraseHistory.ts';
 import { FullScreenSpinner } from './FullScreenSpinner';
 import Link from 'next/link';
 
+const ADMIN_EMAILS = [
+  'banlutachristiandave2@gmail.com',
+  'admin@stylesync.com',
+];
+
 export function AuthStatus() {
   // Stable placeholder so initial server & client HTML match.
   const [ready, setReady] = useState(false);
@@ -77,6 +82,14 @@ export function AuthStatus() {
 
   return <>
     <div className="flex items-center gap-2 text-xs">
+      {ADMIN_EMAILS.includes(email) && (
+        <Link 
+          href="/admin" 
+          className="px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white font-medium transition text-xs"
+        >
+          Admin
+        </Link>
+      )}
       <span className="text-slate-300" suppressHydrationWarning>{email}</span>
       <button onClick={() => supabase?.auth.signOut()} className="text-slate-400 hover:text-white">Sign out</button>
     </div>

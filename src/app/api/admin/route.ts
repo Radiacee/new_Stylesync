@@ -27,19 +27,97 @@ async function checkAdminAuth(req: NextRequest) {
   return { user, supabase };
 }
 
-// GET /api/admin/stats - Get dashboard statistics
+// GET /api/admin - Handle different admin endpoints
 export async function GET(req: NextRequest) {
   const auth = await checkAdminAuth(req);
   if (!auth) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const url = new URL(req.url);
+  const endpoint = url.searchParams.get('endpoint');
+  
+  if (endpoint === 'users') {
+    try {
+      const { supabase } = auth;
+      
+      let users: any[] = [];
+      
+      // Try to get users with service role key if available
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (serviceRoleKey) {
+        try {
+          const serviceRoleSupabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            serviceRoleKey
+          );
+          
+          const { data: authUsers, error: authError } = await serviceRoleSupabase.auth.admin.listUsers();
+          
+          if (!authError && authUsers?.users) {
+            // Get profile data for each user
+            const { data: profiles } = await supabase
+              .from('style_profiles')
+              .select('*');
+            
+            // Combine auth data with profile data
+            users = authUsers.users.map(user => {
+              const profile = profiles?.find(p => p.user_id === user.id);
+              return {
+                id: user.id,
+                email: user.email,
+                created_at: user.created_at,
+                last_sign_in_at: user.last_sign_in_at,
+                email_confirmed_at: user.email_confirmed_at,
+                user_metadata: user.user_metadata,
+                profile: profile || null
+              };
+            });
+          }
+        } catch (serviceError) {
+          console.log('Service role access failed:', serviceError);
+        }
+      }
+      
+      // If service role didn't work or isn't available, fall back to profiles
+      if (users.length === 0) {
+        const { data: profiles } = await supabase
+          .from('style_profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (profiles) {
+          users = profiles.map(profile => ({
+            id: profile.user_id || profile.id,
+            email: 'Email requires service role key - configure SUPABASE_SERVICE_ROLE_KEY',
+            created_at: profile.created_at,
+            last_sign_in_at: profile.updated_at,
+            email_confirmed_at: profile.created_at,
+            user_metadata: profile,
+            profile: profile,
+            isFromProfile: true
+          }));
+        }
+      }
+
+      return NextResponse.json({ users });
+    } catch (error) {
+      console.error('Admin users fetch error:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch users' },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Default endpoint - return stats
   try {
     const { supabase } = auth;
     
-    // Get user count
+    // Get user count from style_profiles table
     const { count: userCount } = await supabase
-      .from('profiles')
+      .from('style_profiles')
       .select('*', { count: 'exact', head: true });
 
     // Get paraphrase count

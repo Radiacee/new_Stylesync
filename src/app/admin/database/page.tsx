@@ -41,7 +41,6 @@ export default function DatabaseManagement() {
         // Fallback to predefined tables if RPC doesn't exist
         setTables([
           { table_name: 'paraphrase_history', table_type: 'BASE TABLE', table_schema: 'public' },
-          { table_name: 'profiles', table_type: 'BASE TABLE', table_schema: 'public' },
           { table_name: 'style_profiles', table_type: 'BASE TABLE', table_schema: 'public' },
         ]);
       } else {
@@ -125,7 +124,7 @@ export default function DatabaseManagement() {
     },
     {
       name: 'Style Profiles Summary',
-      query: 'SELECT COUNT(*) as profile_count FROM profiles'
+      query: 'SELECT COUNT(*) as profile_count FROM style_profiles'
     },
     {
       name: 'User Activity Today',

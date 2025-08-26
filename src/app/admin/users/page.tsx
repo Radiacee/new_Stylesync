@@ -27,17 +27,37 @@ export default function UserManagement() {
 
   const loadUsers = async () => {
     if (!supabase) return;
-    
+
     setLoading(true);
     try {
-      // Get users from auth.users (admin only)
-      const { data: { users }, error } = await supabase.auth.admin.listUsers();
-      
-      if (error) throw error;
-      setUsers(users || []);
+      // Get the auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.error('No auth token available');
+        await loadUsersFromProfiles();
+        return;
+      }
+
+      // Fetch users from the admin API
+      const response = await fetch('/api/admin?endpoint=users', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users || []);
+      } else {
+        console.error('API response not ok:', response.status);
+        // Fallback to old method if API fails
+        await loadUsersFromProfiles();
+      }
     } catch (error) {
       console.error('Error loading users:', error);
-      // Fallback to profile data if direct user access fails
+      // Fallback to old method
       await loadUsersFromProfiles();
     } finally {
       setLoading(false);
@@ -51,19 +71,20 @@ export default function UserManagement() {
       // This assumes you have user profile data stored somewhere
       // Adjust the table name and structure based on your schema
       const { data, error } = await supabase
-        .from('profiles') // Adjust table name
+        .from('style_profiles') // Using correct table name
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!error && data) {
         // Transform profile data to user-like structure
         const profileUsers = data.map(profile => ({
-          id: profile.id,
-          email: profile.email || 'N/A',
+          id: profile.user_id || profile.id,
+          email: 'Email not available (admin access required)',
           created_at: profile.created_at,
           last_sign_in_at: profile.updated_at,
           email_confirmed_at: profile.created_at,
-          user_metadata: profile
+          user_metadata: profile,
+          profile: profile
         }));
         setUsers(profileUsers);
       }
