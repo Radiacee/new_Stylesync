@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 const ADMIN_EMAILS = [
-  'banluytachristiandave2@gmail.com',
+  'banlutachristiandave2@gmail.com',
   'admin@stylesync.com',
 ];
 

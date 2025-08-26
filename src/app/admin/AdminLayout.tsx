@@ -9,7 +9,7 @@ interface AdminLayoutProps {
 }
 
 const ADMIN_EMAILS = [
-  'banluytachristiandave2@gmail.com', // Add your admin email here
+  'banlutachristiandave2@gmail.com', // Add your admin email here
   'admin@stylesync.com', // Add more admin emails as needed
 ];
 
