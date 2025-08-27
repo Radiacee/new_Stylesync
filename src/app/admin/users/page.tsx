@@ -94,16 +94,20 @@ export default function UserManagement() {
   };
 
   const deleteUser = async (userId: string) => {
-    if (!supabase || !confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       return;
     }
 
     setActionLoading(true);
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (error) throw error;
-      
+      const response = await fetch('/api/deleteUser', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Failed to delete user');
+
       // Remove from local state
       setUsers(users.filter(user => user.id !== userId));
       setShowUserModal(false);
