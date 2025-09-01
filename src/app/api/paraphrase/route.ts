@@ -68,9 +68,15 @@ export async function POST(req: NextRequest) {
   const fin = finalizeOutput(finalOut, profile, lexiconOptions) as any;
   const resultText = typeof fin === 'string' ? fin : fin.text;
   
-  // Apply basic cleanup using existing pipeline
+  // Apply comprehensive cleanup using existing pipeline
   let cleanedResultText = resultText;
   
+  // Apply enhanced formatting cleanup
+  cleanedResultText = applyAdvancedFormatting(cleanedResultText);
+  
+  // Apply specialized comma cleanup
+  cleanedResultText = cleanupCommaPatterns(cleanedResultText);
+
   const allowDebug = debug && (authorized || process.env.NODE_ENV !== 'production');
   const actions = allowDebug ? (typeof fin === 'string' ? [] : fin.actions) : [];
   const payload: any = { result: cleanedResultText, usedModel: !!allowModel };
@@ -83,6 +89,52 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message || 'Bad Request' }), { status: 400 });
   }
+}
+
+// Advanced formatting cleanup for AI output issues
+function applyAdvancedFormatting(text: string): string {
+  let cleaned = text;
+  
+  // Fix missing spaces between words (common AI issue)
+  cleaned = cleaned.replace(/([a-z])([A-Z])/g, '$1 $2'); // camelCase issues like "personThe"
+  cleaned = cleaned.replace(/([.!?])([A-Z])/g, '$1 $2'); // Missing space after punctuation
+  cleaned = cleaned.replace(/([a-z])([A-Z][a-z])/g, '$1 $2'); // More word boundary issues
+  
+  // Fix paragraph separation
+  cleaned = cleaned.replace(/([.!?])([A-Z])/g, '$1\n\n$2');
+  
+  // Enhanced repetition removal
+  cleaned = cleaned.replace(/\b(\w+)(\s+\1){1,}/gi, '$1'); // "in order in order" -> "in order"
+  cleaned = cleaned.replace(/\b(\w+\s+\w+)(\s+\1){1,}/gi, '$1'); // phrase repetitions
+  
+  // CRITICAL: Fix comma repetition patterns
+  cleaned = cleaned.replace(/,(\s*,)+/g, ','); // ", , ," -> ","
+  cleaned = cleaned.replace(/,\s*,\s*,/g, ','); // "a, , ,b" -> "a,b"
+  cleaned = cleaned.replace(/(\w+),\s*,\s*(\w+)/g, '$1, $2'); // "word, ,word" -> "word, word"
+  cleaned = cleaned.replace(/,\s{2,}/g, ', '); // ", " with multiple spaces -> ", "
+  
+  // Fix other punctuation repetitions
+  cleaned = cleaned.replace(/\.{2,}/g, '.'); // Multiple periods
+  cleaned = cleaned.replace(/!{2,}/g, '!'); // Multiple exclamations
+  cleaned = cleaned.replace(/\?{2,}/g, '?'); // Multiple questions
+  
+  // Fix spacing around punctuation
+  cleaned = cleaned.replace(/\s+([,.!?])/g, '$1'); // Remove space before punctuation
+  cleaned = cleaned.replace(/([,.!?])([^\s])/g, '$1 $2'); // Add space after punctuation
+  
+  // Fix common AI capitalization issues
+  cleaned = cleaned.replace(/\bchatGPT\b/g, 'ChatGPT');
+  cleaned = cleaned.replace(/\bai\b/gi, 'AI');
+  
+  // Clean up extra spaces but preserve paragraph breaks
+  cleaned = cleaned.replace(/ +/g, ' ');
+  cleaned = cleaned.replace(/\n +/g, '\n');
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  
+  // Remove trailing incomplete phrases
+  cleaned = cleaned.replace(/\s+(And|But|So|Then|Also|However|Therefore)\s*$/gi, '');
+  
+  return cleaned.trim();
 }
 
 async function modelParaphraseGroq(text: string, profile: any, preserveFormatting: boolean = false) {
@@ -187,7 +239,7 @@ function buildSystemPrompt(profile: any): string {
   
   // Add custom lexicon as optional vocabulary hints (with strong warnings)
   if (profile.customLexicon && profile.customLexicon.length > 0) {
-    stylePrompt += `\n\nVOCABULARY SUGGESTIONS (USE SPARINGLY): The user occasionally prefers these words: ${profile.customLexicon.join(', ')}. These are OPTIONAL suggestions - only use them if they naturally replace existing words and maintain identical meaning. NEVER insert them where they don't belong or change the meaning. If they don't fit naturally, ignore them completely. Clear, accurate writing is always more important than using any specific vocabulary.`;
+    stylePrompt += `\n\nVOCABULARY SUGGESTIONS (ONLY IF NATURAL): The user's writing style occasionally includes these words: ${profile.customLexicon.join(', ')}. These are OPTIONAL suggestions extracted from their sample text - only use them if they naturally replace existing words and maintain identical meaning. DO NOT force these words into sentences where they don't belong. DO NOT add extra commas or awkward insertions to accommodate these words. If they don't fit naturally in the context, ignore them completely. Natural, clear writing is always more important than using specific vocabulary.`;
   } else {
     // When no custom lexicon, be explicit about not adding unnecessary words or commas
     stylePrompt += `\n\nNO CUSTOM VOCABULARY: Write naturally without trying to insert specific vocabulary words. Do not use placeholder commas or awkward insertions. Focus purely on clear, natural language that matches the user's sentence construction patterns.`;

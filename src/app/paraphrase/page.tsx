@@ -8,6 +8,8 @@ import { StyleProfileManager } from '../../components/StyleProfileManager';
 import { fetchHistory, addHistoryEntry, updateHistoryNote, deleteHistoryEntry, deleteAllHistory, type ParaphraseEntry, isParaphraseHistoryTableMissing, PARAPHRASE_HISTORY_SQL } from '../../lib/paraphraseHistory.ts';
 import { supabase } from '../../lib/supabaseClient.ts';
 import AITransparencyPanel from '../../components/AITransparencyPanel';
+import StyleComparisonPanel from '../../components/StyleComparisonPanel';
+import { type StyleTransformation } from '../../lib/styleComparison';
 
 export default function ParaphrasePage() {
   const router = useRouter();
@@ -29,6 +31,9 @@ export default function ParaphrasePage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [copied, setCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [styleTransformation, setStyleTransformation] = useState<StyleTransformation | null>(null);
+  const [showStyleAnalysis, setShowStyleAnalysis] = useState(false);
+  const [analyzingStyle, setAnalyzingStyle] = useState(false);
 
   useEffect(() => {
     // Check authentication first
@@ -198,6 +203,39 @@ export default function ParaphrasePage() {
       document.body.removeChild(textArea);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  async function handleStyleAnalysis() {
+    if (!profile?.sampleExcerpt || !input || !output) {
+      setError('Need user sample text, original input, and paraphrased output for style analysis');
+      return;
+    }
+
+    setAnalyzingStyle(true);
+    try {
+      const response = await fetch('/api/style-comparison', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userSampleText: profile.sampleExcerpt,
+          originalText: input,
+          paraphrasedText: output
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Style analysis failed');
+      }
+
+      const data = await response.json();
+      setStyleTransformation(data.transformation);
+      setShowStyleAnalysis(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to analyze style transformation');
+    } finally {
+      setAnalyzingStyle(false);
     }
   }
 
@@ -411,17 +449,29 @@ export default function ParaphrasePage() {
                 {!usedModel && output && <span className="text-[10px] px-2 py-0.5 rounded bg-slate-500/20 text-slate-300 border border-white/10">Heuristic</span>}
               </h2>
               {output && (
-                <button 
-                  onClick={handleCopyResult}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    copied 
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                      : 'bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 border border-brand-500/30 hover:border-brand-400/50'
-                  }`}
-                  title="Copy result to clipboard"
-                >
-                  {copied ? '✓ Copied!' : '📋 Copy'}
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleCopyResult}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      copied 
+                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                        : 'bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 border border-brand-500/30 hover:border-brand-400/50'
+                    }`}
+                    title="Copy result to clipboard"
+                  >
+                    {copied ? '✓ Copied!' : '📋 Copy'}
+                  </button>
+                  {profile?.sampleExcerpt && input && (
+                    <button 
+                      onClick={handleStyleAnalysis}
+                      disabled={analyzingStyle}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 hover:border-purple-400/50 disabled:opacity-50"
+                      title="Analyze style transformation"
+                    >
+                      {analyzingStyle ? '⏳ Analyzing...' : '📊 Style Analysis'}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
             {error && <p className="text-xs text-amber-400">{error}</p>}
@@ -470,6 +520,26 @@ export default function ParaphrasePage() {
             usedModel={usedModel}
             className="mt-6"
           />
+        )}
+
+        {/* Style Comparison Panel - Detailed style transformation analysis */}
+        {showStyleAnalysis && styleTransformation && (
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-brand-300">Style Transformation Analysis</h3>
+              <button 
+                onClick={() => setShowStyleAnalysis(false)}
+                className="px-3 py-1 rounded text-xs bg-slate-600/30 hover:bg-slate-600/50 text-slate-300"
+              >
+                Close ✕
+              </button>
+            </div>
+            <StyleComparisonPanel 
+              transformation={styleTransformation} 
+              originalText={input}
+              paraphrasedText={output}
+            />
+          </div>
         )}
       </div>
       <aside className="lg:col-span-2 space-y-8">

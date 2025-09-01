@@ -379,11 +379,114 @@ function fallbackDiversify(text: string, profile?: StyleProfile, freqMap: Record
     }
   }
   t = words.join('');
+  
+  // Smart lexicon insertion - only add missing keywords if they fit contextually
   if (profile?.customLexicon?.length) {
-    const firstMissing = profile.customLexicon.find(w => !new RegExp(`\\b${escapeReg(w)}\\b`, 'i').test(t));
-    if (firstMissing) t += (t.endsWith('.')?'':'.') + ' ' + firstMissing + '.';
+    const missing = profile.customLexicon.filter(w => !new RegExp(`\\b${escapeReg(w)}\\b`, 'i').test(t));
+    
+    if (missing.length > 0) {
+      console.log('Missing lexicon words:', missing);
+      // Check if we can naturally integrate any missing words
+      let integrated = false;
+      
+      for (const missingWord of missing.slice(0, 1)) { // Only try 1 word max to avoid forcing
+        // Try to find a natural place to integrate the word
+        const contextualMatch = findContextualMatch(t, missingWord);
+        if (contextualMatch.canIntegrate && !integrated) {
+          console.log('Successfully integrated:', missingWord);
+          t = contextualMatch.integratedText;
+          integrated = true;
+          break;
+        } else {
+          console.log('Could not naturally integrate:', missingWord);
+        }
+      }
+      
+      // REMOVED: No longer add words as separate sentences - they must fit naturally or not at all
+      // if (!integrated && missing.length === 1 && missing[0].length < 12) {
+      //   const word = missing[0];
+      //   if (isWordRelevantToContent(t, word)) {
+      //     t += (t.endsWith('.') ? '' : '.') + ' This approach is ' + word + '.';
+      //   }
+      // }
+    }
   }
   return t;
+}
+
+// Helper function to find contextual matches for lexicon words
+function findContextualMatch(text: string, word: string): { canIntegrate: boolean; integratedText: string } {
+  const lowerWord = word.toLowerCase();
+  const lowerText = text.toLowerCase();
+  
+  // Define word categories and their suitable contexts - be more restrictive
+  const adverbPositions = ['carefully', 'effectively', 'significantly', 'particularly', 'primarily', 'essentially', 'specifically'];
+  const adjectivePositions = ['advanced', 'sophisticated', 'comprehensive', 'detailed', 'innovative', 'strategic', 'efficient'];
+  
+  // Only integrate adverbs if there's a clear verb context
+  if (adverbPositions.includes(lowerWord)) {
+    // Look for specific verbs that commonly take adverbs
+    const verbMatch = text.match(/\b(works?|functions?|operates?|performs?|processes?|analyzes?)\b/i);
+    if (verbMatch && verbMatch[0] && (lowerText.includes('system') || lowerText.includes('model') || lowerText.includes('technology'))) {
+      const replacement = verbMatch[0] + ' ' + word;
+      return {
+        canIntegrate: true,
+        integratedText: text.replace(verbMatch[0], replacement)
+      };
+    }
+  }
+  
+  // Only integrate adjectives if there's a relevant noun nearby
+  if (adjectivePositions.includes(lowerWord)) {
+    // Look for specific nouns that commonly take these adjectives
+    const nounMatch = text.match(/\b(model|system|approach|method|technology|tool|solution|platform)\b/i);
+    if (nounMatch && nounMatch[0]) {
+      const replacement = word + ' ' + nounMatch[0];
+      return {
+        canIntegrate: true,
+        integratedText: text.replace(nounMatch[0], replacement)
+      };
+    }
+  }
+  
+  // For transitions, only integrate at sentence boundaries with appropriate context
+  const transitions = ['however', 'moreover', 'furthermore', 'additionally', 'meanwhile', 'therefore', 'consequently'];
+  if (transitions.includes(lowerWord)) {
+    // Only if there are multiple sentences and it makes logical sense
+    const sentences = text.split(/[.!?]\s+/);
+    if (sentences.length > 1 && !text.toLowerCase().includes(lowerWord)) {
+      const replacement = text.replace(/([.!?]\s+)/, `$1${word.charAt(0).toUpperCase() + word.slice(1)}, `);
+      return {
+        canIntegrate: true,
+        integratedText: replacement
+      };
+    }
+  }
+  
+  console.log('No suitable context found for word:', word);
+  return { canIntegrate: false, integratedText: text };
+}
+
+// Helper function to check if a word is relevant to the content
+function isWordRelevantToContent(text: string, word: string): boolean {
+  const lowerText = text.toLowerCase();
+  const lowerWord = word.toLowerCase();
+  
+  // Technology and AI related terms
+  const techWords = ['advanced', 'sophisticated', 'model', 'system', 'technology', 'ai', 'artificial', 'intelligence'];
+  const descWords = ['moderately', 'significantly', 'particularly', 'effectively'];
+  
+  // Check if the word category matches the content
+  if (techWords.includes(lowerWord)) {
+    return /\b(model|system|ai|artificial|intelligence|technology|computer|program|software)\b/.test(lowerText);
+  }
+  
+  if (descWords.includes(lowerWord)) {
+    return /\b(is|are|works|functions|designed|created|built)\b/.test(lowerText);
+  }
+  
+  // Conservative approach - only integrate if there's clear relevance
+  return false;
 }
 
 // Compute proportion of tokens changed (case-insensitive exact match comparison)
@@ -474,32 +577,65 @@ function aggressiveDirectSimplify(t: string): string {
 export function humanizeText(text: string, opts: { allowContractions?: boolean; preferredTransitions?: string[] } = {}): string {
   let t = text;
   
-  // Normalize spacing and fix multiple spaces
+  // STEP 1: Fix spacing issues first
+  // Fix missing spaces between words (common AI output issue)
+  t = t.replace(/([a-z])([A-Z])/g, '$1 $2'); // camelCase splits like "personThe" -> "person The"
+  t = t.replace(/([.!?])([A-Z])/g, '$1 $2'); // Sentence endings without space
+  t = t.replace(/([a-z])([A-Z][a-z])/g, '$1 $2'); // More sophisticated word boundary detection
+  
+  // CRITICAL: Fix comma repetition patterns first
+  t = t.replace(/,(\s*,)+/g, ','); // ", , ," -> ","
+  t = t.replace(/,\s*,\s*,/g, ','); // Multiple commas with spaces
+  t = t.replace(/(\w+),\s*,\s*(\w+)/g, '$1, $2'); // "word, ,word" -> "word, word"
+  t = t.replace(/,\s{2,}/g, ', '); // Multiple spaces after comma
+  
+  // Fix other punctuation repetitions
+  t = t.replace(/\.{2,}/g, '.'); // Multiple periods
+  t = t.replace(/!{2,}/g, '!'); // Multiple exclamations
+  t = t.replace(/\?{2,}/g, '?'); // Multiple questions
+  
+  // Fix paragraph separation - ensure proper spacing after periods
+  t = t.replace(/([.!?])([A-Z])/g, '$1\n\n$2'); // Add paragraph breaks after sentences that start new topics
+  
+  // Normalize multiple spaces but preserve paragraph breaks
   t = t.replace(/ +/g, ' ');
+  t = t.replace(/\n +/g, '\n');
   
-  // Remove repetitive word patterns (words repeated 2+ times in a row) - enhanced detection
-  t = t.replace(/\b(\w+)(\s+\1){1,}\b/gi, '$1');
+  // STEP 2: Enhanced repetition removal
+  // Remove exact word repetitions like "in order in order"
+  t = t.replace(/\b(\w+)(\s+\1){1,}/gi, '$1');
   
-  // Remove repetitive phrase patterns (simple detection) - enhanced
-  t = t.replace(/\b(.{5,50}?)\s+\1\b/gi, '$1');
+  // Remove repetitive phrase patterns (2-4 words)
+  t = t.replace(/\b(\w+\s+\w+)(\s+\1){1,}/gi, '$1');
+  t = t.replace(/\b(\w+\s+\w+\s+\w+)(\s+\1){1,}/gi, '$1');
+  t = t.replace(/\b(\w+\s+\w+\s+\w+\s+\w+)(\s+\1){1,}/gi, '$1');
   
-  // Remove specific repetitive patterns like "in other in other"
-  t = t.replace(/\b(in|on|at|for|with|by|to|from)\s+\1\b/gi, '$1');
-  
-  // Remove repetitive preposition + word patterns
+  // Remove specific problematic repetitive patterns
+  t = t.replace(/\b(in|on|at|for|with|by|to|from|of|as)\s+\1\b/gi, '$1');
   t = t.replace(/\b(the|this|that|these|those|a|an)\s+(\w+)\s+\1\s+\2\b/gi, '$1 $2');
   
-  // Remove consecutive identical phrases
-  const phrases = t.split(/([.!?]\s*)/);
-  for (let i = 0; i < phrases.length - 2; i++) {
-    if (phrases[i].trim() && phrases[i].trim() === phrases[i + 2]?.trim()) {
-      phrases.splice(i + 2, 1);
-      i--; // Adjust index after removal
+  // Remove repetitive transitional phrases
+  t = t.replace(/\b(and|but|so|then|also|however|therefore)\s+\1\b/gi, '$1');
+  
+  // STEP 3: Fix consecutive identical sentences
+  const sentenceParts = t.split(/([.!?]\s*)/);
+  const cleanedSentences = [];
+  let lastSentence = '';
+  
+  for (let i = 0; i < sentenceParts.length; i++) {
+    const sentence = sentenceParts[i];
+    if (sentence.match(/[.!?]/)) {
+      cleanedSentences.push(sentence);
+    } else if (sentence.trim() !== lastSentence.trim() || sentence.trim().length < 10) {
+      cleanedSentences.push(sentence);
+      if (sentence.trim().length > 10) {
+        lastSentence = sentence;
+      }
     }
   }
-  t = phrases.join('');
+  t = cleanedSentences.join('');
   
-  // Contractions (simple set)
+  // STEP 4: Contractions (keep existing logic)
   if (opts.allowContractions !== false) {
     const CONTRACTIONS: [RegExp, string][] = [
       [/\b[Dd]o not\b/g, "don't"],
@@ -1224,13 +1360,16 @@ function fixSpellingArtifacts(text: string): string {
 function validateAndRepair(out: string, profile?: StyleProfile): string {
   if (!profile) return out;
   let text = out;
-  // Ensure custom lexicon words appear (at least 1 missing -> inject near end)
-  if (profile.customLexicon?.length) {
-    const missing = profile.customLexicon.filter(w => !new RegExp(`\\b${escapeReg(w)}\\b`, 'i').test(text));
-    if (missing.length) {
-      text += (text.endsWith('.')?'' : '.') + ' ' + missing.slice(0,2).join(', ') + '.';
-    }
-  }
+  
+  // DISABLED: Do not force custom lexicon words that don't fit contextually
+  // The AI model and contextual integration should handle lexicon words naturally
+  // if (profile.customLexicon?.length) {
+  //   const missing = profile.customLexicon.filter(w => !new RegExp(`\\b${escapeReg(w)}\\b`, 'i').test(text));
+  //   if (missing.length) {
+  //     text += (text.endsWith('.')?'' : '.') + ' ' + missing.slice(0,2).join(', ') + '.';
+  //   }
+  // }
+  
   // Directness high: remove flowery adjectives
   if (profile.directness > 0.8) {
     const FLOWERY = /(hypnotic|hypnotizing|luminous|shimmering|radiant|ethereal|boundless|symphonic|harmonic|crystalline|algorithmic|infinite|perpetual)\b/gi;
