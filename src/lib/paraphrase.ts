@@ -32,8 +32,162 @@ const SYNONYMS: Record<string, string[]> = {
   jumps: ['leaps', 'bounds']
 };
 
-export function paraphraseWithProfile(text: string, profile?: StyleProfile, options: { includeLexiconNotes?: boolean } = {}): string {
+function paraphraseWithFormatting(text: string, profile?: StyleProfile, options: { includeLexiconNotes?: boolean } = {}): string {
   if (!text.trim()) return '';
+
+  // Build frequency map from user sample
+  const freqMap = profile?.sampleExcerpt ? buildFrequencyMap(profile.sampleExcerpt) : {};
+  const sampleStyle = profile?.sampleExcerpt ? analyzeSampleStyle(profile.sampleExcerpt) : null;
+
+  // Split text into lines while preserving line breaks and indentation
+  const lines = text.split(/\r?\n/);
+  const processedLines: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Preserve empty lines
+    if (!trimmed) {
+      processedLines.push(line);
+      continue;
+    }
+
+    // Extract leading whitespace/indentation
+    const leadingWhitespace = line.match(/^\s*/)?.[0] || '';
+
+    // Check if line is a list item or heading
+    const isListItem = /^\s*[-*•]\s+/.test(line);
+    const isNumberedList = /^\s*\d+\.\s+/.test(line);
+    const isHeading = /^\s*#{1,6}\s+/.test(line);
+
+    // If it's a structural element, preserve it mostly as-is but paraphrase content
+    if (isListItem) {
+      const match = line.match(/^(\s*[-*•]\s+)(.+)$/);
+      if (match) {
+        const [_, prefix, content] = match;
+        const paraphrasedContent = paraphraseContent(content, profile, freqMap, sampleStyle);
+        processedLines.push(prefix + paraphrasedContent);
+        continue;
+      }
+    }
+
+    if (isNumberedList) {
+      const match = line.match(/^(\s*\d+\.\s+)(.+)$/);
+      if (match) {
+        const [_, prefix, content] = match;
+        const paraphrasedContent = paraphraseContent(content, profile, freqMap, sampleStyle);
+        processedLines.push(prefix + paraphrasedContent);
+        continue;
+      }
+    }
+
+    if (isHeading) {
+      const match = line.match(/^(\s*#{1,6}\s+)(.+)$/);
+      if (match) {
+        const [_, prefix, content] = match;
+        const paraphrasedContent = paraphraseContent(content, profile, freqMap, sampleStyle);
+        processedLines.push(prefix + paraphrasedContent);
+        continue;
+      }
+    }
+
+    // For regular text, preserve indentation and paraphrase content
+    const paraphrasedContent = paraphraseContent(trimmed, profile, freqMap, sampleStyle);
+    processedLines.push(leadingWhitespace + paraphrasedContent);
+  }
+
+  // Join lines back with original line endings
+  let result = processedLines.join('\n');
+
+  // Apply profile-based adjustments while preserving formatting
+  if (profile) {
+    result = applyProfileAdjustmentsWithFormatting(result, profile, options);
+  }
+
+  return result;
+}
+
+function paraphraseContent(content: string, profile?: StyleProfile, freqMap?: Record<string, number>, sampleStyle?: any): string {
+  if (!content.trim()) return content;
+
+  // Split into sentences and paraphrase each
+  const sentences = content.split(/(?<=[.!?])\s+/);
+  const paraphrasedSentences = sentences.map(s => rewriteSentence(s, profile, freqMap, sampleStyle));
+
+  // Join sentences back
+  let result = paraphrasedSentences.join(' ');
+
+  // Apply basic humanization
+  result = humanizeText(result, {
+    allowContractions: sampleStyle ? sampleStyle.usesContractions : true,
+    preferredTransitions: sampleStyle?.preferredTransitions || []
+  });
+
+  return result;
+}
+
+function applyProfileAdjustmentsWithFormatting(text: string, profile: StyleProfile, options: { includeLexiconNotes?: boolean } = {}): string {
+  // Split into lines to preserve formatting
+  const lines = text.split(/\r?\n/);
+  const adjustedLines: string[] = [];
+
+  for (const line of lines) {
+    let adjusted = line;
+
+    // Apply descriptiveness adjustments
+    if (profile.descriptiveness > 0.7) {
+      adjusted = adjusted.replace(/\b(idea|concept|plan)\b/gi, m => 'distinct ' + m);
+    } else if (profile.descriptiveness < 0.3) {
+      adjusted = adjusted.replace(/\b(distinct|vivid|rich)\s+(idea|concept|plan)\b/gi, '$2');
+    }
+
+    // Apply directness adjustments
+    if (profile.directness > 0.7) {
+      adjusted = adjusted.replace(/\b(in order to)\b/gi, 'to');
+      adjusted = adjusted.replace(/\b(it is|there is|there are)\b/gi, '');
+    } else if (profile.directness < 0.3) {
+      adjusted = adjusted.replace(/\b(to)\b/gi, 'in order to');
+    }
+
+    adjustedLines.push(adjusted);
+  }
+
+  let result = adjustedLines.join('\n');
+
+  // Apply contractions if sample prefers them
+  const sampleStyle = profile?.sampleExcerpt ? analyzeSampleStyle(profile.sampleExcerpt) : null;
+  if (sampleStyle?.usesContractions) {
+    const CONTR_MAP: [RegExp, string][] = [
+      [/\b[Ii]t is\b/g, "it's"],
+      [/\b[Dd]o not\b/g, "don't"],
+      [/\b[Cc]annot\b/g, "can't"],
+      [/\b[Tt]hat is\b/g, "that's"],
+      [/\b[Tt]here is\b/g, "there's"],
+      [/\b[Yy]ou are\b/g, "you're"],
+      [/\bW[eE] are\b/g, "we're"],
+      [/\b[Ii] am\b/g, "I'm"],
+    ];
+    CONTR_MAP.forEach(([r, rep]) => { result = result.replace(r, rep); });
+  }
+
+  // Lexicon injection (ensure words appear at least once) - only if enabled
+  if (profile.customLexicon?.length && options.includeLexiconNotes !== false) {
+    const missing = profile.customLexicon.filter(w => !new RegExp(`\\b${escapeReg(w)}\\b`, 'i').test(result));
+    if (missing.length) {
+      result += '\n\nLexicon notes: ' + missing.slice(0, 5).join(', ');
+    }
+  }
+
+  return result;
+}
+
+export function paraphraseWithProfile(text: string, profile?: StyleProfile, options: { includeLexiconNotes?: boolean; preserveFormatting?: boolean } = {}): string {
+  if (!text.trim()) return '';
+
+  // If preserving formatting, handle it differently
+  if (options.preserveFormatting) {
+    return paraphraseWithFormatting(text, profile, options);
+  }
 
   // Build frequency map from user sample (once) to bias synonym choices toward familiar vocabulary.
   const freqMap = profile?.sampleExcerpt ? buildFrequencyMap(profile.sampleExcerpt) : {};
@@ -323,11 +477,27 @@ export function humanizeText(text: string, opts: { allowContractions?: boolean; 
   // Normalize spacing and fix multiple spaces
   t = t.replace(/ +/g, ' ');
   
-  // Remove repetitive word patterns (words repeated 2+ times in a row)
-  t = t.replace(/\b(\w+)(\s+\1){2,}\b/gi, '$1');
+  // Remove repetitive word patterns (words repeated 2+ times in a row) - enhanced detection
+  t = t.replace(/\b(\w+)(\s+\1){1,}\b/gi, '$1');
   
-  // Remove repetitive phrase patterns (simple detection)
-  t = t.replace(/\b(.{10,30}?)\s+\1\b/gi, '$1');
+  // Remove repetitive phrase patterns (simple detection) - enhanced
+  t = t.replace(/\b(.{5,50}?)\s+\1\b/gi, '$1');
+  
+  // Remove specific repetitive patterns like "in other in other"
+  t = t.replace(/\b(in|on|at|for|with|by|to|from)\s+\1\b/gi, '$1');
+  
+  // Remove repetitive preposition + word patterns
+  t = t.replace(/\b(the|this|that|these|those|a|an)\s+(\w+)\s+\1\s+\2\b/gi, '$1 $2');
+  
+  // Remove consecutive identical phrases
+  const phrases = t.split(/([.!?]\s*)/);
+  for (let i = 0; i < phrases.length - 2; i++) {
+    if (phrases[i].trim() && phrases[i].trim() === phrases[i + 2]?.trim()) {
+      phrases.splice(i + 2, 1);
+      i--; // Adjust index after removal
+    }
+  }
+  t = phrases.join('');
   
   // Contractions (simple set)
   if (opts.allowContractions !== false) {
@@ -475,7 +645,20 @@ export interface HumanizationMetrics {
 }
 
 const AI_PHRASES = [
-  'in conclusion', 'this article', 'the following', 'as an ai', 'here is', 'here are', 'in this section', 'overall,'
+  'in other words', 'to put it another way', 'essentially', 'basically', 'fundamentally', 
+  'in essence', 'at its core', 'in summary', 'to summarize', 'overall', 'generally speaking',
+  'it is important to note', 'it should be noted', 'one might say', 'it can be said',
+  'this means that', 'this suggests that', 'this indicates that', 'as a result', 'consequently',
+  'therefore', 'thus', 'hence', 'accordingly', 'subsequently', 'moreover', 'furthermore',
+  'additionally', 'in addition', 'besides', 'also', 'likewise', 'similarly', 'correspondingly',
+  'notably', 'particularly', 'specifically', 'especially', 'in particular', 'namely',
+  'for example', 'for instance', 'such as', 'including', 'like', 'as', 'in the case of',
+  'on the other hand', 'however', 'nevertheless', 'nonetheless', 'despite this', 'although',
+  'even though', 'whereas', 'while', 'in contrast', 'conversely', 'alternatively',
+  'in conclusion', 'to conclude', 'in closing', 'finally', 'ultimately', 'eventually',
+  'in the end', 'at last', 'lastly', 'to sum up', 'all in all', 'in brief', 'briefly',
+  'to put it simply', 'simply put', 'in short', 'to make a long story short',
+  'this article', 'the following', 'as an ai', 'here is', 'here are', 'in this section', 'overall,'
 ];
 
 export function analyzeHumanization(text: string, profile?: StyleProfile): HumanizationMetrics {
@@ -558,11 +741,23 @@ function adjustmentPass(text: string, profile: StyleProfile | undefined, pass: n
       t = sentences.join(' ');
     }
   }
+  
+  // Enhanced repetition removal
+  // Remove consecutive identical words
+  t = t.replace(/\b(\w+)(\s+\1)+\b/gi, '$1');
+  
+  // Remove repetitive phrases
+  t = t.replace(/\b(.{5,30}?)\s+\1\b/gi, '$1');
+  
   // Remove AI phrases if any
   for (const phrase of AI_PHRASES) {
     const re = new RegExp(`\\b${escapeReg(phrase)}\\b`, 'ig');
     t = t.replace(re, '');
   }
+  
+  // Clean up any resulting double spaces
+  t = t.replace(/\s{2,}/g, ' ');
+  
   // If lexicon missing, inject subtle parenthetical rather than notes if not already there.
   if (profile?.customLexicon?.length) {
     const firstMissing = profile.customLexicon.find(w => !new RegExp(`\\b${escapeReg(w)}\\b`, 'i').test(t));
@@ -570,13 +765,14 @@ function adjustmentPass(text: string, profile: StyleProfile | undefined, pass: n
       t += (t.endsWith('.') ? '' : '.') + ' (' + firstMissing + ')';
     }
   }
+  
   // Vary starts if repeated
   const starts = t.split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(Boolean);
   const startWords = starts.map(s => (s.match(/^([A-Za-z']+)/)?.[1]||'').toLowerCase());
   const freq: Record<string, number> = {};
   startWords.forEach(w => { if(w) freq[w]=(freq[w]||0)+1; });
   const maxFreqWord = Object.entries(freq).sort((a,b)=>b[1]-a[1])[0]?.[0];
-  if (maxFreqWord) {
+  if (maxFreqWord && freq[maxFreqWord] > 1) {
     for (let i=1;i<starts.length;i++) {
       if (starts[i].toLowerCase().startsWith(maxFreqWord) && Math.random()<0.5) {
         starts[i] = varySentenceStart(starts[i]);
@@ -588,12 +784,25 @@ function adjustmentPass(text: string, profile: StyleProfile | undefined, pass: n
 }
 
 function varySentenceStart(s: string): string {
-  const transitions = ['However,', 'Moreover,', 'Additionally,', 'Still,', 'Instead,', 'Meanwhile,'];
+  const transitions = [
+    'However,', 'Moreover,', 'Additionally,', 'Still,', 'Instead,', 'Meanwhile,',
+    'Furthermore,', 'Consequently,', 'Therefore,', 'Thus,', 'Hence,', 'Accordingly,',
+    'Nevertheless,', 'Nonetheless,', 'Despite this,', 'Although,', 'While,'
+  ];
   const firstWord = s.match(/^([A-Za-z']+)/)?.[1] || '';
   if (!firstWord) return s;
-  if (new RegExp(`^(${transitions.join('|')})`, 'i').test(s)) return s; // already varied
-  if (Math.random() < 0.6) {
-    return transitions[Math.floor(Math.random()*transitions.length)] + ' ' + s.charAt(0).toLowerCase() + s.slice(1);
+  
+  // Check if already starts with a transition
+  const transitionPattern = new RegExp(`^(${transitions.map(t => t.slice(0, -1)).join('|')})`, 'i');
+  if (transitionPattern.test(s)) return s; // already varied
+  
+  // Don't vary if it's a question or exclamation
+  if (s.includes('?') || s.includes('!')) return s;
+  
+  // Vary with higher probability for better diversity
+  if (Math.random() < 0.7) {
+    const transition = transitions[Math.floor(Math.random() * transitions.length)];
+    return transition + ' ' + s.charAt(0).toLowerCase() + s.slice(1);
   }
   return s;
 }
@@ -909,10 +1118,31 @@ function adaptToSampleStyle(original: string, current: string, sampleStyle: Samp
 // --- Artifact & spelling cleanup ---
 function fixSpellingArtifacts(text: string): string {
   let t = text;
+  // Enhanced repetition removal - handle various patterns
   // Collapse accidental immediate word repetitions (case-insensitive) for words > 3 chars, keep first.
   t = t.replace(/\b([A-Za-z]{4,})\b(\s+\1\b)+/gi, (m, w) => w);
+  
+  // Remove repetitive preposition patterns like "in other in other"
+  t = t.replace(/\b(in|on|at|for|with|by|to|from|of|as|at)\s+\1\b/gi, '$1');
+  
+  // Remove repetitive article + word patterns
+  t = t.replace(/\b(the|a|an|this|that|these|those)\s+(\w+)\s+\1\s+\2\b/gi, '$1 $2');
+  
   // Target a second pass for shorter duplicated function words (is is, the the)
-  t = t.replace(/\b(is|the|and|to|of)\b\s+\1\b/gi, '$1');
+  t = t.replace(/\b(is|the|and|to|of|in|on|at|for|with|by)\b\s+\1\b/gi, '$1');
+  
+  // Remove consecutive identical phrases
+  const words = t.split(/\s+/);
+  const cleanedWords = [];
+  for (let i = 0; i < words.length; i++) {
+    // Check if current word is same as previous two (avoiding legitimate repetitions)
+    if (i >= 2 && words[i].toLowerCase() === words[i-1].toLowerCase() && 
+        words[i].toLowerCase() === words[i-2].toLowerCase()) {
+      continue; // Skip this repetition
+    }
+    cleanedWords.push(words[i]);
+  }
+  t = cleanedWords.join(' ');
   // Common adverb / adjective minor typos introduced by trimming or extra letter
   const CORRECTIONS: Record<string,string> = {
     'especialy': 'especially',

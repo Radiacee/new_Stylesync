@@ -183,7 +183,7 @@ export function upsertProfileLocal(p: StyleProfile) {
   const idx = list.findIndex(x => x.id === p.id);
   if (idx >= 0) list[idx] = p; else list.push(p);
   saveProfiles(list);
-  setActiveProfileId(p.id);
+  // Don't set active ID here - let the caller do it if needed
 }
 
 export function deleteProfileLocal(id: string) {

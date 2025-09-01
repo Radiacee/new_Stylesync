@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadProfile, type StyleProfile, listProfiles, getActiveProfileId, loadProfileRemote, upsertProfileLocal, loadProfilesRemote, syncLocalProfilesToRemote } from '../../lib/styleProfile.ts';
+import { loadProfile, type StyleProfile, listProfiles, getActiveProfileId, setActiveProfileId, loadProfileRemote, upsertProfileLocal, loadProfilesRemote, syncLocalProfilesToRemote } from '../../lib/styleProfile.ts';
 import { paraphraseWithProfile, analyzeSampleStyle } from '../../lib/paraphrase.ts';
 import { FullScreenSpinner } from '../../components/FullScreenSpinner';
 import { StyleProfileManager } from '../../components/StyleProfileManager';
@@ -23,6 +23,7 @@ export default function ParaphrasePage() {
   const [actions, setActions] = useState<{ code: string; meta?: any }[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
   const [debug, setDebug] = useState(false);
+  const [preserveFormatting, setPreserveFormatting] = useState(true);
   const [history, setHistory] = useState<ParaphraseEntry[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -57,6 +58,8 @@ export default function ParaphrasePage() {
     if (activeId) {
       const found = profiles.find(p => p.id === activeId) || null;
       if (found) { setProfile(found); return; }
+      // If active ID is set but not found locally, wait for remote load
+      return;
     }
     const legacy = loadProfile();
     if (legacy) setProfile(legacy);
@@ -67,15 +70,20 @@ export default function ParaphrasePage() {
     (async () => {
       if (!userId) return;
       const localProfiles = listProfiles();
-      if (!profile && localProfiles.length === 0) {
+      if (!profile) {
         try {
           // Load all remote profiles
           const remoteProfiles = await loadProfilesRemote(userId);
           if (remoteProfiles.length) {
             remoteProfiles.forEach(r => upsertProfileLocal(r));
-            // choose most recently updated as active
-            const sorted = [...remoteProfiles].sort((a,b)=>b.updatedAt - a.updatedAt);
-            setProfile(sorted[0]);
+            // choose active if exists, else most recently updated
+            const activeId = getActiveProfileId();
+            const activeProfile = activeId ? remoteProfiles.find(p => p.id === activeId) : null;
+            const profileToSet = activeProfile || [...remoteProfiles].sort((a,b)=>b.updatedAt - a.updatedAt)[0];
+            setProfile(profileToSet);
+            if (profileToSet && !activeId) {
+              setActiveProfileId(profileToSet.id);
+            }
           } else {
             // No remote profiles but maybe we have local (rare), push them
             if (localProfiles.length) await syncLocalProfilesToRemote(userId);
@@ -100,7 +108,7 @@ export default function ParaphrasePage() {
         enhancedProfile = { ...profile, styleAnalysis };
       }
       
-      const payload = { text: input, useModel, profile: enhancedProfile, debug };
+      const payload = { text: input, useModel, profile: enhancedProfile, debug, preserveFormatting };
       const res = await fetch('/api/paraphrase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -386,6 +394,10 @@ export default function ParaphrasePage() {
               <label className="flex items-center gap-2 text-slate-500 select-none">
                 <input type="checkbox" className="accent-brand-500" checked={debug} onChange={e=>setDebug(e.target.checked)} />
                 Debug Mode
+              </label>
+              <label className="flex items-center gap-2 text-slate-300 select-none">
+                <input type="checkbox" className="accent-brand-500" checked={preserveFormatting} onChange={e=>setPreserveFormatting(e.target.checked)} />
+                Preserve Formatting
               </label>
             </div>
           </div>

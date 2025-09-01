@@ -84,7 +84,12 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
 
   function refresh() {
     const list = listProfiles();
-    const active = getActiveProfileId();
+    let active = getActiveProfileId();
+    // If active is not in the list, set to the first profile
+    if (active && !list.find(p => p.id === active)) {
+      active = list.length > 0 ? list[0].id : null;
+      if (active) setActiveProfileId(active);
+    }
     setProfiles(list);
     setActive(active);
     if (onSelect) {
