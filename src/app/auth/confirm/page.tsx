@@ -100,39 +100,71 @@ export default function AuthConfirmPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex items-center justify-center px-4">
-      <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-8 max-w-md w-full text-center">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white mb-2">StyleSync</h1>
-          <p className="text-gray-300">Email Confirmation</p>
+    <div className="min-h-screen md:min-h-dvh relative">
+      {/* Background decoration */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-brand-500/3 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/3 rounded-full blur-3xl animate-pulse delay-1000" />
+      </div>
+
+      <div className="flex min-h-screen items-center justify-center p-6 relative z-10">
+        <div className="w-full max-w-md glass-panel p-12 space-y-8 animate-fade-in-up">
+          <div className="text-center space-y-4">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent">
+              StyleSync
+            </h1>
+            <p className="text-base text-slate-400">Email Confirmation</p>
+          </div>
+
+          {status === 'loading' && (
+            <div className="space-y-8 text-center animate-fade-in">
+              <div className="relative mx-auto w-16 h-16">
+                <div className="absolute inset-0 rounded-full border-4 border-brand-500/30 animate-pulse" />
+                <div className="absolute inset-0 rounded-full border-4 border-brand-500 border-t-transparent animate-spin" />
+              </div>
+              <div className="space-y-4">
+                <p className="text-slate-200 font-medium text-lg">Processing Authentication</p>
+                <p className="text-base text-slate-400">{message}</p>
+              </div>
+            </div>
+          )}
+
+          {status === 'success' && (
+            <div className="space-y-8 text-center animate-fade-in">
+              <div className="mx-auto w-16 h-16 bg-emerald-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="space-y-4">
+                <p className="text-emerald-400 font-semibold text-xl">Success!</p>
+                <p className="text-slate-300 text-base">{message}</p>
+              </div>
+            </div>
+          )}
+
+          {status === 'error' && (
+            <div className="space-y-8 text-center animate-fade-in">
+              <div className="mx-auto w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <p className="text-red-400 font-semibold text-xl">Authentication Failed</p>
+                  <p className="text-slate-300 text-base">{message}</p>
+                </div>
+                <button
+                  onClick={() => router.push('/auth/sign-in')}
+                  className="w-full px-6 py-4 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-slate-900 font-semibold transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-brand-500/25 text-base"
+                >
+                  Return to Sign In
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-
-        {status === 'loading' && (
-          <div className="space-y-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
-            <p className="text-gray-300">{message}</p>
-          </div>
-        )}
-
-        {status === 'success' && (
-          <div className="space-y-4">
-            <div className="text-green-400 text-4xl">✓</div>
-            <p className="text-green-300 font-medium">{message}</p>
-          </div>
-        )}
-
-        {status === 'error' && (
-          <div className="space-y-4">
-            <div className="text-red-400 text-4xl">✗</div>
-            <p className="text-red-300 font-medium">{message}</p>
-            <button
-              onClick={() => router.push('/auth/sign-in')}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-            >
-              Return to Sign In
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

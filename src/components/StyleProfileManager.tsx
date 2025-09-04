@@ -168,7 +168,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
         </button>
       </div>
       {profiles.length === 0 && <p className="text-slate-500">No styles yet.</p>}
-      <ul className="space-y-1">
+      <ul className={`space-y-1 ${profiles.length > 4 ? 'max-h-80 overflow-y-auto pr-2' : ''}`}>
         {profiles.map(p => {
           const active = p.id === activeId;
           const isEditing = p.id === editingId;
