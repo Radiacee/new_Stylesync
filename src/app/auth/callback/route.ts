@@ -9,18 +9,12 @@ const ADMIN_EMAILS = [
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
+  const error = searchParams.get('error');
   
-  // Check if this is a hash-based redirect (from email confirmation)
-  const hashParams = request.url.split('#')[1];
-  if (hashParams) {
-    const params = new URLSearchParams(hashParams);
-    const access_token = params.get('access_token');
-    const refresh_token = params.get('refresh_token');
-    
-    if (access_token && refresh_token) {
-      // For hash-based auth, redirect to a client-side handler
-      return NextResponse.redirect(`${origin}/auth/confirm?${hashParams}`);
-    }
+  // If there's an error parameter, handle it
+  if (error) {
+    console.error('Auth callback error:', error);
+    return NextResponse.redirect(`${origin}/auth/sign-in?error=${error}`);
   }
   
   if (code) {
@@ -40,9 +34,12 @@ export async function GET(request: NextRequest) {
       } else {
         return NextResponse.redirect(`${origin}/paraphrase`);
       }
+    } else {
+      console.error('Code exchange error:', error);
+      return NextResponse.redirect(`${origin}/auth/sign-in?error=session_failed`);
     }
   }
 
-  // Redirect to sign in page if something went wrong
-  return NextResponse.redirect(`${origin}/auth/sign-in?error=auth_failed`);
+  // If no code, redirect to confirmation page to handle hash tokens
+  return NextResponse.redirect(`${origin}/auth/confirm`);
 }
