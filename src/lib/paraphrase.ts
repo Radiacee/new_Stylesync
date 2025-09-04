@@ -32,162 +32,8 @@ const SYNONYMS: Record<string, string[]> = {
   jumps: ['leaps', 'bounds']
 };
 
-function paraphraseWithFormatting(text: string, profile?: StyleProfile, options: { includeLexiconNotes?: boolean } = {}): string {
+export function paraphraseWithProfile(text: string, profile?: StyleProfile, options: { includeLexiconNotes?: boolean } = {}): string {
   if (!text.trim()) return '';
-
-  // Build frequency map from user sample
-  const freqMap = profile?.sampleExcerpt ? buildFrequencyMap(profile.sampleExcerpt) : {};
-  const sampleStyle = profile?.sampleExcerpt ? analyzeSampleStyle(profile.sampleExcerpt) : null;
-
-  // Split text into lines while preserving line breaks and indentation
-  const lines = text.split(/\r?\n/);
-  const processedLines: string[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Preserve empty lines
-    if (!trimmed) {
-      processedLines.push(line);
-      continue;
-    }
-
-    // Extract leading whitespace/indentation
-    const leadingWhitespace = line.match(/^\s*/)?.[0] || '';
-
-    // Check if line is a list item or heading
-    const isListItem = /^\s*[-*•]\s+/.test(line);
-    const isNumberedList = /^\s*\d+\.\s+/.test(line);
-    const isHeading = /^\s*#{1,6}\s+/.test(line);
-
-    // If it's a structural element, preserve it mostly as-is but paraphrase content
-    if (isListItem) {
-      const match = line.match(/^(\s*[-*•]\s+)(.+)$/);
-      if (match) {
-        const [_, prefix, content] = match;
-        const paraphrasedContent = paraphraseContent(content, profile, freqMap, sampleStyle);
-        processedLines.push(prefix + paraphrasedContent);
-        continue;
-      }
-    }
-
-    if (isNumberedList) {
-      const match = line.match(/^(\s*\d+\.\s+)(.+)$/);
-      if (match) {
-        const [_, prefix, content] = match;
-        const paraphrasedContent = paraphraseContent(content, profile, freqMap, sampleStyle);
-        processedLines.push(prefix + paraphrasedContent);
-        continue;
-      }
-    }
-
-    if (isHeading) {
-      const match = line.match(/^(\s*#{1,6}\s+)(.+)$/);
-      if (match) {
-        const [_, prefix, content] = match;
-        const paraphrasedContent = paraphraseContent(content, profile, freqMap, sampleStyle);
-        processedLines.push(prefix + paraphrasedContent);
-        continue;
-      }
-    }
-
-    // For regular text, preserve indentation and paraphrase content
-    const paraphrasedContent = paraphraseContent(trimmed, profile, freqMap, sampleStyle);
-    processedLines.push(leadingWhitespace + paraphrasedContent);
-  }
-
-  // Join lines back with original line endings
-  let result = processedLines.join('\n');
-
-  // Apply profile-based adjustments while preserving formatting
-  if (profile) {
-    result = applyProfileAdjustmentsWithFormatting(result, profile, options);
-  }
-
-  return result;
-}
-
-function paraphraseContent(content: string, profile?: StyleProfile, freqMap?: Record<string, number>, sampleStyle?: any): string {
-  if (!content.trim()) return content;
-
-  // Split into sentences and paraphrase each
-  const sentences = content.split(/(?<=[.!?])\s+/);
-  const paraphrasedSentences = sentences.map(s => rewriteSentence(s, profile, freqMap, sampleStyle));
-
-  // Join sentences back
-  let result = paraphrasedSentences.join(' ');
-
-  // Apply basic humanization
-  result = humanizeText(result, {
-    allowContractions: sampleStyle ? sampleStyle.usesContractions : true,
-    preferredTransitions: sampleStyle?.preferredTransitions || []
-  });
-
-  return result;
-}
-
-function applyProfileAdjustmentsWithFormatting(text: string, profile: StyleProfile, options: { includeLexiconNotes?: boolean } = {}): string {
-  // Split into lines to preserve formatting
-  const lines = text.split(/\r?\n/);
-  const adjustedLines: string[] = [];
-
-  for (const line of lines) {
-    let adjusted = line;
-
-    // Apply descriptiveness adjustments
-    if (profile.descriptiveness > 0.7) {
-      adjusted = adjusted.replace(/\b(idea|concept|plan)\b/gi, m => 'distinct ' + m);
-    } else if (profile.descriptiveness < 0.3) {
-      adjusted = adjusted.replace(/\b(distinct|vivid|rich)\s+(idea|concept|plan)\b/gi, '$2');
-    }
-
-    // Apply directness adjustments
-    if (profile.directness > 0.7) {
-      adjusted = adjusted.replace(/\b(in order to)\b/gi, 'to');
-      adjusted = adjusted.replace(/\b(it is|there is|there are)\b/gi, '');
-    } else if (profile.directness < 0.3) {
-      adjusted = adjusted.replace(/\b(to)\b/gi, 'in order to');
-    }
-
-    adjustedLines.push(adjusted);
-  }
-
-  let result = adjustedLines.join('\n');
-
-  // Apply contractions if sample prefers them
-  const sampleStyle = profile?.sampleExcerpt ? analyzeSampleStyle(profile.sampleExcerpt) : null;
-  if (sampleStyle?.usesContractions) {
-    const CONTR_MAP: [RegExp, string][] = [
-      [/\b[Ii]t is\b/g, "it's"],
-      [/\b[Dd]o not\b/g, "don't"],
-      [/\b[Cc]annot\b/g, "can't"],
-      [/\b[Tt]hat is\b/g, "that's"],
-      [/\b[Tt]here is\b/g, "there's"],
-      [/\b[Yy]ou are\b/g, "you're"],
-      [/\bW[eE] are\b/g, "we're"],
-      [/\b[Ii] am\b/g, "I'm"],
-    ];
-    CONTR_MAP.forEach(([r, rep]) => { result = result.replace(r, rep); });
-  }
-
-  // Lexicon injection (ensure words appear at least once) - only if enabled
-  if (profile.customLexicon?.length && options.includeLexiconNotes !== false) {
-    const missing = profile.customLexicon.filter(w => !new RegExp(`\\b${escapeReg(w)}\\b`, 'i').test(result));
-    if (missing.length) {
-      result += '\n\nLexicon notes: ' + missing.slice(0, 5).join(', ');
-    }
-  }
-
-  return result;
-}
-
-export function paraphraseWithProfile(text: string, profile?: StyleProfile, options: { includeLexiconNotes?: boolean; preserveFormatting?: boolean } = {}): string {
-  if (!text.trim()) return '';
-
-  // If preserving formatting, handle it differently
-  if (options.preserveFormatting) {
-    return paraphraseWithFormatting(text, profile, options);
-  }
 
   // Build frequency map from user sample (once) to bias synonym choices toward familiar vocabulary.
   const freqMap = profile?.sampleExcerpt ? buildFrequencyMap(profile.sampleExcerpt) : {};
@@ -573,126 +419,183 @@ function aggressiveDirectSimplify(t: string): string {
   return t.replace(/\s{2,}/g, ' ');
 }
 
-// Humanization post-process: add gentle variability, contractions, avoid overly AI formality.
+// Enhanced humanization post-process: comprehensive cleanup for natural, accurate output
 export function humanizeText(text: string, opts: { allowContractions?: boolean; preferredTransitions?: string[] } = {}): string {
   let t = text;
   
-  // STEP 1: Fix spacing issues first
+  // STEP 1: Advanced spacing and word boundary fixes
   // Fix missing spaces between words (common AI output issue)
   t = t.replace(/([a-z])([A-Z])/g, '$1 $2'); // camelCase splits like "personThe" -> "person The"
   t = t.replace(/([.!?])([A-Z])/g, '$1 $2'); // Sentence endings without space
   t = t.replace(/([a-z])([A-Z][a-z])/g, '$1 $2'); // More sophisticated word boundary detection
+  t = t.replace(/(\w)([A-Z][a-z])/g, '$1 $2'); // Additional word boundary fixes
   
-  // CRITICAL: Fix comma repetition patterns first
+  // STEP 2: COMPREHENSIVE repetition removal - multiple passes for thoroughness
+  
+  // Pass 1: Remove immediate word repetitions (case-insensitive)
+  t = t.replace(/\b(\w{3,})\s+\1\b/gi, '$1'); // "word word" -> "word" (for words 3+ chars)
+  t = t.replace(/\b(\w{4,})\s+\1\b/gi, '$1'); // Second pass for 4+ char words
+  
+  // Pass 2: Remove phrase repetitions like "in order in order"
+  t = t.replace(/\b(\w+\s+\w+)\s+\1\b/gi, '$1'); // "phrase phrase" -> "phrase"
+  
+  // Pass 3: Target specific problematic patterns
+  t = t.replace(/\b(in order)\s+(in order)\b/gi, '$1'); // "in order in order"
+  t = t.replace(/\b(in other)\s+(in other)\b/gi, '$1'); // "in other in other"  
+  t = t.replace(/\b(that is)\s+(that is)\b/gi, '$1'); // "that is that is"
+  t = t.replace(/\b(such as)\s+(such as)\b/gi, '$1'); // "such as such as"
+  t = t.replace(/\b(as well)\s+(as well)\b/gi, '$1'); // "as well as well"
+  
+  // Pass 4: Remove function word repetitions
+  const functionWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'for', 'with', 'by', 'to', 'from', 'of', 'as', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'will', 'would', 'can', 'could', 'should', 'may', 'might'];
+  functionWords.forEach(word => {
+    const regex = new RegExp(`\\b${word}\\s+${word}\\b`, 'gi');
+    t = t.replace(regex, word);
+  });
+  
+  // Pass 5: Remove triple+ repetitions of any word
+  t = t.replace(/\b(\w+)(\s+\1){2,}\b/gi, '$1'); // "word word word" -> "word"
+  
+  // STEP 3: ADVANCED comma cleanup - multiple targeted fixes
+  
+  // Fix comma repetition patterns that break readability
   t = t.replace(/,(\s*,)+/g, ','); // ", , ," -> ","
-  t = t.replace(/,\s*,\s*,/g, ','); // Multiple commas with spaces
-  t = t.replace(/(\w+),\s*,\s*(\w+)/g, '$1, $2'); // "word, ,word" -> "word, word"
-  t = t.replace(/,\s{2,}/g, ', '); // Multiple spaces after comma
+  t = t.replace(/,\s*,\s*,/g, ','); // "a, , ,b" -> "a,b" 
+  t = t.replace(/,\s*,/g, ','); // ", ," -> ","
+  t = t.replace(/,{2,}/g, ','); // ",," -> ","
   
-  // Fix other punctuation repetitions
+  // Fix specific problematic comma patterns around conjunctions
+  t = t.replace(/(\w+),\s*,\s*,\s*(that|which|who|when|where|how|why)\b/gi, '$1, $2');
+  t = t.replace(/(\w+),\s*,\s*(that|which|who|when|where|how|why)\b/gi, '$1, $2');
+  t = t.replace(/(\w+)\s*,\s*,\s*(and|but|or|so|yet|for)\b/gi, '$1 $2');
+  
+  // Fix comma patterns around specific content words
+  t = t.replace(/\b(data|insights|information|content|art|music|literature|innovation|technology)\s*,\s*,\s*/gi, '$1 ');
+  t = t.replace(/\b(process|analyze|examine|create|develop|produce|ensure)\s*,\s*,\s*/gi, '$1 ');
+  
+  // Normalize comma spacing
+  t = t.replace(/\s*,\s*/g, ', '); // Ensure proper spacing around commas
+  t = t.replace(/\s+,/g, ','); // Remove space before comma
+  t = t.replace(/,([^\s])/g, ', $1'); // Add space after comma if missing
+  
+  // STEP 4: Fix other punctuation repetitions and formatting
   t = t.replace(/\.{2,}/g, '.'); // Multiple periods
   t = t.replace(/!{2,}/g, '!'); // Multiple exclamations
   t = t.replace(/\?{2,}/g, '?'); // Multiple questions
+  t = t.replace(/;{2,}/g, ';'); // Multiple semicolons
+  t = t.replace(/:{2,}/g, ':'); // Multiple colons
   
+  // STEP 5: Advanced sentence boundary and paragraph fixes
   // Fix paragraph separation - ensure proper spacing after periods
-  t = t.replace(/([.!?])([A-Z])/g, '$1\n\n$2'); // Add paragraph breaks after sentences that start new topics
+  t = t.replace(/([.!?])([A-Z])/g, '$1 $2'); // Add space after sentence punctuation
+  t = t.replace(/([.!?])\s{2,}([A-Z])/g, '$1 $2'); // Normalize multiple spaces after punctuation
   
-  // Normalize multiple spaces but preserve paragraph breaks
-  t = t.replace(/ +/g, ' ');
-  t = t.replace(/\n +/g, '\n');
+  // STEP 6: Enhanced content word and phrase optimizations
   
-  // STEP 2: Enhanced repetition removal
-  // Remove exact word repetitions like "in order in order"
-  t = t.replace(/\b(\w+)(\s+\1){1,}/gi, '$1');
+  // Fix common AI-generated awkward phrases
+  t = t.replace(/\bin order to in order to\b/gi, 'in order to');
+  t = t.replace(/\bthat is to say that is\b/gi, 'that is to say');
+  t = t.replace(/\bfor example for example\b/gi, 'for example');
+  t = t.replace(/\bin addition in addition\b/gi, 'in addition');
+  t = t.replace(/\bmoreover moreover\b/gi, 'moreover');
+  t = t.replace(/\bhowever however\b/gi, 'however');
   
-  // Remove repetitive phrase patterns (2-4 words)
-  t = t.replace(/\b(\w+\s+\w+)(\s+\1){1,}/gi, '$1');
-  t = t.replace(/\b(\w+\s+\w+\s+\w+)(\s+\1){1,}/gi, '$1');
-  t = t.replace(/\b(\w+\s+\w+\s+\w+\s+\w+)(\s+\1){1,}/gi, '$1');
+  // Fix AI tendency to repeat transitional phrases
+  const transitions = ['however', 'moreover', 'furthermore', 'additionally', 'therefore', 'consequently', 'meanwhile', 'nevertheless'];
+  transitions.forEach(trans => {
+    const regex = new RegExp(`\\b${trans}\\s*,?\\s*${trans}\\b`, 'gi');
+    t = t.replace(regex, trans);
+  });
   
-  // Remove specific problematic repetitive patterns
-  t = t.replace(/\b(in|on|at|for|with|by|to|from|of|as)\s+\1\b/gi, '$1');
-  t = t.replace(/\b(the|this|that|these|those|a|an)\s+(\w+)\s+\1\s+\2\b/gi, '$1 $2');
+  // STEP 7: Word-level accuracy improvements
   
-  // Remove repetitive transitional phrases
-  t = t.replace(/\b(and|but|so|then|also|however|therefore)\s+\1\b/gi, '$1');
+  // Fix common AI-generated compound word issues
+  t = t.replace(/\bdata base\b/gi, 'database');
+  t = t.replace(/\bweb site\b/gi, 'website');
+  t = t.replace(/\bemail\s+address\b/gi, 'email address');
+  t = t.replace(/\bonline\s+platform\b/gi, 'online platform');
   
-  // STEP 3: Fix consecutive identical sentences
-  const sentenceParts = t.split(/([.!?]\s*)/);
-  const cleanedSentences = [];
-  let lastSentence = '';
-  
-  for (let i = 0; i < sentenceParts.length; i++) {
-    const sentence = sentenceParts[i];
-    if (sentence.match(/[.!?]/)) {
-      cleanedSentences.push(sentence);
-    } else if (sentence.trim() !== lastSentence.trim() || sentence.trim().length < 10) {
-      cleanedSentences.push(sentence);
-      if (sentence.trim().length > 10) {
-        lastSentence = sentence;
-      }
+  // Fix hyphenation issues
+  t = t.replace(/\b(well|high|low|multi|pre|post|re|un|non|anti|pro)\s+(\w+)/gi, (match, prefix, word) => {
+    // Only hyphenate if it makes sense contextually
+    if (['known', 'established', 'defined', 'quality', 'level', 'purpose', 'processing', 'existing'].includes(word.toLowerCase())) {
+      return `${prefix}-${word}`;
     }
-  }
-  t = cleanedSentences.join('');
+    return match;
+  });
   
-  // STEP 4: Contractions (keep existing logic)
-  if (opts.allowContractions !== false) {
-    const CONTRACTIONS: [RegExp, string][] = [
-      [/\b[Dd]o not\b/g, "don't"],
-      [/\b[Ii]t is\b/g, "it's"],
-      [/\b[Cc]annot\b/g, "can't"],
-      [/\b[Tt]hat is\b/g, "that's"],
-      [/\b[Tt]here is\b/g, "there's"],
-      [/\b[Yy]ou are\b/g, "you're"],
-      [/\bW[eE] are\b/g, "we're"],
-      [/\b[Ii] am\b/g, "I'm"],
+  // STEP 8: Natural language flow optimizations
+  
+  // Apply contractions if requested and context is appropriate
+  if (opts.allowContractions) {
+    const contractionMap = [
+      [/\bdo not\b/gi, "don't"],
+      [/\bdoes not\b/gi, "doesn't"], 
+      [/\bdid not\b/gi, "didn't"],
+      [/\bcannot\b/gi, "can't"],
+      [/\bwill not\b/gi, "won't"],
+      [/\bwould not\b/gi, "wouldn't"],
+      [/\bshould not\b/gi, "shouldn't"],
+      [/\bcould not\b/gi, "couldn't"],
+      [/\bit is\b/gi, "it's"],
+      [/\bthat is\b/gi, "that's"],
+      [/\bthere is\b/gi, "there's"],
+      [/\byou are\b/gi, "you're"],
+      [/\bwe are\b/gi, "we're"],
+      [/\bthey are\b/gi, "they're"],
+      [/\bI am\b/g, "I'm"],
+      [/\bhe is\b/gi, "he's"],
+      [/\bshe is\b/gi, "she's"]
     ];
-    CONTRACTIONS.forEach(([r, rep]) => { t = t.replace(r, rep); });
-  } else {
-    // If contractions disallowed, expand any that slipped in
-    const EXPAND: [RegExp, string][] = [
-      [/\bit's\b/gi, 'it is'],
-      [/\bcan't\b/gi, 'cannot'],
-      [/\bthat's\b/gi, 'that is'],
-      [/\bthere's\b/gi, 'there is'],
-      [/\byou're\b/gi, 'you are'],
-      [/\bwe're\b/gi, 'we are'],
-      [/\bI'm\b/g, 'I am'],
-      [/\bdon't\b/gi, 'do not']
-    ];
-    EXPAND.forEach(([r, rep]) => { t = t.replace(r, rep); });
+    
+    contractionMap.forEach(([pattern, replacement]) => {
+      t = t.replace(pattern, replacement as string);
+    });
   }
   
-  // Slight sentence length variation: occasionally merge very short sentences.
-  const parts = t.split(/(?<=[.!?])\s+/);
-  for (let i = 0; i < parts.length - 1; i++) {
-    if (parts[i].length < 25 && parts[i + 1].length < 40 && Math.random() < 0.3) {
-      parts[i] = parts[i].replace(/[.!?]$/, '') + ', ' + parts[i + 1].charAt(0).toLowerCase() + parts[i + 1].slice(1);
-      parts.splice(i + 1, 1); i--;
-    }
-  }
-  t = parts.join(' ');
+  // STEP 9: Final cleanup and normalization
   
-  // Avoid AI style openings
-  t = t.replace(/^Here(?:'|)s a(?:n)? /i, '').replace(/^This is a /i, '');
-  t = t.replace(/^(?:Certainly|Of course)[,!]?\s*/i, '');
+  // Clean up excessive whitespace while preserving intentional formatting
+  t = t.replace(/ {3,}/g, ' '); // Multiple spaces to single space
+  t = t.replace(/\n {2,}/g, '\n '); // Clean up indentation
+  t = t.replace(/\n{3,}/g, '\n\n'); // Multiple line breaks to double
+  t = t.replace(/\t+/g, ' '); // Tabs to single space
   
-  // Remove lingering meta phrasing
-  t = t.replace(/I (?:have|have just|will) (?:maintained|kept|preserved|ensured) .*?$/i, '').trim();
-  t = t.replace(/(?:This|The above) (?:maintains|preserves|ensures) .*?$/i, '').trim();
+  // Fix spacing around punctuation marks
+  t = t.replace(/\s+([.!?;:])/g, '$1'); // Remove space before punctuation
+  t = t.replace(/([.!?;:])([^\s"'])/g, '$1 $2'); // Add space after punctuation if needed
   
-  // Fix trailing incomplete sentences
+  // Clean up quote and apostrophe spacing
+  t = t.replace(/\s+(['"])/g, ' $1'); // Space before quotes
+  t = t.replace(/(['"])\s+/g, '$1 '); // Space after quotes
+  t = t.replace(/(\w)'(\w)/g, '$1\'$2'); // Fix apostrophes in contractions
+  
+  // STEP 10: Accuracy validation and final touches
+  
+  // Remove any remaining incomplete or fragmented sentences at the end
   const sentences = t.split(/(?<=[.!?])\s+/);
   if (sentences.length > 1) {
     const lastSentence = sentences[sentences.length - 1];
-    // If last sentence is incomplete and short, remove it
-    if (!/[.!?]$/.test(lastSentence.trim()) && lastSentence.trim().length < 15) {
+    // Remove if it's clearly a fragment (too short, no punctuation, or starts with lowercase)
+    if (lastSentence.trim().length < 10 || 
+        (!/[.!?]$/.test(lastSentence.trim()) && lastSentence.trim().length < 25) ||
+        /^[a-z]/.test(lastSentence.trim())) {
       sentences.pop();
       t = sentences.join(' ');
     }
   }
   
-  return t.trim();
+  // Ensure proper sentence case
+  t = t.replace(/([.!?]\s+)([a-z])/g, (match, punct, letter) => punct + letter.toUpperCase());
+  t = t.replace(/^([a-z])/, (match, letter) => letter.toUpperCase()); // Capitalize first letter
+  
+  // Final validation: ensure the text ends properly
+  t = t.trim();
+  if (t && !/[.!?]$/.test(t)) {
+    t += '.';
+  }
+  
+  return t;
 }
 
 // Final verification + styling pass to ensure output is humanized and style aspects considered.
@@ -998,10 +901,10 @@ export function analyzeSampleStyle(sample: string): SampleStyle {
   const std = Math.sqrt(variance);
   const usesContractions = /\b(?:[A-Za-z]+n't|it's|I'm|you're|we're|they're|that's)\b/i.test(sample);
   
-  // Count transitions
+  // Count transitions with better detection
   const transitionCounts: Record<string, number> = {};
   for (const t of TRANSITION_CANDIDATES) {
-    const rx = new RegExp('^' + escapeReg(t) + '\\s', 'gmi');
+    const rx = new RegExp('^\\s*' + escapeReg(t) + '\\s+', 'gmi');
     const count = (sample.match(rx) || []).length;
     if (count) transitionCounts[t] = count;
   }
@@ -1010,41 +913,65 @@ export function analyzeSampleStyle(sample: string): SampleStyle {
     .slice(0,3)
     .map(([t])=>t);
   
-  // High frequency words (exclude stopwords)
-  const STOP = new Set(['the','a','an','and','or','but','of','in','on','for','to','it','is','are','be','as','that','this','with','by','was','were','at']);
-  const words = sample.toLowerCase().match(/\b[a-z]{4,}\b/g) || [];
+  // Enhanced high frequency words analysis with better filtering
+  const STOP = new Set(['the','a','an','and','or','but','of','in','on','for','to','it','is','are','be','as','that','this','with','by','was','were','at','has','have','had','will','would','can','could','should','shall','may','might','must']);
+  const words = sample.toLowerCase().match(/\b[a-z]{3,}\b/g) || [];
   const freq: Record<string, number> = {};
-  for (const w of words) { if (!STOP.has(w)) freq[w]=(freq[w]||0)+1; }
-  const highFrequencyWords = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([w])=>w);
+  for (const w of words) { 
+    if (!STOP.has(w) && w.length > 3) {
+      freq[w]=(freq[w]||0)+1; 
+    }
+  }
+  const highFrequencyWords = Object.entries(freq)
+    .filter(([word, count]) => count >= 2 || word.length > 6) // Focus on meaningful patterns
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,30)
+    .map(([w])=>w);
   
   const commaCount = (sample.match(/,/g) || []).length;
   const semiCount = (sample.match(/;/g) || []).length;
   const transitionStarts = sentences.filter(s => /^\s*(However,|Moreover,|Additionally,|Furthermore,|Meanwhile,|Instead,|Still,|Thus,|Therefore,)/i.test(s)).length;
   
-  // Simple adverb extraction (ending with ly, length >4) frequency
+  // Enhanced adverb extraction with context awareness
   const adverbFreq: Record<string, number> = {};
-  (sample.match(/\b[a-z]{5,}ly\b/gi) || []).forEach(w => { adverbFreq[w.toLowerCase()] = (adverbFreq[w.toLowerCase()]||0)+1; });
-  const topAdverbs = Object.entries(adverbFreq).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([w])=>w);
+  const adverbMatches = sample.match(/\b[a-z]{5,}ly\b/gi) || [];
+  adverbMatches.forEach(w => { 
+    const lower = w.toLowerCase();
+    // Filter out common but less meaningful adverbs
+    if (!['really', 'very', 'quite', 'rather', 'pretty', 'fairly', 'slightly'].includes(lower)) {
+      adverbFreq[lower] = (adverbFreq[lower]||0)+1; 
+    }
+  });
+  const topAdverbs = Object.entries(adverbFreq)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,5)
+    .map(([w])=>w);
 
-  // Enhanced analysis for AI prompting
+  // Enhanced word analysis with better complexity metrics
   const allWords = sample.split(/\s+/);
-  const wordLengths = allWords.map(w => w.replace(/[^\w]/g, '').length).filter(l => l > 0);
-  const avgWordLength = wordLengths.reduce((sum, len) => sum + len, 0) / wordLengths.length;
+  const meaningfulWords = allWords.filter(w => w.replace(/[^\w]/g, '').length > 2);
+  const wordLengths = meaningfulWords.map(w => w.replace(/[^\w]/g, '').length);
+  const avgWordLength = wordLengths.reduce((sum, len) => sum + len, 0) / (wordLengths.length || 1);
   
-  // Vocabulary complexity analysis
-  const complexWords = allWords.filter(w => w.replace(/[^\w]/g, '').length > 7);
-  const vocabularyComplexity = complexWords.length / allWords.length;
+  // Improved vocabulary complexity analysis
+  const complexWords = meaningfulWords.filter(w => {
+    const clean = w.replace(/[^\w]/g, '');
+    return clean.length > 7 || /[A-Z].*[A-Z]/.test(clean) || /\w{3,}tion|ment|ness|ity|ous|ive|able|ible/.test(clean);
+  });
+  const vocabularyComplexity = complexWords.length / (meaningfulWords.length || 1);
   
-  // Sentence type analysis
+  // Enhanced sentence type analysis
   const questionSentences = sentences.filter(s => s.includes('?')).length;
   const exclamatorySentences = sentences.filter(s => s.includes('!')).length;
   const questionRatio = sentences.length ? questionSentences / sentences.length : 0;
   const exclamatoryRatio = sentences.length ? exclamatorySentences / sentences.length : 0;
   
-  // Sentence starter patterns
+  // Enhanced sentence starter patterns with better categorization
   const sentenceStarters = sentences.map(s => {
-    const firstWord = s.trim().split(/\s+/)[0]?.toLowerCase()?.replace(/[^\w]/g, '');
-    return firstWord;
+    const trimmed = s.trim();
+    // Extract first meaningful word or phrase
+    const firstPhrase = trimmed.match(/^([A-Z][a-z]*(?:\s+[a-z]+)?)/)?.[1]?.toLowerCase();
+    return firstPhrase?.replace(/[^\w\s]/g, '');
   }).filter(Boolean);
   
   const starterPatterns: Record<string, number> = {};
@@ -1059,22 +986,31 @@ export function analyzeSampleStyle(sample: string): SampleStyle {
     .slice(0, 5)
     .map(([starter]) => starter);
   
-  // Conjunction density
-  const conjunctions = ['and', 'but', 'or', 'nor', 'yet', 'so', 'because', 'since', 'although', 'while', 'if', 'unless'];
-  const conjunctionCount = conjunctions.reduce((count, conj) => {
+  // Enhanced conjunction analysis with semantic grouping
+  const coordinatingConjunctions = ['and', 'but', 'or', 'nor', 'yet', 'so'];
+  const subordinatingConjunctions = ['because', 'since', 'although', 'while', 'if', 'unless', 'when', 'where', 'that', 'which', 'who'];
+  
+  const coordCount = coordinatingConjunctions.reduce((count, conj) => {
     const regex = new RegExp(`\\b${conj}\\b`, 'gi');
     return count + (sample.match(regex) || []).length;
   }, 0);
-  const conjunctionDensity = sentences.length ? conjunctionCount / sentences.length : 0;
   
-  // Descriptive language patterns
-  const adjectivePatterns = /\b(beautiful|amazing|wonderful|terrible|horrible|excellent|outstanding|remarkable|extraordinary|incredible|fantastic|brilliant|magnificent|stunning|gorgeous|lovely|charming|delightful|pleasant|impressive|significant|important|crucial|essential|vital|necessary|useful|helpful|effective|successful|powerful|strong|weak|small|large|huge|tiny|enormous|massive|great|good|bad|poor|rich|expensive|cheap|easy|difficult|hard|simple|complex|complicated)\b/gi;
-  const adjectives = sample.match(adjectivePatterns) || [];
-  const adjectiveDensity = adjectives.length / allWords.length;
+  const subordCount = subordinatingConjunctions.reduce((count, conj) => {
+    const regex = new RegExp(`\\b${conj}\\b`, 'gi');
+    return count + (sample.match(regex) || []).length;
+  }, 0);
   
-  // Tone analysis
-  const positiveWords = ['good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'brilliant', 'outstanding', 'impressive', 'successful', 'effective', 'helpful', 'useful', 'important', 'significant', 'valuable', 'beneficial'];
-  const negativeWords = ['bad', 'terrible', 'horrible', 'awful', 'poor', 'weak', 'difficult', 'hard', 'complicated', 'problematic', 'challenging', 'concerning', 'disappointing', 'ineffective', 'useless'];
+  const conjunctionDensity = sentences.length ? (coordCount + subordCount) / sentences.length : 0;
+  
+  // Enhanced descriptive language analysis
+  const descriptivePatterns = /\b(beautiful|amazing|wonderful|excellent|outstanding|remarkable|extraordinary|incredible|fantastic|brilliant|magnificent|stunning|gorgeous|lovely|charming|delightful|pleasant|impressive|significant|important|crucial|essential|vital|necessary|useful|helpful|effective|successful|powerful|strong|substantial|considerable|notable|remarkable|distinctive|unique|special|particular|specific|detailed|comprehensive|thorough|extensive|broad|wide|deep|profound|complex|sophisticated|advanced|modern|contemporary|traditional|classic|elegant|graceful|smooth|rough|sharp|clear|bright|dark|light|heavy|large|small|huge|tiny|enormous|massive|great|excellent|poor|rich|expensive|cheap|difficult|easy|simple|complex|complicated)\b/gi;
+  const adjectives = sample.match(descriptivePatterns) || [];
+  const adjectiveDensity = adjectives.length / (meaningfulWords.length || 1);
+  
+  // Enhanced tone analysis with more nuanced detection
+  const positiveWords = ['good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'brilliant', 'outstanding', 'impressive', 'successful', 'effective', 'helpful', 'useful', 'important', 'significant', 'valuable', 'beneficial', 'positive', 'strong', 'powerful', 'remarkable', 'extraordinary', 'incredible'];
+  const negativeWords = ['bad', 'terrible', 'horrible', 'awful', 'poor', 'weak', 'difficult', 'hard', 'complicated', 'problematic', 'challenging', 'concerning', 'disappointing', 'ineffective', 'useless', 'negative', 'harmful', 'dangerous', 'risky', 'threatening', 'worrying', 'troubling'];
+  const neutralWords = ['neutral', 'standard', 'normal', 'typical', 'average', 'common', 'regular', 'ordinary', 'conventional', 'traditional'];
   
   const positiveCount = positiveWords.reduce((count, word) => {
     const regex = new RegExp(`\\b${word}\\b`, 'gi');
@@ -1086,9 +1022,16 @@ export function analyzeSampleStyle(sample: string): SampleStyle {
     return count + (sample.match(regex) || []).length;
   }, 0);
   
-  const toneBalance = positiveCount > negativeCount ? 'positive' : negativeCount > positiveCount ? 'negative' : 'neutral';
+  const neutralCount = neutralWords.reduce((count, word) => {
+    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    return count + (sample.match(regex) || []).length;
+  }, 0);
   
-  // Personal voice analysis
+  let toneBalance: 'positive' | 'negative' | 'neutral' = 'neutral';
+  if (positiveCount > negativeCount + neutralCount) toneBalance = 'positive';
+  else if (negativeCount > positiveCount + neutralCount) toneBalance = 'negative';
+  
+  // Enhanced personal voice analysis with better pronouns detection
   const firstPersonPronouns = (sample.match(/\b(I|me|my|mine|myself|we|us|our|ours|ourselves)\b/gi) || []).length;
   const secondPersonPronouns = (sample.match(/\b(you|your|yours|yourself|yourselves)\b/gi) || []).length;
   const thirdPersonPronouns = (sample.match(/\b(he|she|it|they|him|her|them|his|hers|its|their|theirs|himself|herself|itself|themselves)\b/gi) || []).length;

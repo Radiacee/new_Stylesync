@@ -25,7 +25,6 @@ export default function ParaphrasePage() {
   const [actions, setActions] = useState<{ code: string; meta?: any }[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
   const [debug, setDebug] = useState(false);
-  const [preserveFormatting, setPreserveFormatting] = useState(true);
   const [history, setHistory] = useState<ParaphraseEntry[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -113,7 +112,7 @@ export default function ParaphrasePage() {
         enhancedProfile = { ...profile, styleAnalysis };
       }
       
-      const payload = { text: input, useModel, profile: enhancedProfile, debug, preserveFormatting };
+      const payload = { text: input, useModel, profile: enhancedProfile, debug };
       const res = await fetch('/api/paraphrase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -432,10 +431,6 @@ export default function ParaphrasePage() {
               <label className="flex items-center gap-2 text-slate-500 select-none">
                 <input type="checkbox" className="accent-brand-500" checked={debug} onChange={e=>setDebug(e.target.checked)} />
                 Debug Mode
-              </label>
-              <label className="flex items-center gap-2 text-slate-300 select-none">
-                <input type="checkbox" className="accent-brand-500" checked={preserveFormatting} onChange={e=>setPreserveFormatting(e.target.checked)} />
-                Preserve Formatting
               </label>
             </div>
           </div>

@@ -8,8 +8,7 @@ const bodySchema = z.object({
   text: z.string().min(1).max(8000),
   useModel: z.boolean().optional(),
   profile: z.any().optional(),
-  debug: z.boolean().optional(),
-  preserveFormatting: z.boolean().optional()
+  debug: z.boolean().optional()
 });
 
 export const runtime = 'nodejs';
@@ -24,7 +23,7 @@ export async function POST(req: NextRequest) {
     }
 
     const json = await req.json();
-    const { text, useModel, profile, debug, preserveFormatting } = bodySchema.parse(json);
+    const { text, useModel, profile, debug } = bodySchema.parse(json);
     let output: string;
 
     // Simple API key auth for production usage gating (add per-user auth separately)
@@ -53,11 +52,11 @@ export async function POST(req: NextRequest) {
     let usedAIModel = false;
     if (allowModel && (useModel ?? true)) {
       console.log('=== USING AI MODEL ===');
-      output = await modelParaphraseGroq(text, profile, preserveFormatting);
+      output = await modelParaphraseGroq(text, profile);
       usedAIModel = true;
     } else {
       console.log('=== USING FALLBACK ===', 'allowModel:', allowModel, 'useModel:', useModel);
-      output = paraphraseWithProfile(text, profile, { preserveFormatting });
+      output = paraphraseWithProfile(text, profile);
     }
 
   // Verification & iterative humanization (returns metrics).
@@ -137,7 +136,7 @@ function applyAdvancedFormatting(text: string): string {
   return cleaned.trim();
 }
 
-async function modelParaphraseGroq(text: string, profile: any, preserveFormatting: boolean = false) {
+async function modelParaphraseGroq(text: string, profile: any) {
   try {
     const GroqMod = await import('groq-sdk');
     const Groq = (GroqMod as any).default ?? (GroqMod as any).Groq;
@@ -151,13 +150,25 @@ async function modelParaphraseGroq(text: string, profile: any, preserveFormattin
       max_tokens: Math.min(2000, Math.max(100, text.length * 2)), // Prevent excessive length
       messages: [
         { role: 'system', content: system },
-        { role: 'user', content: `Paraphrase the text below maintaining the EXACT same meaning. Focus on mimicking the user's sentence construction patterns, clause usage, and punctuation habits. Pay attention to how sentences are built: their complexity, conjunction usage, modifier placement, and overall flow. 
+        { role: 'user', content: `Paraphrase the following text while preserving EXACTLY the same meaning and all factual content. Your goal is to transform the writing style to match the user's patterns while keeping every piece of information identical.
 
-CRITICAL: The meaning must stay identical. Do not add, remove, or change any facts, concepts, or ideas. Only change the wording and sentence structure while preserving all original information.
+CRITICAL REQUIREMENTS:
+1. Preserve ALL facts, concepts, data, and ideas exactly as written
+2. Maintain the original meaning completely - no additions, omissions, or changes to content
+3. Focus on mimicking the user's sentence construction, word choice patterns, and flow
+4. Use natural language that sounds human-written, not AI-generated
+5. Avoid repetitive words or phrases within your output
+6. Do not add explanatory notes, commentary, or vocabulary lists
 
-Output ONLY the rewritten text itself with no preface, explanation, notes, or commentary.
+STYLE MATCHING PRIORITY:
+- Sentence structure and complexity patterns are most important
+- Punctuation and pacing habits should be replicated
+- Word choice should feel natural while matching user preferences  
+- Overall flow and readability must remain high
 
-Text:
+OUTPUT ONLY the paraphrased text with no additional content.
+
+Text to paraphrase:
 ${text}` }
       ]
     });
@@ -175,11 +186,11 @@ ${text}` }
     return cleaned;
   } else {
     console.log('AI response was empty/short, using fallback');
-    return paraphraseWithProfile(text, profile, { includeLexiconNotes: false, preserveFormatting });
+    return paraphraseWithProfile(text, profile, { includeLexiconNotes: false });
   }
   } catch (e: any) {
     console.log('AI request failed, using fallback:', e?.message || e);
-    return paraphraseWithProfile(text, profile, { includeLexiconNotes: false, preserveFormatting });
+    return paraphraseWithProfile(text, profile, { includeLexiconNotes: false });
   }
 }
 
@@ -232,102 +243,123 @@ function cleanupCommaPatterns(text: string): string {
 }
 
 function buildSystemPrompt(profile: any): string {
-  const base = STYLE_RULE_PROMPT + '\n\nCRITICAL: Preserve the exact meaning and all factual content. No fabrication of facts. Focus on sentence construction patterns rather than specific vocabulary. Maintain natural language flow and readability above all else.';
+  const base = STYLE_RULE_PROMPT + '\n\nCRITICAL: Preserve the exact meaning and all factual content. No fabrication of facts. Focus on sentence construction patterns and natural language flow. Maintain clarity and readability above all else.';
   if (!profile) return base;
   
-  let stylePrompt = base + `\nProfile cues: Tone=${profile.tone}; Formality=${profile.formality}; Pacing=${profile.pacing}; Descriptiveness=${profile.descriptiveness}; Directness=${profile.directness}`;
+  let stylePrompt = base + `\n\nUSER STYLE PROFILE:`;
+  stylePrompt += `\n- Tone: ${profile.tone}`;
+  stylePrompt += `\n- Formality: ${Math.round(profile.formality * 100)}% formal`;
+  stylePrompt += `\n- Pacing: ${Math.round(profile.pacing * 100)}% fast-paced`;
+  stylePrompt += `\n- Descriptiveness: ${Math.round(profile.descriptiveness * 100)}% descriptive`;
+  stylePrompt += `\n- Directness: ${Math.round(profile.directness * 100)}% direct`;
   
-  // Add custom lexicon as optional vocabulary hints (with strong warnings)
+  // Optimize lexicon handling - focus on natural integration
   if (profile.customLexicon && profile.customLexicon.length > 0) {
-    stylePrompt += `\n\nVOCABULARY SUGGESTIONS (ONLY IF NATURAL): The user's writing style occasionally includes these words: ${profile.customLexicon.join(', ')}. These are OPTIONAL suggestions extracted from their sample text - only use them if they naturally replace existing words and maintain identical meaning. DO NOT force these words into sentences where they don't belong. DO NOT add extra commas or awkward insertions to accommodate these words. If they don't fit naturally in the context, ignore them completely. Natural, clear writing is always more important than using specific vocabulary.`;
-  } else {
-    // When no custom lexicon, be explicit about not adding unnecessary words or commas
-    stylePrompt += `\n\nNO CUSTOM VOCABULARY: Write naturally without trying to insert specific vocabulary words. Do not use placeholder commas or awkward insertions. Focus purely on clear, natural language that matches the user's sentence construction patterns.`;
+    const relevantWords = profile.customLexicon.slice(0, 10); // Limit to most relevant
+    stylePrompt += `\n\nVOCABULARY PREFERENCES: The user occasionally uses these terms in their writing: ${relevantWords.join(', ')}. Use these words ONLY when they naturally fit the context and meaning. DO NOT force them into sentences. Natural expression takes priority over vocabulary matching.`;
   }
   
-  // Add detailed sample style analysis if available
+  // Add detailed sample style analysis for more accurate mimicking
   if (profile.sampleExcerpt && profile.styleAnalysis) {
     const analysis = profile.styleAnalysis;
     console.log('Style Analysis received:', JSON.stringify(analysis, null, 2));
     
-    stylePrompt += '\n\nWRITING STYLE PATTERNS TO MIMIC:';
-    stylePrompt += `\n- Sentence length: Average ${Math.round(analysis.avgSentenceLength)} words (±${Math.round(analysis.sentenceLengthStd)})`;
-    stylePrompt += `\n- Word complexity: Average word length ${Math.round(analysis.avgWordLength)} chars, vocabulary complexity ${(analysis.vocabularyComplexity * 100).toFixed(1)}%`;
+    stylePrompt += '\n\n=== DETAILED WRITING STYLE TO MIMIC ===';
     
+    // SENTENCE STRUCTURE PATTERNS
+    stylePrompt += '\n\nSENTENCE CONSTRUCTION:';
+    stylePrompt += `\n- Average sentence length: ${Math.round(analysis.avgSentenceLength)} characters`;
+    stylePrompt += `\n- Sentence length variation: ±${Math.round(analysis.sentenceLengthStd)} characters`;
+    stylePrompt += `\n- Average word length: ${analysis.avgWordLength.toFixed(1)} characters`;
+    stylePrompt += `\n- Vocabulary complexity: ${(analysis.vocabularyComplexity * 100).toFixed(1)}% complex words`;
+    
+    // LINGUISTIC PREFERENCES  
     if (analysis.usesContractions) {
-      stylePrompt += '\n- Uses contractions (don\'t, it\'s, etc.)';
+      stylePrompt += '\n- Uses contractions naturally (don\'t, it\'s, we\'re, etc.)';
     } else {
-      stylePrompt += '\n- Avoids contractions (formal writing)';
+      stylePrompt += '\n- Avoids contractions (formal style: do not, it is, we are)';
     }
     
+    if (analysis.questionRatio > 0.1) {
+      stylePrompt += `\n- Uses rhetorical questions (${(analysis.questionRatio * 100).toFixed(0)}% of sentences)`;
+    }
+    
+    if (analysis.exclamatoryRatio > 0.05) {
+      stylePrompt += `\n- Uses exclamations for emphasis (${(analysis.exclamatoryRatio * 100).toFixed(0)}% of sentences)`;
+    }
+    
+    // VOICE AND PERSPECTIVE
+    stylePrompt += `\n- Writing perspective: ${analysis.personalVoice}`;
+    stylePrompt += `\n- Overall tone: ${analysis.toneBalance}`;
+    
+    // SENTENCE STARTERS
+    if (analysis.commonStarters && analysis.commonStarters.length > 0) {
+      stylePrompt += `\n- Common sentence starters: "${analysis.commonStarters.slice(0, 3).join('", "')}"`;
+    }
+    
+    // TRANSITIONS AND FLOW
     if (analysis.preferredTransitions && analysis.preferredTransitions.length > 0) {
       stylePrompt += `\n- Preferred transitions: ${analysis.preferredTransitions.slice(0, 3).join(', ')}`;
     }
     
-    if (analysis.questionRatio > 0.1) {
-      stylePrompt += `\n- Uses questions frequently (${(analysis.questionRatio * 100).toFixed(1)}% of sentences)`;
+    if (analysis.transitionStartRatio > 0.2) {
+      stylePrompt += `\n- Often starts sentences with transitions (${(analysis.transitionStartRatio * 100).toFixed(0)}% of sentences)`;
     }
     
-    if (analysis.exclamatoryRatio > 0.1) {
-      stylePrompt += `\n- Uses exclamations frequently (${(analysis.exclamatoryRatio * 100).toFixed(1)}% of sentences)`;
-    }
-    
-    if (analysis.commonStarters && analysis.commonStarters.length > 0) {
-      stylePrompt += `\n- Common sentence starters: ${analysis.commonStarters.slice(0, 3).join(', ')}`;
-    }
-    
-    stylePrompt += `\n- Personal voice: ${analysis.personalVoice} perspective`;
-    stylePrompt += `\n- Tone tendency: ${analysis.toneBalance}`;
-    
-    if (analysis.conjunctionDensity > 1) {
-      stylePrompt += '\n- Uses many connecting words (and, but, because, etc.)';
-    }
-    
-    if (analysis.adjectiveDensity > 0.1) {
-      stylePrompt += `\n- Descriptive writing style (${(analysis.adjectiveDensity * 100).toFixed(1)}% descriptive words)`;
-    } else {
-      stylePrompt += '\n- Concise, minimal descriptive language';
-    }
-    
-    // REMOVED: Don't mention specific adverbs in the prompt as they get injected
-    
-    // SENTENCE CONSTRUCTION PATTERNS
+    // DETAILED CONSTRUCTION PATTERNS
     if (analysis.constructionPatterns) {
-      stylePrompt += '\n\nSENTENCE CONSTRUCTION STYLE:';
+      stylePrompt += '\n\nSENTENCE STRUCTURE PREFERENCES:';
       
       if (analysis.constructionPatterns.subordinateClauseRatio > 0.3) {
-        stylePrompt += `\n- Frequently uses subordinate clauses (${(analysis.constructionPatterns.subordinateClauseRatio * 100).toFixed(0)}% of sentences) with words like "because", "although", "when"`;
+        stylePrompt += `\n- Frequently uses complex sentences with subordinate clauses (${(analysis.constructionPatterns.subordinateClauseRatio * 100).toFixed(0)}% of sentences)`;
+        stylePrompt += '\n  → Uses words like "because", "although", "when", "if", "since"';
       }
       
-      if (analysis.constructionPatterns.coordinateClauseRatio > 0.3) {
-        stylePrompt += `\n- Often connects ideas with coordinating conjunctions (${(analysis.constructionPatterns.coordinateClauseRatio * 100).toFixed(0)}% of sentences) using "and", "but", "or"`;
+      if (analysis.constructionPatterns.coordinateClauseRatio > 0.4) {
+        stylePrompt += `\n- Often connects ideas with coordinating conjunctions (${(analysis.constructionPatterns.coordinateClauseRatio * 100).toFixed(0)}% of sentences)`;
+        stylePrompt += '\n  → Uses "and", "but", "or", "so", "yet" to link clauses';
       }
       
-      if (analysis.constructionPatterns.parentheticalRatio > 0.2) {
-        stylePrompt += `\n- Uses parenthetical elements and asides (${(analysis.constructionPatterns.parentheticalRatio * 100).toFixed(0)}% of sentences)`;
+      if (analysis.constructionPatterns.parentheticalRatio > 0.15) {
+        stylePrompt += `\n- Uses parenthetical expressions and asides (${(analysis.constructionPatterns.parentheticalRatio * 100).toFixed(0)}% of sentences)`;
+        stylePrompt += '\n  → Includes explanatory phrases, examples, or clarifications';
       }
       
-      if (analysis.constructionPatterns.frontLoadedDependentRatio > 0.2) {
-        stylePrompt += `\n- Often starts sentences with dependent clauses (${(analysis.constructionPatterns.frontLoadedDependentRatio * 100).toFixed(0)}% of sentences)`;
+      if (analysis.constructionPatterns.frontLoadedDependentRatio > 0.15) {
+        stylePrompt += `\n- Often begins sentences with dependent clauses (${(analysis.constructionPatterns.frontLoadedDependentRatio * 100).toFixed(0)}% of sentences)`;
+        stylePrompt += '\n  → Structures like "When X happens, Y occurs" or "Because of X, Y follows"';
       }
       
       if (analysis.avgClausesPerSentence > 2) {
-        stylePrompt += `\n- Complex sentence structure averaging ${analysis.avgClausesPerSentence.toFixed(1)} clauses per sentence`;
+        stylePrompt += `\n- Prefers complex sentences averaging ${analysis.avgClausesPerSentence.toFixed(1)} clauses per sentence`;
+      } else if (analysis.avgClausesPerSentence < 1.5) {
+        stylePrompt += `\n- Prefers simple, direct sentences averaging ${analysis.avgClausesPerSentence.toFixed(1)} clauses per sentence`;
       }
       
       if (analysis.parallelStructureRatio > 0.1) {
-        stylePrompt += `\n- Uses parallel structure patterns (${(analysis.parallelStructureRatio * 100).toFixed(0)}% of sentences) like "X, Y, and Z"`;
+        stylePrompt += `\n- Uses parallel structure patterns (${(analysis.parallelStructureRatio * 100).toFixed(0)}% of sentences)`;
+        stylePrompt += '\n  → Structures like "X, Y, and Z" or "to do X, to achieve Y, and to ensure Z"';
       }
     }
     
-    // PUNCTUATION AND MODIFIER PATTERNS
+    // PUNCTUATION AND STYLE ELEMENTS
     if (analysis.punctuationPatterns) {
       if (analysis.punctuationPatterns.dashUsage > 0) {
-        stylePrompt += `\n- Uses dashes for emphasis or breaks (${analysis.punctuationPatterns.dashUsage} times)`;
+        stylePrompt += `\n- Uses dashes for emphasis or explanatory breaks (${analysis.punctuationPatterns.dashUsage} instances)`;
       }
       if (analysis.punctuationPatterns.colonUsage > 0) {
-        stylePrompt += `\n- Uses colons for explanations (${analysis.punctuationPatterns.colonUsage} times)`;
+        stylePrompt += `\n- Uses colons to introduce explanations or lists (${analysis.punctuationPatterns.colonUsage} instances)`;
       }
+      if (analysis.punctuationPatterns.quotationUsage > 2) {
+        stylePrompt += `\n- Frequently uses quotations or direct speech (${analysis.punctuationPatterns.quotationUsage} instances)`;
+      }
+    }
+    
+    // MODIFIER AND DESCRIPTIVE PATTERNS
+    if (analysis.adjectiveDensity > 0.08) {
+      stylePrompt += `\n- Descriptive writing style (${(analysis.adjectiveDensity * 100).toFixed(1)}% descriptive words)`;
+    } else if (analysis.adjectiveDensity < 0.03) {
+      stylePrompt += '\n- Concise, minimal descriptive language style';
     }
     
     if (analysis.modifierPatterns) {
@@ -335,15 +367,47 @@ function buildSystemPrompt(profile: any): string {
         stylePrompt += `\n- Often starts sentences with adverbs (${(analysis.modifierPatterns.frontLoadedAdverbs * 100).toFixed(0)}% of sentences)`;
       }
       if (analysis.modifierPatterns.midSentenceAdverbs > 0.1) {
-        stylePrompt += `\n- Places adverbs mid-sentence for flow (${(analysis.modifierPatterns.midSentenceAdverbs * 100).toFixed(0)}% of sentences)`;
+        stylePrompt += `\n- Places adverbs mid-sentence for natural flow (${(analysis.modifierPatterns.midSentenceAdverbs * 100).toFixed(0)}% of sentences)`;
       }
     }
     
-    stylePrompt += '\n\nMATCH THESE PATTERNS: Replicate the sentence construction style, clause patterns, punctuation habits, and modifier placement shown above. Focus on HOW sentences are built, not just word choice.';
+    // CONNECTIVITY AND FLOW
+    if (analysis.conjunctionDensity > 1.2) {
+      stylePrompt += `\n- High connectivity between ideas (${analysis.conjunctionDensity.toFixed(1)} conjunctions per sentence on average)`;
+    } else if (analysis.conjunctionDensity < 0.7) {
+      stylePrompt += `\n- Simple, independent sentence structure (${analysis.conjunctionDensity.toFixed(1)} conjunctions per sentence on average)`;
+    }
+    
+    // COMMA AND PAUSE PATTERNS
+    if (analysis.commaPerSentence > 1.5) {
+      stylePrompt += `\n- Uses many commas for pacing and clarity (${analysis.commaPerSentence.toFixed(1)} per sentence on average)`;
+    } else if (analysis.commaPerSentence < 0.8) {
+      stylePrompt += `\n- Minimal comma usage, direct pacing (${analysis.commaPerSentence.toFixed(1)} per sentence on average)`;
+    }
+    
+    if (analysis.semicolonRatio > 0.1) {
+      stylePrompt += `\n- Uses semicolons to connect related ideas (${(analysis.semicolonRatio * 100).toFixed(0)}% of sentences)`;
+    }
+    
+    stylePrompt += '\n\n=== CRITICAL INSTRUCTIONS ===';
+    stylePrompt += '\nReplicate these EXACT patterns in your paraphrase:';
+    stylePrompt += '\n1. Match the sentence length distribution and complexity patterns';
+    stylePrompt += '\n2. Use the same conjunction and transition preferences';
+    stylePrompt += '\n3. Follow the same punctuation and pacing habits';
+    stylePrompt += '\n4. Maintain the same voice, perspective, and tone';
+    stylePrompt += '\n5. Use similar sentence construction approaches (simple vs complex)';
+    stylePrompt += '\n6. Apply the same level of descriptiveness and directness';
   }
   
-  // Add final instructions to prevent lexicon notes in output
-  stylePrompt += '\n\nCRITICAL OUTPUT RULES:\n1. Output ONLY the paraphrased text. No notes, labels, explanations, or lists.\n2. Do NOT include phrases like "Lexicon notes:", "Words used:", "Vocabulary:", etc.\n3. Do NOT mention or list any vocabulary words used.\n4. NEVER insert vocabulary words where they break sentence structure or change meaning.\n5. Do NOT use excessive commas or placeholder punctuation - write naturally.\n6. The response must contain ONLY the clean paraphrased content - nothing else.\n7. Preserve all original facts, concepts, and meaning exactly.\n8. Use proper comma placement only where grammatically appropriate - avoid comma clusters like ",,," or unnecessary comma insertions.';
+  // Final optimization instructions
+  stylePrompt += '\n\n=== OUTPUT REQUIREMENTS ===';
+  stylePrompt += '\n• Output ONLY the paraphrased text - no explanations, notes, or commentary';
+  stylePrompt += '\n• Preserve ALL factual content and meaning exactly';
+  stylePrompt += '\n• Focus on natural language flow over forced vocabulary insertion';
+  stylePrompt += '\n• Use proper grammar and punctuation throughout';
+  stylePrompt += '\n• Avoid repetitive words or phrases within the output';
+  stylePrompt += '\n• Do NOT include phrases like "Lexicon notes:" or vocabulary lists';
+  stylePrompt += '\n• Ensure the result sounds natural and human-written';
   
   return stylePrompt;
 }

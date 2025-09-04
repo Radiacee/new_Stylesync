@@ -150,20 +150,6 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
     }, 500);
   }
 
-  async function pushRemote(id: string) {
-    setBusy(true);
-    try {
-      const p = profiles.find(p => p.id === id);
-      if (!p) return;
-      if (supabase) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await saveProfileRemote({ ...p, userId: user.id });
-        }
-      }
-    } finally { setBusy(false); }
-  }
-
   return (
     <div className="space-y-3 text-xs">
       <div className="flex items-center justify-between">
@@ -207,14 +193,10 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                 <span>Dir{Math.round(p.directness*100)}</span>
                 {p.customLexicon.length > 0 && <span>Lex:{p.customLexicon.length}</span>}
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => pushRemote(p.id)} disabled={busy} className="text-[10px] mt-1 px-2 py-0.5 rounded bg-slate-600/40 hover:bg-slate-500/40 disabled:opacity-40">Sync</button>
-              </div>
             </li>
           );
         })}
       </ul>
-      {busy && <p className="text-[10px] text-slate-500">Syncing…</p>}
       <p className="text-[10px] text-slate-500">Double‑click a name to rename. Activate to use during paraphrasing.</p>
     </div>
   );
