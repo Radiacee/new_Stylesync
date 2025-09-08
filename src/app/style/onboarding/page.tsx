@@ -41,6 +41,8 @@ function OnboardingInner() {
   const [authChecked, setAuthChecked] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<SampleStyle | null>(null);
   const [showAnalysis, setShowAnalysis] = useState(false);
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [hasAppliedAnalysis, setHasAppliedAnalysis] = useState(false);
 
   useEffect(() => {
     // Check authentication first
@@ -99,11 +101,43 @@ function OnboardingInner() {
   function update<K extends keyof StyleProfile>(key: K, value: StyleProfile[K]) {
     setProfile(p => ({ ...p, [key]: value, updatedAt: Date.now(), createdAt: p.createdAt || Date.now() }));
     setSaved(false);
+    
+    // Reset analysis states when sample text changes
+    if (key === 'sampleExcerpt') {
+      setHasAnalyzed(false);
+      setHasAppliedAnalysis(false);
+      setAnalysisResult(null);
+    }
   }
 
   function clearCustomLexicon() {
     setProfile(p => ({ ...p, customLexicon: [], updatedAt: Date.now() }));
     setSaved(false);
+  }
+
+  function isAnalysisRequired() {
+    const text = profile.sampleExcerpt.trim();
+    if (!text) return { required: false, reason: 'No sample text provided' };
+    
+    const wordCount = text.split(/\s+/).length;
+    if (wordCount < 150) {
+      return { required: true, reason: `Sample text too short (${wordCount} words). Please provide at least 150 words for accurate analysis.` };
+    }
+    if (wordCount > 400) {
+      return { required: true, reason: `Sample text too long (${wordCount} words). Please limit to 400 words for optimal analysis.` };
+    }
+    
+    return { required: false, reason: '' };
+  }
+
+  function canCreateProfile() {
+    const analysis = isAnalysisRequired();
+    if (analysis.required) return { canCreate: false, reason: analysis.reason };
+    if (!hasAnalyzed) return { canCreate: false, reason: 'Please analyze your sample text first.' };
+    if (!hasAppliedAnalysis) return { canCreate: false, reason: 'Please apply the analysis results to your profile.' };
+    if (!profile.name?.trim()) return { canCreate: false, reason: 'Please provide a profile name.' };
+    
+    return { canCreate: true, reason: '' };
   }
 
   function handleAnalyze() {
@@ -115,6 +149,9 @@ function OnboardingInner() {
     const analysis = analyzeSampleStyle(profile.sampleExcerpt);
     setAnalysisResult(analysis);
     setShowAnalysis(true);
+    setHasAnalyzed(true);
+    // Reset applied status when new analysis is performed
+    setHasAppliedAnalysis(false);
   }
 
   function handleApplyAnalysis() {
@@ -221,6 +258,7 @@ function OnboardingInner() {
     
     setSaved(false);
     setShowAnalysis(false);
+    setHasAppliedAnalysis(true);
     
     // Show success message with details
     setTimeout(() => {
@@ -237,6 +275,13 @@ function OnboardingInner() {
   }
 
   async function handleSave() {
+    // Final validation check before saving
+    const validation = canCreateProfile();
+    if (!validation.canCreate) {
+      alert(validation.reason);
+      return;
+    }
+    
     setBusy(true); setSaved(false); setRemoteError(null);
     try {
       // For new profiles, ensure we have a unique ID that doesn't conflict with existing ones
@@ -328,13 +373,19 @@ function OnboardingInner() {
               <label className="text-sm font-medium flex items-center gap-2">
                 Sample excerpt 
                 <span className="text-xs text-slate-400 font-normal">(150-400 words)</span>
+                {hasAnalyzed && hasAppliedAnalysis && (
+                  <span className="text-xs text-emerald-400 font-medium">✓ Analyzed & Applied</span>
+                )}
+                {hasAnalyzed && !hasAppliedAnalysis && (
+                  <span className="text-xs text-amber-400 font-medium">⚠ Apply Analysis</span>
+                )}
               </label>
               <button 
                 onClick={handleAnalyze}
-                disabled={!profile.sampleExcerpt.trim()}
+                disabled={!profile.sampleExcerpt.trim() || isAnalysisRequired().required}
                 className="px-3 py-1 text-xs rounded-md bg-blue-600 hover:bg-blue-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Analyze
+                {hasAnalyzed ? 'Re-analyze' : 'Analyze'}
               </button>
             </div>
             <textarea 
@@ -344,6 +395,22 @@ function OnboardingInner() {
               className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-brand-500" 
               placeholder="Paste a paragraph or two you wrote..." 
             />
+            
+            {/* Validation Messages */}
+            {profile.sampleExcerpt.trim() && (
+              <div className="text-xs">
+                {(() => {
+                  const wordCount = profile.sampleExcerpt.trim().split(/\s+/).length;
+                  const analysis = isAnalysisRequired();
+                  
+                  if (analysis.required) {
+                    return <p className="text-amber-400">{analysis.reason}</p>;
+                  } else {
+                    return <p className="text-emerald-400">✓ Text length optimal ({wordCount} words)</p>;
+                  }
+                })()}
+              </div>
+            )}
             
             {/* Analysis Results Modal */}
             {showAnalysis && analysisResult && (
@@ -477,7 +544,31 @@ function OnboardingInner() {
             <label className="text-sm font-medium">Notes (optional)</label>
             <textarea value={profile.notes} onChange={e => update('notes', e.target.value)} rows={3} className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2 text-sm" placeholder="e.g. Professional tone, avoid jargon" />
           </div>
-          <button onClick={handleSave} className="px-5 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold transition disabled:opacity-50" disabled={!profile.sampleExcerpt.trim() || busy}>{busy ? 'Saving…' : 'Create Profile'}</button>
+          
+          {/* Validation Status */}
+          {(() => {
+            const validation = canCreateProfile();
+            if (!validation.canCreate) {
+              return (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                  <p className="text-xs text-amber-400">{validation.reason}</p>
+                </div>
+              );
+            }
+            return (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+                <p className="text-xs text-emerald-400">✓ Ready to create profile</p>
+              </div>
+            );
+          })()}
+          
+          <button 
+            onClick={handleSave} 
+            className="px-5 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold transition disabled:opacity-50" 
+            disabled={!canCreateProfile().canCreate || busy}
+          >
+            {busy ? 'Saving…' : 'Create Profile'}
+          </button>
           <div className="space-y-1">
             {saved && (
               <p className="text-xs text-emerald-400 flex items-center gap-2">
