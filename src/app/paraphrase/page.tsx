@@ -17,14 +17,12 @@ export default function ParaphrasePage() {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [busy, setBusy] = useState(false);
-  const [useModel, setUseModel] = useState(true);
   const [usedModel, setUsedModel] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [diffTokens, setDiffTokens] = useState<{ value: string; changed: boolean }[]>([]);
   const [diffStats, setDiffStats] = useState<{ changed: number; total: number }>({ changed: 0, total: 0 });
   const [actions, setActions] = useState<{ code: string; meta?: any }[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
-  const [debug, setDebug] = useState(false);
   const [history, setHistory] = useState<ParaphraseEntry[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -112,7 +110,8 @@ export default function ParaphrasePage() {
         enhancedProfile = { ...profile, styleAnalysis };
       }
       
-      const payload = { text: input, useModel, profile: enhancedProfile, debug };
+      // Always use AI model - removed useModel and debug options
+      const payload = { text: input, useModel: true, profile: enhancedProfile, debug: false };
       const res = await fetch('/api/paraphrase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -423,16 +422,6 @@ export default function ParaphrasePage() {
             >
               Reset
             </button>
-            <div className="flex flex-wrap gap-4 text-xs">
-              <label className="flex items-center gap-2 text-slate-300 select-none">
-                <input type="checkbox" className="accent-brand-500" checked={useModel} onChange={e=>setUseModel(e.target.checked)} />
-                Use AI Model
-              </label>
-              <label className="flex items-center gap-2 text-slate-500 select-none">
-                <input type="checkbox" className="accent-brand-500" checked={debug} onChange={e=>setDebug(e.target.checked)} />
-                Debug Mode
-              </label>
-            </div>
           </div>
         </div>
         {(error || output) && (
@@ -471,26 +460,6 @@ export default function ParaphrasePage() {
             </div>
             {error && <p className="text-xs text-amber-400">{error}</p>}
             {output && <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200">{output}</p>}
-            {actions.length > 0 && debug && (
-              <div className="mt-4 border-t border-white/5 pt-3 space-y-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">Style Rule Actions</div>
-                <ul className="flex flex-wrap gap-1 text-[10px]">
-                  {actions.map((a,i)=>(
-                    <li key={i} className="px-2 py-0.5 rounded bg-slate-700/50 border border-white/10 text-slate-300" title={a.meta?JSON.stringify(a.meta):''}>{a.code}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {metrics && debug && (
-              <div className="mt-4 border-t border-white/5 pt-3 grid gap-1 text-[10px] text-slate-500">
-                <div>Sentences: {metrics.sentenceCount}</div>
-                <div>Avg sentence length: {metrics.avgLength?.toFixed?.(1)}</div>
-                <div>Std dev: {metrics.stdDev?.toFixed?.(1)}</div>
-                <div>Unique token ratio: {metrics.uniqueTokenRatio?.toFixed?.(2)}</div>
-                <div>AI phrase hits: {metrics.aiPhraseHits}</div>
-                <div>Repeated starts ratio: {metrics.repeatedStartsRatio?.toFixed?.(2)}</div>
-              </div>
-            )}
             <p className="text-[10px] text-slate-500">Review output carefully. Cite sources and disclose AI assistance.</p>
             {diffTokens.length > 0 && (
               <div className="mt-4 space-y-2">
