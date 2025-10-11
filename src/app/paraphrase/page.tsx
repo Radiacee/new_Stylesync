@@ -9,6 +9,7 @@ import { fetchHistory, addHistoryEntry, updateHistoryNote, deleteHistoryEntry, d
 import { supabase } from '../../lib/supabaseClient.ts';
 import AITransparencyPanel from '../../components/AITransparencyPanel';
 import StyleComparisonPanel from '../../components/StyleComparisonPanel';
+import StyleVerification from '../../components/StyleVerification';
 import { type StyleTransformation } from '../../lib/styleComparison';
 
 export default function ParaphrasePage() {
@@ -19,8 +20,6 @@ export default function ParaphrasePage() {
   const [busy, setBusy] = useState(false);
   const [usedModel, setUsedModel] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [diffTokens, setDiffTokens] = useState<{ value: string; changed: boolean }[]>([]);
-  const [diffStats, setDiffStats] = useState<{ changed: number; total: number }>({ changed: 0, total: 0 });
   const [actions, setActions] = useState<{ code: string; meta?: any }[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
   const [history, setHistory] = useState<ParaphraseEntry[]>([]);
@@ -237,30 +236,8 @@ export default function ParaphrasePage() {
     }
   }
 
-  useEffect(() => {
-    if (!output || !input) { setDiffTokens([]); setDiffStats({ changed: 0, total: 0 }); return; }
-    const diff = wordDiff(input, output);
-    setDiffTokens(diff.tokens);
-    setDiffStats({ changed: diff.changed, total: diff.total });
-  }, [output, input]);
-
   // Helper function for percentage display
   const pct = (v: number) => Math.round(v * 100) + '%';
-
-  // Simple word-level diff
-  const wordDiff = (a: string, b: string) => {
-    const aTokens = a.split(/(\s+)/); // keep whitespace separators
-    const bTokens = b.split(/(\s+)/);
-    const aWords = new Set(a.toLowerCase().split(/\s+/).filter(Boolean));
-    const tokens = bTokens.map(tok => {
-      if (/^\s+$/.test(tok)) return { value: tok, changed: false };
-      const changed = !aWords.has(tok.toLowerCase());
-      return { value: tok, changed };
-    });
-    const total = tokens.filter(t => !/^\s+$/.test(t.value)).length;
-    const changed = tokens.filter(t => t.changed).length;
-    return { tokens, total, changed };
-  };
 
   return (
     <div className="py-8">
@@ -461,17 +438,6 @@ export default function ParaphrasePage() {
             {error && <p className="text-xs text-amber-400">{error}</p>}
             {output && <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200">{output}</p>}
             <p className="text-[10px] text-slate-500">Review output carefully. Cite sources and disclose AI assistance.</p>
-            {diffTokens.length > 0 && (
-              <div className="mt-4 space-y-2">
-                <div className="text-[10px] text-slate-500">Changed words: {diffStats.changed}/{diffStats.total} ({diffStats.total ? Math.round(diffStats.changed / diffStats.total * 100) : 0}%)</div>
-                <div className="text-xs leading-relaxed flex flex-wrap gap-1">
-                  {diffTokens.map((t, i) => (
-                    <span key={i} className={t.changed ? 'bg-brand-500/25 text-brand-200 rounded px-1 py-0.5' : ''}>{t.value}</span>
-                  ))}
-                </div>
-                <div className="text-[10px] text-slate-600">Highlighted = altered or new tokens (simple lexical diff).</div>
-              </div>
-            )}
           </div>
         )}
         
@@ -483,6 +449,15 @@ export default function ParaphrasePage() {
             paraphrasedText={output}
             usedModel={usedModel}
             className="mt-6"
+          />
+        )}
+
+        {/* Style Verification - Proof that user's style was applied */}
+        {output && input && (
+          <StyleVerification 
+            original={input}
+            transformed={output}
+            profile={profile}
           />
         )}
 

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { paraphraseWithProfile, humanizeText, verifyAndFinalize, finalizeOutput } from '../../../lib/paraphrase.ts';
+import { applyDeepStyleMatch } from '../../../lib/deepStyleMatch.ts';
 import { STYLE_RULE_PROMPT } from '../../../lib/styleRules.ts';
 import { rateLimit, formatRateLimitHeaders } from '../../../lib/rateLimit.ts';
 import { z } from 'zod';
@@ -69,6 +70,12 @@ export async function POST(req: NextRequest) {
   
   // Apply comprehensive cleanup using existing pipeline
   let cleanedResultText = resultText;
+  
+  // Apply deep style matching for 100% accuracy to user's sample excerpt
+  if (profile && profile.sampleExcerpt && profile.sampleExcerpt.trim().length >= 50) {
+    console.log('=== APPLYING DEEP STYLE MATCH ===');
+    cleanedResultText = applyDeepStyleMatch(cleanedResultText, profile);
+  }
   
   // Apply enhanced formatting cleanup
   cleanedResultText = applyAdvancedFormatting(cleanedResultText);
