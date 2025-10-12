@@ -150,6 +150,17 @@ async function modelParaphraseGroq(text: string, profile: any) {
     const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
     const model = process.env.GROQ_MODEL || 'kimi-k2-instruct-0905';
     const temperature = Number(process.env.GROQ_TEMPERATURE || 0.6); // Lower temperature for more focused output
+    
+    // 🔍 LOG MODEL CONFIGURATION
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🤖 MODEL CONFIGURATION:');
+    console.log('   Model from env:', process.env.GROQ_MODEL);
+    console.log('   Model being used:', model);
+    console.log('   Temperature from env:', process.env.GROQ_TEMPERATURE);
+    console.log('   Temperature being used:', temperature);
+    console.log('   Groq API Key exists:', !!process.env.GROQ_API_KEY);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    
     const system = buildSystemPrompt(profile);
   const completion = await client.chat.completions.create({
       model,
@@ -180,6 +191,15 @@ ${text}` }
       ]
     });
   const raw = completion.choices?.[0]?.message?.content?.trim() || '';
+  
+  // 🔍 LOG ACTUAL MODEL USED BY API
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('✅ ACTUAL MODEL USED BY GROQ API:');
+  console.log('   Model in response:', completion.model);
+  console.log('   Response ID:', completion.id);
+  console.log('   Tokens used:', completion.usage?.total_tokens || 'N/A');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
   console.log('AI raw response:', JSON.stringify(raw.slice(-100)));
   let cleaned = humanizeText(sanitizeModelOutput(raw));
   
