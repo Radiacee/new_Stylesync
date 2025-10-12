@@ -42,6 +42,8 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [topStyles, setTopStyles] = useState<any[]>([]);
+  const [loadingTopStyles, setLoadingTopStyles] = useState(false);
 
   useEffect(() => { refresh(); }, []);
   
@@ -54,6 +56,25 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
       }
     })();
   }, []);
+  
+  // Load top-performing styles from all users
+  useEffect(() => {
+    (async () => {
+      setLoadingTopStyles(true);
+      try {
+        const response = await fetch('/api/analytics/suggestions?limit=5');
+        if (response.ok) {
+          const data = await response.json();
+          setTopStyles(data.suggestions || []);
+        }
+      } catch (error) {
+        console.error('Failed to load top styles:', error);
+      } finally {
+        setLoadingTopStyles(false);
+      }
+    })();
+  }, []);
+  
   // Remote hydration / sync
   useEffect(() => {
     (async () => {
@@ -149,6 +170,29 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
       } catch (e) { console.warn('Auto sync failed', e); }
     }, 500);
   }
+  
+  // Function to apply a top style to the current profile
+  function applyTopStyle(suggestion: any) {
+    const newProfile: StyleProfile = {
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      name: `Top Style (${suggestion.verificationScore}% match)`,
+      tone: suggestion.styleOptions.tone,
+      formality: suggestion.styleOptions.formality,
+      pacing: suggestion.styleOptions.pacing,
+      descriptiveness: suggestion.styleOptions.descriptiveness,
+      directness: suggestion.styleOptions.directness,
+      customLexicon: suggestion.styleOptions.customLexicon || [],
+      sampleExcerpt: suggestion.sampleExcerpt || '',
+      notes: `Imported from top-performing styles. Average score: ${suggestion.averageScore}%`
+    };
+    
+    upsertProfileLocal(newProfile);
+    setActiveProfileId(newProfile.id);
+    refresh();
+    queueAutoSync(newProfile);
+  }
 
   return (
     <div className="space-y-3 text-xs">
@@ -198,6 +242,140 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
         })}
       </ul>
       <p className="text-[10px] text-slate-500">Double‑click a name to rename. Activate to use during paraphrasing.</p>
+      
+      {/* Top Performing Styles Section */}
+      <div className="mt-6 pt-4 border-t border-white/10">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-brand-300 text-sm">Top Performing Styles</h3>
+            <span className="px-2 py-0.5 rounded text-[9px] bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              PREMIUM
+            </span>
+          </div>
+        </div>
+        
+        <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-brand-500/10 border border-purple-500/20 mb-3">
+          <p className="text-[10px] text-slate-300 leading-relaxed">
+            🎯 <strong>Premium Feature Preview:</strong> See styles with the highest success rates from our community. 
+            Try them now for free - premium launching soon!
+          </p>
+        </div>
+        
+        {loadingTopStyles ? (
+          <div className="text-center py-4 text-slate-500 text-xs">Loading top styles...</div>
+        ) : topStyles.length === 0 ? (
+          <div className="text-center py-4 text-slate-500 text-xs">
+            No top styles available yet. Be the first to contribute by using StyleSync with high verification scores!
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {/* Show only the first (top) style */}
+            <ul className="space-y-2">
+              {topStyles.slice(0, 1).map((suggestion, index) => (
+                <li 
+                  key={suggestion.id} 
+                  className="group border border-purple-500/20 rounded-lg p-3 bg-gradient-to-br from-slate-800/60 to-slate-900/60 hover:border-purple-500/40 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-semibold text-white">
+                          #{index + 1} Top Style
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <div className="w-12 bg-slate-700 rounded-full h-1.5">
+                            <div 
+                              className="h-1.5 rounded-full bg-gradient-to-r from-brand-500 to-purple-500"
+                              style={{ width: `${suggestion.verificationScore}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-bold text-brand-300">
+                            {suggestion.verificationScore}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 text-[9px] text-slate-400 mb-2">
+                        <span className="px-1.5 py-0.5 rounded bg-slate-700/40">Tone: {suggestion.styleOptions.tone}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-slate-700/40">F{Math.round(suggestion.styleOptions.formality*100)}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-slate-700/40">P{Math.round(suggestion.styleOptions.pacing*100)}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-slate-700/40">Dsc{Math.round(suggestion.styleOptions.descriptiveness*100)}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-slate-700/40">Dir{Math.round(suggestion.styleOptions.directness*100)}</span>
+                      </div>
+                      <div className="text-[9px] text-slate-500">
+                        Used successfully {suggestion.usageCount}x · Avg score: {suggestion.averageScore}%
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => applyTopStyle(suggestion)}
+                      disabled={!isAuthenticated}
+                      className={`px-3 py-1.5 rounded text-[10px] font-medium transition-all ${
+                        isAuthenticated
+                          ? 'bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-400 hover:to-purple-400 text-white shadow-lg hover:shadow-brand-500/50'
+                          : 'bg-slate-600/30 text-slate-500 cursor-not-allowed'
+                      }`}
+                      title={!isAuthenticated ? "Sign in to use this style" : "Add this style to your saved styles"}
+                    >
+                      Use Style
+                    </button>
+                  </div>
+                  {suggestion.sampleExcerpt && (
+                    <details className="mt-2">
+                      <summary className="text-[9px] text-brand-400 cursor-pointer hover:text-brand-300">
+                        View sample excerpt →
+                      </summary>
+                      <div className="mt-2 p-2 rounded bg-slate-900/60 text-[9px] text-slate-300 leading-relaxed border-l-2 border-brand-500/40">
+                        {suggestion.sampleExcerpt.substring(0, 200)}
+                        {suggestion.sampleExcerpt.length > 200 && '...'}
+                      </div>
+                    </details>
+                  )}
+                </li>
+              ))}
+            </ul>
+            
+            {/* Locked Premium Styles */}
+            {topStyles.length > 1 && (
+              <div className="relative rounded-lg border border-purple-500/30 overflow-hidden bg-slate-800/40 min-h-[255px] flex items-center justify-center">
+                {/* Premium Lock Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-purple-900/30 to-slate-900/95 z-10 flex items-center justify-center">
+                  <div className="text-center space-y-4 p-6 max-w-xs">
+                    <div className="text-4xl">🔒</div>
+                    <div>
+                      <div className="text-base font-bold text-white mb-2">
+                        {topStyles.length - 1} More Top Style{topStyles.length - 1 > 1 ? 's' : ''} Available
+                      </div>
+                      <div className="text-xs text-slate-300 leading-relaxed">
+                        Unlock premium to access all top-performing styles from our community
+                      </div>
+                    </div>
+                    <button
+                      className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-brand-600 hover:from-purple-500 hover:to-brand-500 text-white font-semibold text-sm transition-all shadow-lg hover:shadow-xl hover:scale-105"
+                      onClick={() => {
+                        // Placeholder for future subscription functionality
+                        alert('Premium subscriptions coming soon! 🚀');
+                      }}
+                    >
+                      Subscribe to Premium
+                    </button>
+                    <div className="text-[10px] text-slate-400">
+                      Get access to all top styles, priority support, and more
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Subtle background pattern */}
+                <div className="absolute inset-0 opacity-5">
+                  <div className="grid grid-cols-3 gap-2 p-3">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="h-16 rounded bg-purple-500/20 border border-purple-500/30" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

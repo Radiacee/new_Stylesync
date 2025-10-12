@@ -419,9 +419,13 @@ export default function ParaphrasePage() {
     <div className="grid gap-12 lg:grid-cols-5">
       <div className="lg:col-span-3 space-y-8">
         <div className="glass-panel p-8 space-y-6">
-          <div className="space-y-3">
-            <h1 className="text-3xl font-bold">Paraphrase</h1>
-            <p className="text-slate-300">Transform text to match your writing style</p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-3 flex-1">
+              <h1 className="text-3xl font-bold">Paraphrase</h1>
+              <p className="text-slate-300">Transform text to match your writing style</p>
+            </div>
+            {/* Analytics Consent Button - Top right corner */}
+            {userId && <AnalyticsConsent userId={userId} onConsentChange={setUserConsent} />}
           </div>
           {isParaphraseHistoryTableMissing() && (
             <div className="rounded border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-300 space-y-2">
@@ -566,9 +570,6 @@ export default function ParaphrasePage() {
             </ul>
           ) : <p className="text-slate-400">No profile loaded.</p>}
         </div>
-        
-        {/* Analytics Consent Component */}
-        {userId && <AnalyticsConsent userId={userId} onConsentChange={setUserConsent} />}
         
         <div className="glass-panel p-6 text-xs text-slate-400 space-y-2">
           <p>AI-powered text transformation. Always cite sources and disclose AI assistance.</p>

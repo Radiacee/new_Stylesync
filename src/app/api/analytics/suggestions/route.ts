@@ -16,12 +16,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
 
-    // Fetch aggregated successful style combinations
-    // Group by similar style options and get the highest performing ones
+    // Fetch the highest performing style combinations
+    // Get all available styles and sort by verification score
     const { data, error } = await supabase
       .from('paraphrase_analytics')
       .select('*')
-      .gte('verification_score', 70) // Only show high-quality suggestions (70%+)
       .order('verification_score', { ascending: false })
       .limit(limit * 3); // Fetch more for deduplication
 
