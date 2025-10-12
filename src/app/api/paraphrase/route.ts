@@ -148,8 +148,8 @@ async function modelParaphraseGroq(text: string, profile: any) {
     const GroqMod = await import('groq-sdk');
     const Groq = (GroqMod as any).default ?? (GroqMod as any).Groq;
     const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const model = process.env.GROQ_MODEL || 'llama3-70b-8192';
-    const temperature = Number(process.env.GROQ_TEMPERATURE || 0.3); // Lower temperature for more focused output
+    const model = process.env.GROQ_MODEL || 'kimi-k2-instruct-0905';
+    const temperature = Number(process.env.GROQ_TEMPERATURE || 0.6); // Lower temperature for more focused output
     const system = buildSystemPrompt(profile);
   const completion = await client.chat.completions.create({
       model,
