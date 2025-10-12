@@ -5,6 +5,7 @@ import { loadProfile, saveProfile, type StyleProfile, loadProfileRemote, savePro
 import { analyzeSampleStyle, type SampleStyle } from '../../../lib/paraphrase.ts';
 import { supabase } from '../../../lib/supabaseClient.ts';
 import { FullScreenSpinner } from '../../../components/FullScreenSpinner';
+import StyleOptionsHelp from '../../../components/StyleOptionsHelp';
 
 const initial: StyleProfile = {
   id: 'local',
@@ -624,6 +625,9 @@ create policy if not exists "Allow user delete own" on public.style_profiles for
       </div>
       {busy && <FullScreenSpinner label="Saving style profile" />}
       {!authChecked && <FullScreenSpinner label="Checking authentication" />}
+      
+      {/* Style Options Help Tool */}
+      <StyleOptionsHelp />
     </div>
   );
 }

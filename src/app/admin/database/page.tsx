@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabaseClient';
 import AdminLayout from '../AdminLayout';
 
@@ -18,6 +19,7 @@ interface QueryResult {
 }
 
 export default function DatabaseManagement() {
+  const router = useRouter();
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [sqlQuery, setSqlQuery] = useState('');
@@ -135,10 +137,22 @@ export default function DatabaseManagement() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h2 className="text-3xl font-bold text-white">Database Management</h2>
-          <p className="text-gray-400">Execute queries and manage database operations</p>
+        {/* Header with Back Button */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push('/admin')}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/50 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Admin
+          </button>
+          <div className="h-8 w-px bg-slate-600"></div>
+          <div>
+            <h2 className="text-3xl font-bold text-white">Database Management</h2>
+            <p className="text-gray-400">Execute queries and manage database operations</p>
+          </div>
         </div>
 
         {/* Database Overview */}

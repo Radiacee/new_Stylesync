@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { loadProfile, type StyleProfile, listProfiles, getActiveProfileId, setActiveProfileId, loadProfileRemote, upsertProfileLocal, loadProfilesRemote, syncLocalProfilesToRemote } from '../../lib/styleProfile.ts';
 import { paraphraseWithProfile, analyzeSampleStyle } from '../../lib/paraphrase.ts';
@@ -10,7 +10,10 @@ import { supabase } from '../../lib/supabaseClient.ts';
 import AITransparencyPanel from '../../components/AITransparencyPanel';
 import StyleComparisonPanel from '../../components/StyleComparisonPanel';
 import StyleVerification from '../../components/StyleVerification';
+import StyleOptionsHelp from '../../components/StyleOptionsHelp';
+import AnalyticsConsent from '../../components/AnalyticsConsent';
 import { type StyleTransformation } from '../../lib/styleComparison';
+import { shouldCollectAnalytics, prepareAnalyticsData, submitAnalytics, calculateVerificationScore, getUserConsent } from '../../lib/analytics';
 
 export default function ParaphrasePage() {
   const router = useRouter();
@@ -30,6 +33,9 @@ export default function ParaphrasePage() {
   const [styleTransformation, setStyleTransformation] = useState<StyleTransformation | null>(null);
   const [showStyleAnalysis, setShowStyleAnalysis] = useState(false);
   const [analyzingStyle, setAnalyzingStyle] = useState(false);
+  const [verificationScore, setVerificationScore] = useState<number>(0);
+  const [userConsent, setUserConsent] = useState<boolean>(false);
+  const analyticsSubmittedRef = useRef<boolean>(false); // Use ref instead of state
 
   useEffect(() => {
     // Check authentication first
@@ -95,12 +101,17 @@ export default function ParaphrasePage() {
       if (history.length === 0) {
         try { const fresh = await fetchHistory(); if (fresh.length) setHistory(fresh); } catch {/* ignore */}
       }
+      // Load user consent for analytics
+      if (userId) {
+        getUserConsent(userId).then(consent => setUserConsent(consent));
+      }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   async function handleParaphrase() {
     setBusy(true); setError(null); setUsedModel(false);
+    analyticsSubmittedRef.current = false; // Reset analytics submission flag for new paraphrase
     try {
       // Analyze sample style if available
       let enhancedProfile = profile;
@@ -235,6 +246,54 @@ export default function ParaphrasePage() {
       setAnalyzingStyle(false);
     }
   }
+
+  // Handle verification score update and analytics submission
+  const handleVerificationScore = useCallback(async (score: number) => {
+    console.log('handleVerificationScore called with score:', score);
+    console.log('analyticsSubmittedRef.current:', analyticsSubmittedRef.current);
+    
+    setVerificationScore(score);
+    
+    // Guard against duplicate submissions using ref
+    if (analyticsSubmittedRef.current) {
+      console.log('⏭️ Analytics already submitted for this paraphrase, skipping...');
+      return;
+    }
+    
+    // Collect analytics if score is high enough and user is authenticated
+    if (userId && profile && shouldCollectAnalytics(score)) {
+      console.log('✅ Conditions met, submitting analytics...');
+      
+      // Mark as submitted immediately to prevent race conditions
+      analyticsSubmittedRef.current = true;
+      console.log('🔒 Set analyticsSubmittedRef.current = true');
+      
+      const analyticsData = prepareAnalyticsData(
+        userId,
+        profile,
+        score,
+        input.length,
+        output.length,
+        userConsent
+      );
+      
+      // Submit analytics asynchronously (don't block UI)
+      submitAnalytics(analyticsData).then(success => {
+        if (success) {
+          console.log('✅ Analytics submitted successfully');
+        } else {
+          console.log('⏭️ Analytics submission failed or was skipped (duplicate profile)');
+        }
+      }).catch(err => {
+        console.error('❌ Error submitting analytics:', err);
+      });
+    } else {
+      console.log('❌ Conditions not met for analytics submission');
+      console.log('  userId:', !!userId);
+      console.log('  profile:', !!profile);
+      console.log('  shouldCollectAnalytics:', shouldCollectAnalytics(score));
+    }
+  }, [userId, profile, input, output, userConsent]);
 
   // Helper function for percentage display
   const pct = (v: number) => Math.round(v * 100) + '%';
@@ -458,6 +517,7 @@ export default function ParaphrasePage() {
             original={input}
             transformed={output}
             profile={profile}
+            onScoreCalculated={handleVerificationScore}
           />
         )}
 
@@ -506,6 +566,10 @@ export default function ParaphrasePage() {
             </ul>
           ) : <p className="text-slate-400">No profile loaded.</p>}
         </div>
+        
+        {/* Analytics Consent Component */}
+        {userId && <AnalyticsConsent userId={userId} onConsentChange={setUserConsent} />}
+        
         <div className="glass-panel p-6 text-xs text-slate-400 space-y-2">
           <p>AI-powered text transformation. Always cite sources and disclose AI assistance.</p>
         </div>
@@ -513,6 +577,9 @@ export default function ParaphrasePage() {
         </div>
         {busy && <FullScreenSpinner label="Generating paraphrase" />}
         {!authChecked && <FullScreenSpinner label="Checking authentication" />}
+        
+        {/* Style Options Help Tool */}
+        <StyleOptionsHelp />
       </div>
     </div>
   );

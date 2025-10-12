@@ -1,9 +1,11 @@
 import { StyleProfile } from '../lib/styleProfile';
+import { useEffect, useRef } from 'react';
 
 interface StyleVerificationProps {
   original: string;
   transformed: string;
   profile: StyleProfile | null;
+  onScoreCalculated?: (score: number) => void;
 }
 
 interface StyleMetrics {
@@ -87,12 +89,27 @@ function calculateStyleMatch(original: StyleMetrics, transformed: StyleMetrics, 
   return Math.round((matchScore / totalWeight) * 100);
 }
 
-export default function StyleVerification({ original, transformed, profile }: StyleVerificationProps) {
+export default function StyleVerification({ original, transformed, profile, onScoreCalculated }: StyleVerificationProps) {
   if (!original || !transformed) return null;
+  
+  const hasCalledCallback = useRef(false);
   
   const originalMetrics = analyzeText(original);
   const transformedMetrics = analyzeText(transformed);
   const styleMatchPercentage = calculateStyleMatch(originalMetrics, transformedMetrics, profile);
+  
+  // Call the callback when score is calculated (only once per text change)
+  useEffect(() => {
+    if (onScoreCalculated && styleMatchPercentage > 0 && !hasCalledCallback.current) {
+      hasCalledCallback.current = true;
+      onScoreCalculated(styleMatchPercentage);
+    }
+    
+    // Reset the ref when the text changes so we can call again for new paraphrases
+    return () => {
+      hasCalledCallback.current = false;
+    };
+  }, [styleMatchPercentage, original, transformed]); // Removed onScoreCalculated from deps
   
   return (
     <div className="mt-6 p-6 bg-slate-800/40 border border-white/10 rounded-xl space-y-4">
