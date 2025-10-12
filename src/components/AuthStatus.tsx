@@ -75,23 +75,30 @@ export function AuthStatus() {
 
   if (!supabase || !email) {
     return <>
-      <Link href="/auth/sign-in" className="px-4 py-2 rounded-lg bg-brand-500/90 hover:bg-brand-400 text-slate-900 font-semibold transition">Sign In</Link>
+      <Link href="/auth/sign-in" className="block w-full md:w-auto text-center px-4 py-2 rounded-lg bg-brand-500/90 hover:bg-brand-400 text-slate-900 font-semibold transition">
+        Sign In
+      </Link>
       {transitioning && <FullScreenSpinner label="Refreshing session" />}
     </>;
   }
 
   return <>
-    <div className="flex items-center gap-2 text-xs">
+    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-2 text-xs w-full md:w-auto">
       {ADMIN_EMAILS.includes(email) && (
         <Link 
           href="/admin" 
-          className="px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white font-medium transition text-xs"
+          className="px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white font-medium transition text-xs text-center"
         >
           Admin
         </Link>
       )}
-      <span className="text-slate-300" suppressHydrationWarning>{email}</span>
-      <button onClick={() => supabase?.auth.signOut()} className="text-slate-400 hover:text-white">Sign out</button>
+      <span className="text-slate-300 truncate" suppressHydrationWarning>{email}</span>
+      <button 
+        onClick={() => supabase?.auth.signOut()} 
+        className="text-slate-400 hover:text-white text-left md:text-center py-1"
+      >
+        Sign out
+      </button>
     </div>
     {transitioning && <FullScreenSpinner label="Refreshing session" />}
   </>;

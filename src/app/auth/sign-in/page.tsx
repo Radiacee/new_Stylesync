@@ -112,7 +112,7 @@ export default function SignInPage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/3 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
       
-      <div className="flex min-h-screen items-center">
+      <div className="flex min-h-screen items-center pb-20">
         {/* Left side - Branding/Info */}
         <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 flex-col justify-center px-8 lg:px-12 xl:px-20 relative z-10">
           <div className="max-w-2xl animate-fade-in-up">

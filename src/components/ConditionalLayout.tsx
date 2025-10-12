@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { AuthStatus } from './AuthStatus';
 import WelcomeModal from './WelcomeModal';
+import { useState } from 'react';
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface ConditionalLayoutProps {
 export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (isAdminRoute) {
     // Admin routes get no main app layout
@@ -23,27 +25,81 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     <>
       <WelcomeModal />
       <header className="fixed top-0 inset-x-0 z-40 backdrop-blur-xl bg-slate-950/70 border-b border-white/10">
-        <nav className="mx-auto max-w-6xl px-6 py-3 flex items-center gap-8">
-          <Link href="/" className="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">
-            StyleSync
-          </Link>
-          <div className="flex gap-6 text-sm text-slate-300">
-            <Link href="/style/onboarding" className="hover:text-white transition">
-              Create Style
+        <nav className="mx-auto max-w-6xl px-4 sm:px-6 py-3">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <Link href="/" className="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">
+              StyleSync
             </Link>
-            <Link href="/paraphrase" className="hover:text-white transition">
-              Paraphrase
-            </Link>
-            <Link href="/about" className="hover:text-white transition">
-              About
-            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex gap-6 text-sm text-slate-300">
+              <Link href="/style/onboarding" className="hover:text-white transition">
+                Create Style
+              </Link>
+              <Link href="/paraphrase" className="hover:text-white transition">
+                Paraphrase
+              </Link>
+              <Link href="/about" className="hover:text-white transition">
+                About
+              </Link>
+            </div>
+
+            {/* Desktop Auth Status */}
+            <div className="hidden md:flex gap-3 items-center">
+              <AuthStatus />
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors text-slate-300"
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? (
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
           </div>
-          <div className="ml-auto flex gap-3 items-center">
-            <AuthStatus />
-          </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-3 pt-3 border-t border-white/10 space-y-3">
+              <Link 
+                href="/style/onboarding" 
+                className="block py-2 text-sm text-slate-300 hover:text-white transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Create Style
+              </Link>
+              <Link 
+                href="/paraphrase" 
+                className="block py-2 text-sm text-slate-300 hover:text-white transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Paraphrase
+              </Link>
+              <Link 
+                href="/about" 
+                className="block py-2 text-sm text-slate-300 hover:text-white transition"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                About
+              </Link>
+              <div className="pt-3 border-t border-white/10">
+                <AuthStatus />
+              </div>
+            </div>
+          )}
         </nav>
       </header>
-      <main className="pt-5 pb-16 min-h-screen mx-auto max-w-6xl px-6">
+      <main className="pt-20 pb-16 min-h-screen mx-auto max-w-6xl px-6">
         {children}
       </main>
       <footer className="mt-8 py-10 text-center text-xs text-slate-500">
