@@ -27,25 +27,49 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
       <header className="fixed top-0 inset-x-0 z-40 backdrop-blur-xl bg-slate-950/70 border-b border-white/10">
         <nav className="mx-auto max-w-6xl px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">
-              StyleSync
-            </Link>
+            {/* Left side - Logo and Nav Links grouped together */}
+            <div className="flex items-center gap-8">
+              {/* Logo */}
+              <Link href="/" className="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">
+                StyleSync
+              </Link>
 
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex gap-6 text-sm text-slate-300">
-              <Link href="/style/onboarding" className="hover:text-white transition">
-                Create Style
-              </Link>
-              <Link href="/paraphrase" className="hover:text-white transition">
-                Paraphrase
-              </Link>
-              <Link href="/about" className="hover:text-white transition">
-                About
-              </Link>
+              {/* Desktop Navigation */}
+              <div className="hidden md:flex gap-6 text-sm">
+                <Link 
+                  href="/style/onboarding" 
+                  className={`hover:text-white transition ${
+                    pathname.startsWith('/style') 
+                      ? 'text-brand-400 font-semibold' 
+                      : 'text-slate-300'
+                  }`}
+                >
+                  Create Style
+                </Link>
+                <Link 
+                  href="/paraphrase" 
+                  className={`hover:text-white transition ${
+                    pathname === '/paraphrase' 
+                      ? 'text-brand-400 font-semibold' 
+                      : 'text-slate-300'
+                  }`}
+                >
+                  Paraphrase
+                </Link>
+                <Link 
+                  href="/about" 
+                  className={`hover:text-white transition ${
+                    pathname === '/about' 
+                      ? 'text-brand-400 font-semibold' 
+                      : 'text-slate-300'
+                  }`}
+                >
+                  About
+                </Link>
+              </div>
             </div>
 
-            {/* Desktop Auth Status */}
+            {/* Right side - Auth Status */}
             <div className="hidden md:flex gap-3 items-center">
               <AuthStatus />
             </div>
@@ -53,7 +77,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors text-slate-300"
+              className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors text-slate-300 ml-auto"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
@@ -70,24 +94,36 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden mt-3 pt-3 border-t border-white/10 space-y-3">
+            <div className="md:hidden mt-3 pt-3 border-t border-white/10 space-y-3 text-left">
               <Link 
                 href="/style/onboarding" 
-                className="block py-2 text-sm text-slate-300 hover:text-white transition"
+                className={`block py-2 text-sm hover:text-white transition text-left ${
+                  pathname.startsWith('/style') 
+                    ? 'text-brand-400 font-semibold' 
+                    : 'text-slate-300'
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Create Style
               </Link>
               <Link 
                 href="/paraphrase" 
-                className="block py-2 text-sm text-slate-300 hover:text-white transition"
+                className={`block py-2 text-sm hover:text-white transition text-left ${
+                  pathname === '/paraphrase' 
+                    ? 'text-brand-400 font-semibold' 
+                    : 'text-slate-300'
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Paraphrase
               </Link>
               <Link 
                 href="/about" 
-                className="block py-2 text-sm text-slate-300 hover:text-white transition"
+                className={`block py-2 text-sm hover:text-white transition text-left ${
+                  pathname === '/about' 
+                    ? 'text-brand-400 font-semibold' 
+                    : 'text-slate-300'
+                }`}
                 onClick={() => setMobileMenuOpen(false)}
               >
                 About

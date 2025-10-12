@@ -4,7 +4,14 @@ import { ConditionalLayout } from '../components/ConditionalLayout';
 
 export const metadata = {
   title: 'StyleSync',
-  description: 'Personalize paraphrasing to your authentic writing voice (ethical, transparent use).'
+  description: 'Personalize paraphrasing to your authentic writing voice (ethical, transparent use).',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: '32x32' }
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
