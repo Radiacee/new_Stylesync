@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { AuthStatus } from './AuthStatus';
+import WelcomeModal from './WelcomeModal';
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   // Regular routes get the normal layout
   return (
     <>
+      <WelcomeModal />
       <header className="fixed top-0 inset-x-0 z-40 backdrop-blur-xl bg-slate-950/70 border-b border-white/10">
         <nav className="mx-auto max-w-6xl px-6 py-3 flex items-center gap-8">
           <Link href="/" className="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">
@@ -41,7 +43,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
           </div>
         </nav>
       </header>
-      <main className="pt-20 pb-16 min-h-screen mx-auto max-w-6xl px-6">
+      <main className="pt-5 pb-16 min-h-screen mx-auto max-w-6xl px-6">
         {children}
       </main>
       <footer className="mt-8 py-10 text-center text-xs text-slate-500">

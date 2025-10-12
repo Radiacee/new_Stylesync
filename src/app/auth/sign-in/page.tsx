@@ -105,18 +105,18 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen md:min-h-dvh relative">
+    <div className="min-h-screen md:min-h-dvh relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-brand-500/3 rounded-full blur-3xl animate-pulse" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-500/3 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
       
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen items-center">
         {/* Left side - Branding/Info */}
         <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 flex-col justify-center px-8 lg:px-12 xl:px-20 relative z-10">
           <div className="max-w-2xl animate-fade-in-up">
-            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent mb-6 lg:mb-8">
+            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent mb-6 lg:mb-8 pb-2">
               StyleSync
             </h1>
             <p className="text-lg lg:text-xl xl:text-2xl text-slate-300 mb-8 lg:mb-12 leading-relaxed max-w-lg">
@@ -143,21 +143,21 @@ export default function SignInPage() {
         <div className="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center p-4 lg:p-6 xl:p-8 relative z-10">
           <div className={`w-full max-w-sm lg:max-w-md space-y-3 lg:space-y-4 transform transition-all duration-700 ease-out animate-fade-in-up ${isAnimating ? 'scale-95 opacity-80' : 'scale-100 opacity-100'}`}>
             {/* Mobile branding */}
-            <div className="text-center lg:hidden mb-4 lg:mb-6">
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent mb-2">
+            <div className="text-center lg:hidden mb-3 lg:mb-4">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent mb-2 pb-1">
                 StyleSync
               </h1>
               <p className="text-slate-400 text-sm sm:text-base">AI-powered writing transformation</p>
             </div>
 
             {/* Auth card */}
-            <div className="glass-panel p-5 lg:p-6 xl:p-7 space-y-4 lg:space-y-5">
+            <div className="glass-panel p-4 lg:p-5 xl:p-6 space-y-3 lg:space-y-4">
               {/* Header */}
               <div className="text-center space-y-1">
                 <h2 className={`text-xl lg:text-2xl xl:text-3xl font-bold text-slate-100 transition-all duration-300 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
                   {mode === 'signin' ? 'Welcome Back' : 'Get Started'}
                 </h2>
-                <p className={`text-slate-400 text-sm lg:text-base transition-all duration-300 delay-75 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
+                <p className={`text-slate-400 text-xs lg:text-sm transition-all duration-300 delay-75 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
                   {mode === 'signin' ? 'Sign in to continue your writing journey' : 'Create your account and start transforming text'}
                 </p>
               </div>
