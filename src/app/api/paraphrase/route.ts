@@ -148,7 +148,7 @@ async function modelParaphraseGroq(text: string, profile: any) {
     const GroqMod = await import('groq-sdk');
     const Groq = (GroqMod as any).default ?? (GroqMod as any).Groq;
     const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const model = process.env.GROQ_MODEL || 'kimi-k2-instruct-0905';
+    const model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
     const temperature = Number(process.env.GROQ_TEMPERATURE || 0.6); // Lower temperature for more focused output
     
     // 🔍 LOG MODEL CONFIGURATION
