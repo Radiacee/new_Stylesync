@@ -36,14 +36,14 @@ export const metadata = {
     telephone: false,
   },
   openGraph: {
-    title: 'StyleSync - AI Writing Style Manager',
+    title: 'StyleSync: AI-Powered Paraphrasing Companion',
     description: 'Transform any text to match your unique writing style with AI-powered analysis',
     type: 'website',
     siteName: 'StyleSync',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'StyleSync - AI Writing Style Manager',
+    title: 'StyleSync: AI-Powered Paraphrasing Companion',
     description: 'Transform any text to match your unique writing style with AI-powered analysis',
   }
 };
