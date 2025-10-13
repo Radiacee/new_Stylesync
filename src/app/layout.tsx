@@ -21,12 +21,6 @@ export const metadata = {
     ],
   },
   themeColor: '#3b82f6',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -45,7 +39,18 @@ export const metadata = {
     card: 'summary_large_image',
     title: 'StyleSync: AI-Powered Paraphrasing Companion',
     description: 'Transform any text to match your unique writing style with AI-powered analysis',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   }
+};
+
+// Viewport configuration must be a separate export in Next.js 14+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -3,23 +3,33 @@ import { useEffect } from 'react';
 
 export default function ServiceWorkerRegistration() {
   useEffect(() => {
+    let updateInterval: NodeJS.Timeout | null = null;
+
     if (
       typeof window !== 'undefined' &&
       'serviceWorker' in navigator &&
       process.env.NODE_ENV === 'production'
     ) {
       // Wait for page load before registering
-      window.addEventListener('load', () => {
+      const handleLoad = () => {
         navigator.serviceWorker
           .register('/sw.js')
           .then((registration) => {
             console.log('✅ Service Worker registered:', registration.scope);
 
-            // Check for updates periodically
-            setInterval(() => {
-              registration.update().catch((err) => {
-                console.warn('Service Worker update check failed:', err);
-              });
+            // Check for updates periodically (with better error handling)
+            updateInterval = setInterval(() => {
+              if (registration.active) {
+                registration.update().catch((err) => {
+                  // Silently handle invalid state errors (happens during updates)
+                  if (err.name !== 'InvalidStateError') {
+                    console.warn('Service Worker update check failed:', err);
+                  }
+                });
+              } else {
+                // If no active worker, clear the interval
+                if (updateInterval) clearInterval(updateInterval);
+              }
             }, 60000); // Check every minute
 
             // Handle updates
@@ -56,7 +66,14 @@ export default function ServiceWorkerRegistration() {
             console.log('📦 Cache updated:', event.data.url);
           }
         });
-      });
+      };
+
+      window.addEventListener('load', handleLoad);
+
+      // Cleanup function
+      return () => {
+        if (updateInterval) clearInterval(updateInterval);
+      };
     } else if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       // In development, unregister any existing service workers to avoid conflicts
       navigator.serviceWorker?.getRegistrations().then((registrations) => {

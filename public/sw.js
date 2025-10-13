@@ -1,15 +1,11 @@
 // Service Worker for StyleSync PWA
-const CACHE_NAME = 'stylesync-v1';
+const CACHE_NAME = 'stylesync-v2'; // Updated version
 const RUNTIME_CACHE = 'stylesync-runtime';
 
-// Assets to cache on install
+// Assets to cache on install (only essential files that exist)
 const PRECACHE_ASSETS = [
   '/',
-  '/paraphrase',
-  '/about',
-  '/manifest.json',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  '/manifest.json'
 ];
 
 // Install event - cache essential assets
