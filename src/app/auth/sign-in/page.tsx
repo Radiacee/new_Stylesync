@@ -35,8 +35,10 @@ export default function SignInPage() {
     setMsg(''); // Clear any existing messages
     setTimeout(() => {
       setMode(mode === 'signin' ? 'signup' : 'signin');
+    }, 250); // Change mode during animation
+    setTimeout(() => {
       setIsAnimating(false);
-    }, 150);
+    }, 500); // End animation after mode change
   };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -115,25 +117,51 @@ export default function SignInPage() {
       <div className="flex min-h-screen items-center pb-20">
         {/* Left side - Branding/Info */}
         <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 flex-col justify-center px-8 lg:px-12 xl:px-20 relative z-10">
-          <div className="max-w-2xl animate-fade-in-up">
+          <div className="max-w-2xl">
             <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent mb-6 lg:mb-8 pb-2">
               StyleSync
             </h1>
-            <p className="text-lg lg:text-xl xl:text-2xl text-slate-300 mb-8 lg:mb-12 leading-relaxed max-w-lg">
-              Transform your writing with AI-powered paraphrasing that matches your unique style
-            </p>
-            <div className="space-y-4 lg:space-y-6 text-slate-400">
-              <div className="flex items-center gap-3 lg:gap-4">
-                <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
-                <span className="text-base lg:text-lg">Personalized style analysis</span>
-              </div>
-              <div className="flex items-center gap-3 lg:gap-4">
-                <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
-                <span className="text-base lg:text-lg">Advanced AI paraphrasing</span>
-              </div>
-              <div className="flex items-center gap-3 lg:gap-4">
-                <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
-                <span className="text-base lg:text-lg">Seamless writing workflow</span>
+            <div 
+              key={mode}
+              className={`transition-all duration-300 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
+            >
+              <p className="text-lg lg:text-xl xl:text-2xl text-slate-300 mb-8 lg:mb-12 leading-relaxed max-w-lg">
+                {mode === 'signin' 
+                  ? 'Welcome back! Continue your journey to transform writing with AI-powered paraphrasing that matches your unique style' 
+                  : 'Join StyleSync and start transforming your writing with AI-powered paraphrasing tailored to your personal style'}
+              </p>
+              <div className="space-y-4 lg:space-y-6 text-slate-400">
+                {mode === 'signin' ? (
+                  <>
+                    <div className="flex items-center gap-3 lg:gap-4">
+                      <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
+                      <span className="text-base lg:text-lg">Access your saved style profiles</span>
+                    </div>
+                    <div className="flex items-center gap-3 lg:gap-4">
+                      <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
+                      <span className="text-base lg:text-lg">Continue your writing transformation</span>
+                    </div>
+                    <div className="flex items-center gap-3 lg:gap-4">
+                      <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
+                      <span className="text-base lg:text-lg">Pick up where you left off</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 lg:gap-4">
+                      <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
+                      <span className="text-base lg:text-lg">Create personalized style profiles</span>
+                    </div>
+                    <div className="flex items-center gap-3 lg:gap-4">
+                      <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
+                      <span className="text-base lg:text-lg">Advanced AI paraphrasing engine</span>
+                    </div>
+                    <div className="flex items-center gap-3 lg:gap-4">
+                      <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
+                      <span className="text-base lg:text-lg">Start transforming in seconds</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

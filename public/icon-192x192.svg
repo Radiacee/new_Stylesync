@@ -1,32 +1,115 @@
-<svg width="192" height="192" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background -->
-  <rect width="192" height="192" fill="#3b82f6" rx="48"/>
-  
-  <!-- Icon Design - Stylized "S" for StyleSync -->
-  <g transform="translate(96, 96)">
-    <!-- Outer glow -->
-    <circle cx="0" cy="0" r="70" fill="rgba(255,255,255,0.1)"/>
+<svg width="192" height="192" viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg"><svg width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+
+  <defs>  <!-- Background -->
+
+    <linearGradient id="outerGradient" x1="0%" y1="0%" x2="100%" y2="100%">  <rect width="192" height="192" fill="#3b82f6" rx="48"/>
+
+      <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />  
+
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />  <!-- Icon Design - Stylized "S" for StyleSync -->
+
+    </linearGradient>  <g transform="translate(96, 96)">
+
+  </defs>    <!-- Outer glow -->
+
+      <circle cx="0" cy="0" r="70" fill="rgba(255,255,255,0.1)"/>
+
+  <!-- White background circle -->    
+
+  <circle cx="400" cy="400" r="400" fill="white"/>    <!-- Main S shape -->
+
+      <path d="M -25,-40 Q -40,-40 -40,-25 Q -40,-10 -25,-10 L 25,-10 Q 40,-10 40,5 Q 40,20 25,20 L 0,20" 
+
+  <!-- Outer gradient circle (border) -->          stroke="white" 
+
+  <circle cx="400" cy="400" r="360" fill="none" stroke="url(#outerGradient)" stroke-width="12"/>          stroke-width="12" 
+
+            fill="none" 
+
+  <!-- Main content - Speech bubbles with yin-yang design -->          stroke-linecap="round"
+
+  <g transform="translate(400, 390)">          stroke-linejoin="round"/>
+
+    <!-- Left bubble (organic/human writing side) - White with organic patterns -->    
+
+    <path d="M -120,-80 Q -180,-80 -200,-40 Q -210,0 -200,40 Q -180,80 -120,100     <!-- Accent dot -->
+
+             L -20,80 Q 0,40 10,0 Q 0,-40 -20,-80 Z"     <circle cx="30" cy="-35" r="6" fill="white"/>
+
+          fill="white" stroke="#1e3a8a" stroke-width="3"/>    <circle cx="-30" cy="35" r="6" fill="white"/>
+
+        
+
+    <!-- Organic handwriting-style lines in left bubble -->    <!-- Text -->
+
+    <g stroke="#1e3a8a" stroke-width="2" fill="none" stroke-linecap="round">    <text x="0" y="55" 
+
+      <path d="M -160,-50 Q -165,-40 -170,-25"/>          font-family="Arial, sans-serif" 
+
+      <path d="M -165,-20 Q -170,-10 -175,5"/>          font-size="20" 
+
+      <path d="M -170,10 Q -175,20 -170,35"/>          font-weight="bold" 
+
+      <path d="M -150,-45 Q -155,-30 -160,-15"/>          fill="white" 
+
+      <path d="M -155,-10 Q -160,0 -165,15"/>          text-anchor="middle">
+
+      <path d="M -160,20 Q -165,30 -160,45"/>      StyleSync
+
+      <path d="M -140,-40 Q -145,-25 -150,-10"/>    </text>
+
+      <path d="M -145,-5 Q -150,5 -155,20"/>  </g>
+
+      <path d="M -150,25 Q -155,35 -150,50"/></svg>
+
+      <path d="M -130,-50 Q -135,-35 -140,-20"/>
+      <path d="M -135,-15 Q -140,-5 -145,10"/>
+      <path d="M -140,15 Q -145,25 -140,40"/>
+    </g>
     
-    <!-- Main S shape -->
-    <path d="M -25,-40 Q -40,-40 -40,-25 Q -40,-10 -25,-10 L 25,-10 Q 40,-10 40,5 Q 40,20 25,20 L 0,20" 
-          stroke="white" 
-          stroke-width="12" 
-          fill="none" 
-          stroke-linecap="round"
-          stroke-linejoin="round"/>
+    <!-- Right bubble (AI/digital side) - Blue with circuit patterns -->
+    <path d="M 120,100 Q 180,80 200,40 Q 210,0 200,-40 Q 180,-80 120,-80 
+             L 20,-80 Q 0,-40 -10,0 Q 0,40 20,80 Z" 
+          fill="#3b82f6" stroke="#1e3a8a" stroke-width="3"/>
     
-    <!-- Accent dot -->
-    <circle cx="30" cy="-35" r="6" fill="white"/>
-    <circle cx="-30" cy="35" r="6" fill="white"/>
+    <!-- Circuit board patterns in right bubble -->
+    <g stroke="white" stroke-width="2" fill="none">
+      <!-- Horizontal circuit lines -->
+      <line x1="40" y1="-60" x2="160" y2="-60"/>
+      <line x1="40" y1="-45" x2="160" y2="-45"/>
+      <line x1="40" y1="-30" x2="160" y2="-30"/>
+      <line x1="40" y1="-15" x2="160" y2="-15"/>
+      <line x1="40" y1="0" x2="160" y2="0"/>
+      <line x1="40" y1="15" x2="160" y2="15"/>
+      <line x1="40" y1="30" x2="160" y2="30"/>
+      <line x1="40" y1="45" x2="160" y2="45"/>
+      <line x1="40" y1="60" x2="160" y2="60"/>
+      
+      <!-- Vertical circuit lines -->
+      <line x1="60" y1="-70" x2="60" y2="70"/>
+      <line x1="80" y1="-70" x2="80" y2="70"/>
+      <line x1="100" y1="-70" x2="100" y2="70"/>
+      <line x1="120" y1="-70" x2="120" y2="70"/>
+      <line x1="140" y1="-70" x2="140" y2="70"/>
+      
+      <!-- Circuit nodes -->
+      <circle cx="60" cy="-60" r="3" fill="white"/>
+      <circle cx="80" cy="-45" r="3" fill="white"/>
+      <circle cx="100" cy="-30" r="3" fill="white"/>
+      <circle cx="120" cy="-15" r="3" fill="white"/>
+      <circle cx="140" cy="0" r="3" fill="white"/>
+      <circle cx="60" cy="15" r="3" fill="white"/>
+      <circle cx="80" cy="30" r="3" fill="white"/>
+      <circle cx="100" cy="45" r="3" fill="white"/>
+      <circle cx="120" cy="60" r="3" fill="white"/>
+    </g>
     
-    <!-- Text -->
-    <text x="0" y="55" 
-          font-family="Arial, sans-serif" 
-          font-size="20" 
-          font-weight="bold" 
-          fill="white" 
-          text-anchor="middle">
-      StyleSync
-    </text>
+    <!-- S-curve dividing line -->
+    <path d="M 0,-90 Q -30,-60 -30,-30 Q -30,0 0,0 Q 30,0 30,30 Q 30,60 0,90" 
+          fill="none" stroke="#1e3a8a" stroke-width="4"/>
+    
+    <!-- Small circles at the ends (yin-yang style) -->
+    <circle cx="-100" cy="50" r="12" fill="#3b82f6" stroke="#1e3a8a" stroke-width="2"/>
+    <circle cx="100" cy="-50" r="12" fill="white" stroke="#1e3a8a" stroke-width="2"/>
   </g>
 </svg>

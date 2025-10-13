@@ -9,15 +9,15 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "/icon-192x192.svg",
       "sizes": "192x192",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "/icon-512x512.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ],
@@ -28,14 +28,14 @@
       "short_name": "Paraphrase",
       "description": "Open paraphrase tool",
       "url": "/paraphrase",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192x192.svg", "sizes": "192x192" }]
     },
     {
       "name": "Style Profile",
       "short_name": "Profile",
       "description": "Manage style profiles",
       "url": "/style/onboarding",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192x192.svg", "sizes": "192x192" }]
     }
   ],
   "screenshots": [
