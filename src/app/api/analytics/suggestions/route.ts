@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
     const suggestions = Array.from(grouped.entries())
       .map(([key, items]) => {
         const avgScore = items.reduce((sum, item) => sum + item.verification_score, 0) / items.length;
+        const maxScore = Math.max(...items.map(item => item.verification_score));
         const hasConsent = items.some(item => item.consent_given && item.sample_excerpt);
         const sampleItem = items.find(item => item.consent_given && item.sample_excerpt) || items[0];
 
@@ -66,16 +67,16 @@ export async function GET(request: NextRequest) {
             customLexicon: sampleItem.custom_lexicon || []
           },
           sampleExcerpt: hasConsent ? sampleItem.sample_excerpt : undefined,
-          verificationScore: Math.round(avgScore * 10) / 10,
+          verificationScore: Math.round(maxScore), // Use max score for display (best performance)
           usageCount: items.length,
-          averageScore: Math.round(avgScore * 10) / 10,
+          averageScore: Math.round(avgScore), // Average across all uses
           createdAt: items[0].created_at,
           isPublic: true
         };
       })
       .sort((a, b) => {
-        // Sort by average score first, then usage count
-        const scoreDiff = b.averageScore - a.averageScore;
+        // Sort by max verification score first, then usage count
+        const scoreDiff = b.verificationScore - a.verificationScore;
         return scoreDiff !== 0 ? scoreDiff : b.usageCount - a.usageCount;
       })
       .slice(0, limit);

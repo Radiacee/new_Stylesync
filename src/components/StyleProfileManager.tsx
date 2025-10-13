@@ -67,21 +67,23 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
   
   // Load top-performing styles from all users
   useEffect(() => {
-    (async () => {
-      setLoadingTopStyles(true);
-      try {
-        const response = await fetch('/api/analytics/suggestions?limit=5');
-        if (response.ok) {
-          const data = await response.json();
-          setTopStyles(data.suggestions || []);
-        }
-      } catch (error) {
-        console.error('Failed to load top styles:', error);
-      } finally {
-        setLoadingTopStyles(false);
-      }
-    })();
+    loadTopStyles();
   }, []);
+  
+  async function loadTopStyles() {
+    setLoadingTopStyles(true);
+    try {
+      const response = await fetch('/api/analytics/suggestions?limit=5');
+      if (response.ok) {
+        const data = await response.json();
+        setTopStyles(data.suggestions || []);
+      }
+    } catch (error) {
+      console.error('Failed to load top styles:', error);
+    } finally {
+      setLoadingTopStyles(false);
+    }
+  }
   
   // Remote hydration / sync
   useEffect(() => {
@@ -377,9 +379,24 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
               PREMIUM
             </span>
           </div>
-          <span className="text-xs text-slate-500 flex-shrink-0">
-            {showTopStyles ? 'Hide' : 'Show'}
-          </span>
+          <div className="flex items-center gap-2">
+            {showTopStyles && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  loadTopStyles();
+                }}
+                disabled={loadingTopStyles}
+                className="px-2 py-1 rounded text-[10px] bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 transition-colors disabled:opacity-50"
+                title="Refresh top styles"
+              >
+                {loadingTopStyles ? '⟳' : '↻'}
+              </button>
+            )}
+            <span className="text-xs text-slate-500 flex-shrink-0">
+              {showTopStyles ? 'Hide' : 'Show'}
+            </span>
+          </div>
         </button>
         
         {showTopStyles && (
