@@ -336,7 +336,7 @@ export default function ParaphrasePage() {
 
       {/* History Side Navigation */}
       {history.length > 0 && (
-        <div className={`fixed top-0 right-0 h-full w-80 bg-slate-900/95 backdrop-blur-xl border-l border-white/10 transform transition-transform duration-300 ease-in-out z-40 ${
+        <div className={`fixed top-0 right-0 h-full w-full sm:w-96 md:w-80 bg-slate-900/95 backdrop-blur-xl border-l border-white/10 transform transition-transform duration-300 ease-in-out z-40 ${
           historyOpen ? 'translate-x-0' : 'translate-x-full'
         }`}>
           <div className="p-6 pt-16 h-full flex flex-col">
@@ -465,13 +465,13 @@ export default function ParaphrasePage() {
         />
       )}
 
-    <div className="grid gap-12 lg:grid-cols-5">
-      <div className="lg:col-span-3 space-y-8">
-        <div className="glass-panel p-8 space-y-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-3 flex-1">
-              <h1 className="text-3xl font-bold">Paraphrase</h1>
-              <p className="text-slate-300">Transform text to match your writing style</p>
+    <div className="grid gap-6 lg:gap-12 lg:grid-cols-5">
+      <div className="lg:col-span-3 space-y-6 lg:space-y-8">
+        <div className="glass-panel p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+            <div className="space-y-2 sm:space-y-3 flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold">Paraphrase</h1>
+              <p className="text-sm sm:text-base text-slate-300">Transform text to match your writing style</p>
             </div>
             {/* Analytics Consent Button - Top right corner */}
             {userId && <AnalyticsConsent userId={userId} onConsentChange={setUserConsent} />}
@@ -497,35 +497,35 @@ export default function ParaphrasePage() {
               className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed" 
             />
           </div>
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
             <button 
               onClick={handleParaphrase} 
               disabled={!input.trim() || busy} 
-              className="px-8 py-3 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold disabled:opacity-40 transition min-w-[160px]"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold disabled:opacity-40 transition sm:min-w-[160px] text-center"
             >
               {busy ? 'Processing…' : 'Paraphrase'}
             </button>
             <button 
               onClick={() => { setInput(''); setOutput(''); setError(null); setUsedModel(false); }} 
-              className="px-6 py-3 rounded-lg border border-white/10 hover:border-brand-400/60 text-slate-200 text-sm transition"
+              className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-lg border border-white/10 hover:border-brand-400/60 text-slate-200 text-sm transition text-center"
             >
               Reset
             </button>
           </div>
         </div>
         {(error || output) && (
-          <div ref={resultsRef} className="glass-panel p-5 space-y-3 scroll-mt-8">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-brand-300 flex items-center gap-2">
+          <div ref={resultsRef} className="glass-panel p-4 sm:p-5 space-y-3 scroll-mt-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <h2 className="font-semibold text-brand-300 flex items-center gap-2 text-sm sm:text-base">
                 Result 
                 {usedModel && <span className="text-[10px] px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">Model</span>} 
                 {!usedModel && output && <span className="text-[10px] px-2 py-0.5 rounded bg-slate-500/20 text-slate-300 border border-white/10">Heuristic</span>}
               </h2>
               {output && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                   <button 
                     onClick={handleCopyResult}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                       copied 
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
                         : 'bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 border border-brand-500/30 hover:border-brand-400/50'
@@ -538,10 +538,10 @@ export default function ParaphrasePage() {
                     <button 
                       onClick={handleStyleAnalysis}
                       disabled={analyzingStyle}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 hover:border-purple-400/50 disabled:opacity-50"
+                      className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 hover:border-purple-400/50 disabled:opacity-50 whitespace-nowrap"
                       title="Analyze style transformation"
                     >
-                      {analyzingStyle ? '⏳ Analyzing...' : '📊 Style Analysis'}
+                      {analyzingStyle ? '⏳ Analyzing...' : '📊 Analysis'}
                     </button>
                   )}
                 </div>
@@ -576,12 +576,12 @@ export default function ParaphrasePage() {
 
         {/* Style Comparison Panel - Detailed style transformation analysis */}
         {showStyleAnalysis && styleTransformation && (
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold text-brand-300">Style Transformation Analysis</h3>
+          <div className="mt-4 sm:mt-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+              <h3 className="text-lg sm:text-xl font-semibold text-brand-300">Style Transformation Analysis</h3>
               <button 
                 onClick={() => setShowStyleAnalysis(false)}
-                className="px-3 py-1 rounded text-xs bg-slate-600/30 hover:bg-slate-600/50 text-slate-300"
+                className="w-full sm:w-auto px-3 py-1 rounded text-xs bg-slate-600/30 hover:bg-slate-600/50 text-slate-300"
               >
                 Close ✕
               </button>
@@ -594,9 +594,9 @@ export default function ParaphrasePage() {
           </div>
         )}
       </div>
-      <aside className="lg:col-span-2 space-y-4">
+      <aside className="lg:col-span-2 space-y-4 order-first lg:order-last">
         <div className="glass-panel p-4">
-          <h2 className="font-semibold text-brand-300 text-base mb-2">Current Style Profile</h2>
+          <h2 className="font-semibold text-brand-300 text-sm sm:text-base mb-2">Current Style Profile</h2>
           {profile ? (
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-300">

@@ -363,9 +363,9 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
           onClick={() => setShowTopStyles(!showTopStyles)}
           className="w-full flex items-center justify-between mb-3 hover:bg-white/5 p-2 rounded transition-colors"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <svg 
-              className={`w-4 h-4 text-brand-300 transition-transform ${showTopStyles ? 'rotate-90' : ''}`}
+              className={`w-4 h-4 text-brand-300 transition-transform flex-shrink-0 ${showTopStyles ? 'rotate-90' : ''}`}
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
@@ -377,7 +377,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
               PREMIUM
             </span>
           </div>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-500 flex-shrink-0">
             {showTopStyles ? 'Hide' : 'Show'}
           </span>
         </button>
@@ -385,7 +385,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
         {showTopStyles && (
           <>
             <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-brand-500/10 border border-purple-500/20 mb-3">
-              <p className="text-[10px] text-slate-300 leading-relaxed">
+              <p className="text-[10px] sm:text-xs text-slate-300 leading-relaxed">
                 🎯 <strong>Premium Feature Preview:</strong> See styles with the highest success rates from our community. 
                 Try them now for free - premium launching soon!
               </p>
@@ -408,14 +408,14 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                         key={suggestion.id} 
                         className="group border border-purple-500/20 rounded-lg p-3 bg-gradient-to-br from-slate-800/60 to-slate-900/60 hover:border-purple-500/40 transition-all"
                       >
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-2">
+                          <div className="flex-1 w-full">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
                               <span className="text-xs font-semibold text-white">
                                 #{rank} Top Style
                               </span>
                               <div className="flex items-center gap-1">
-                                <div className="w-12 bg-slate-700 rounded-full h-1.5">
+                                <div className="w-16 sm:w-12 bg-slate-700 rounded-full h-1.5">
                                   <div 
                                     className="h-1.5 rounded-full bg-gradient-to-r from-brand-500 to-purple-500"
                                     style={{ width: `${suggestion.verificationScore}%` }}
@@ -443,7 +443,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                               <button
                                 onClick={() => applyTopStyle(suggestion)}
                                 disabled={!isAuthenticated || alreadySaved}
-                                className={`px-3 py-1.5 rounded text-[10px] font-medium transition-all ${
+                                className={`w-full sm:w-auto px-3 py-1.5 rounded text-[10px] font-medium transition-all flex-shrink-0 ${
                                   alreadySaved
                                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-not-allowed'
                                     : isAuthenticated
@@ -481,21 +481,28 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                 
                 {/* Locked Premium Styles */}
                 {topStyles.length > 1 && (
-                  <div className="relative rounded-lg border border-purple-500/30 overflow-hidden bg-slate-800/40 min-h-[255px] flex items-center justify-center">
+                  <div className="relative rounded-lg border border-purple-500/30 overflow-hidden bg-slate-800/40 min-h-[200px] sm:min-h-[300px] flex items-center justify-center">
                     {/* Premium Lock Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-purple-900/30 to-slate-900/95 z-10 flex items-center justify-center">
-                      <div className="text-center space-y-4 p-6 max-w-xs">
-                        <div className="text-4xl">🔒</div>
+                      <div className="text-center space-y-3 sm:space-y-4 p-4 sm:p-6 max-w-xs">
+                        <div className="text-3xl sm:text-4xl">🔒</div>
                         <div>
-                          <div className="text-base font-bold text-white mb-2">
+                          <div className="text-sm sm:text-base font-bold text-white mb-2">
                             {topStyles.length - 1} More Top Style{topStyles.length - 1 > 1 ? 's' : ''} Available
                           </div>
-                          <div className="text-xs text-slate-300 leading-relaxed">
+                          <div className="text-xs text-slate-300 leading-relaxed mb-2">
                             Unlock premium to access all top-performing styles from our community
                           </div>
+                          {topStyles[0] && (
+                            <div className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-brand-500/20 border border-purple-500/40">
+                              <span className="text-[10px] sm:text-[12px] text-slate-400">Including #1 style at</span>
+                              <span className="text-xs sm:text-sm font-bold text-brand-300">{topStyles[0].verificationScore}%</span>
+                              <span className="text-[10px] sm:text-[12px] text-slate-400">match</span>
+                            </div>
+                          )}
                         </div>
                         <button
-                          className="px-5 py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-brand-600 hover:from-purple-500 hover:to-brand-500 text-white font-semibold text-sm transition-all shadow-lg hover:shadow-xl hover:scale-105"
+                          className="w-full px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-brand-600 hover:from-purple-500 hover:to-brand-500 text-white font-semibold text-xs sm:text-sm transition-all shadow-lg hover:shadow-xl hover:scale-105"
                           onClick={() => {
                             // Placeholder for future subscription functionality
                             alert('Premium subscriptions coming soon! 🚀');
@@ -503,7 +510,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                         >
                           Subscribe to Premium
                         </button>
-                        <div className="text-[10px] text-slate-400">
+                        <div className="text-[9px] sm:text-[10px] text-slate-400">
                           Get access to all top styles, priority support, and more
                         </div>
                       </div>
@@ -528,18 +535,18 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
       {/* Edit Profile Modal - Full Screen (Portal to document body) */}
       {showEditModal && editingProfile && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-slate-950 z-[9999] overflow-y-auto">
-          <div className="min-h-screen py-8">
-            <div className="max-w-4xl mx-auto px-4">
-              <div className="glass-panel p-8 space-y-8">
+          <div className="min-h-screen py-4 sm:py-8">
+            <div className="max-w-4xl mx-auto px-3 sm:px-4">
+              <div className="glass-panel p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
                 {/* Header */}
-                <div className="flex items-center justify-between pb-6 border-b border-white/10">
+                <div className="flex items-start sm:items-center justify-between pb-4 sm:pb-6 border-b border-white/10 gap-3">
                   <div>
-                    <h2 className="text-2xl font-bold text-white">Edit Style Profile</h2>
-                    <p className="text-sm text-slate-400 mt-1">Modify your writing style parameters and settings</p>
+                    <h2 className="text-xl sm:text-2xl font-bold text-white">Edit Style Profile</h2>
+                    <p className="text-xs sm:text-sm text-slate-400 mt-1">Modify your writing style parameters and settings</p>
                   </div>
                   <button 
                     onClick={cancelEdit}
-                    className="text-slate-400 hover:text-white transition text-2xl px-3"
+                    className="text-slate-400 hover:text-white transition text-xl sm:text-2xl px-2 sm:px-3 flex-shrink-0"
                     title="Close"
                   >
                     ✕
@@ -570,12 +577,12 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                 
                 {/* Style Parameters */}
                 <div className="space-y-6">
-                  <div className="flex items-center gap-2 pb-2 border-b border-white/10">
-                    <h3 className="text-lg font-semibold text-brand-300">Style Parameters</h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-2 border-b border-white/10">
+                    <h3 className="text-base sm:text-lg font-semibold text-brand-300">Style Parameters</h3>
                     <span className="text-xs text-slate-500">(Adjust sliders to fine-tune your style)</span>
                   </div>
                   
-                  <div className="grid gap-8 md:grid-cols-2">
+                  <div className="grid gap-6 sm:gap-8 md:grid-cols-2">
                     {/* Formality */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm text-slate-400">
@@ -701,16 +708,16 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                 </div>
                 
                 {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t border-white/10">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sm:pt-6 border-t border-white/10">
                   <button 
                     onClick={saveEditedProfile}
-                    className="flex-1 px-6 py-3 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-bold text-base transition shadow-lg hover:shadow-brand-500/50"
+                    className="w-full sm:flex-1 px-6 py-3 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-bold text-sm sm:text-base transition shadow-lg hover:shadow-brand-500/50 order-1"
                   >
                     💾 Save Changes
                   </button>
                   <button 
                     onClick={cancelEdit}
-                    className="px-6 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold text-base transition"
+                    className="w-full sm:w-auto px-6 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold text-sm sm:text-base transition order-2"
                   >
                     Cancel
                   </button>
@@ -724,17 +731,17 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
       
       {/* Delete Confirmation Modal (Portal to document body) */}
       {showDeleteConfirm && profileToDelete && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-3 sm:p-4">
           <div className="bg-slate-900 rounded-xl border border-red-500/30 max-w-md w-full shadow-2xl">
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {/* Header */}
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">⚠️</span>
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl sm:text-2xl">⚠️</span>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-white">Delete Style Profile?</h3>
-                  <p className="text-sm text-slate-400 mt-1">This action cannot be undone.</p>
+                  <h3 className="text-base sm:text-lg font-bold text-white">Delete Style Profile?</h3>
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">This action cannot be undone.</p>
                 </div>
               </div>
               
@@ -763,16 +770,16 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
               </div>
               
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button 
                   onClick={cancelDelete}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold transition"
+                  className="w-full sm:flex-1 px-4 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold transition order-2 sm:order-1"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={confirmDelete}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold transition shadow-lg hover:shadow-red-500/50"
+                  className="w-full sm:flex-1 px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold transition shadow-lg hover:shadow-red-500/50 order-1 sm:order-2"
                 >
                   Delete Profile
                 </button>

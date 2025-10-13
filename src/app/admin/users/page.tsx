@@ -162,26 +162,26 @@ export default function UserManagement() {
     <AdminLayout>
       <div className="space-y-6">
         {/* Header with Back Button */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-6">
           <button
             onClick={() => router.push('/admin')}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/50 transition-colors"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/50 transition-colors text-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Admin
           </button>
-          <div className="h-8 w-px bg-slate-600"></div>
-          <div className="flex-1 flex items-center justify-between">
+          <div className="hidden sm:block h-8 w-px bg-slate-600"></div>
+          <div className="flex-1 w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-3xl font-bold text-white">User Management</h2>
-              <p className="text-gray-400">Manage user accounts and permissions</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white">User Management</h2>
+              <p className="text-sm text-gray-400">Manage user accounts and permissions</p>
             </div>
             <button
               onClick={loadUsers}
               disabled={loading}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
             >
               {loading ? 'Loading...' : 'Refresh'}
             </button>
@@ -189,9 +189,9 @@ export default function UserManagement() {
         </div>
 
         {/* Search and Stats */}
-        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
+        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-4 sm:space-x-4">
               <div>
                 <p className="text-sm text-gray-400">Total Users</p>
                 <p className="text-2xl font-bold text-white">{users.length}</p>

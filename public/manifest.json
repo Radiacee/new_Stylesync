@@ -1,0 +1,55 @@
+{
+  "name": "StyleSync - AI Writing Style Manager",
+  "short_name": "StyleSync",
+  "description": "Transform any text to match your unique writing style with AI-powered analysis",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "writing", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Paraphrase",
+      "short_name": "Paraphrase",
+      "description": "Open paraphrase tool",
+      "url": "/paraphrase",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Style Profile",
+      "short_name": "Profile",
+      "description": "Manage style profiles",
+      "url": "/style/onboarding",
+      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}

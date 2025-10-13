@@ -1,0 +1,46 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+    </linearGradient>
+    
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <rect width="512" height="512" fill="url(#bg-gradient)" rx="128"/>
+  
+  <!-- Icon Design - Stylized "S" for StyleSync -->
+  <g transform="translate(256, 256)" filter="url(#shadow)">
+    <!-- Outer circle -->
+    <circle cx="0" cy="0" r="180" fill="rgba(255,255,255,0.1)"/>
+    
+    <!-- Main S shape -->
+    <path d="M -60,-100 Q -100,-100 -100,-60 Q -100,-20 -60,-20 L 60,-20 Q 100,-20 100,20 Q 100,60 60,60 L -10,60" 
+          stroke="white" 
+          stroke-width="28" 
+          fill="none" 
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    
+    <!-- Decorative elements -->
+    <circle cx="80" cy="-85" r="14" fill="white"/>
+    <circle cx="-80" cy="85" r="14" fill="white"/>
+    
+    <!-- Shine effect -->
+    <ellipse cx="-50" cy="-70" rx="30" ry="50" fill="rgba(255,255,255,0.2)" transform="rotate(-20 -50 -70)"/>
+    
+    <!-- Text -->
+    <text x="0" y="140" 
+          font-family="Arial, sans-serif" 
+          font-size="48" 
+          font-weight="bold" 
+          fill="white" 
+          text-anchor="middle">
+      StyleSync
+    </text>
+  </g>
+</svg>

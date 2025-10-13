@@ -1,0 +1,32 @@
+<svg width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="192" height="192" fill="#3b82f6" rx="48"/>
+  
+  <!-- Icon Design - Stylized "S" for StyleSync -->
+  <g transform="translate(96, 96)">
+    <!-- Outer glow -->
+    <circle cx="0" cy="0" r="70" fill="rgba(255,255,255,0.1)"/>
+    
+    <!-- Main S shape -->
+    <path d="M -25,-40 Q -40,-40 -40,-25 Q -40,-10 -25,-10 L 25,-10 Q 40,-10 40,5 Q 40,20 25,20 L 0,20" 
+          stroke="white" 
+          stroke-width="12" 
+          fill="none" 
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    
+    <!-- Accent dot -->
+    <circle cx="30" cy="-35" r="6" fill="white"/>
+    <circle cx="-30" cy="35" r="6" fill="white"/>
+    
+    <!-- Text -->
+    <text x="0" y="55" 
+          font-family="Arial, sans-serif" 
+          font-size="20" 
+          font-weight="bold" 
+          fill="white" 
+          text-anchor="middle">
+      StyleSync
+    </text>
+  </g>
+</svg>
