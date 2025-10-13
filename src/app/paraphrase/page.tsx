@@ -36,6 +36,8 @@ export default function ParaphrasePage() {
   const [verificationScore, setVerificationScore] = useState<number>(0);
   const [userConsent, setUserConsent] = useState<boolean>(false);
   const analyticsSubmittedRef = useRef<boolean>(false); // Use ref instead of state
+  const resultsRef = useRef<HTMLDivElement>(null); // Ref for auto-scroll to results
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null); // Track expanded history item
 
   useEffect(() => {
     // Check authentication first
@@ -161,7 +163,17 @@ export default function ParaphrasePage() {
       } else {
         setHistory(h => [{ id: crypto.randomUUID(), input, output: fallback, note: '', usedModel: false, createdAt: new Date().toISOString(), localOnly: true }, ...h].slice(0,50));
       }
-    } finally { setBusy(false); }
+    } finally { 
+      setBusy(false);
+      
+      // Smooth scroll to results after paraphrase completes
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start'
+        });
+      }, 100);
+    }
   }
 
   async function handleDeleteHistoryEntry(id: string) {
@@ -345,63 +357,100 @@ export default function ParaphrasePage() {
             
             <div className="flex-1 overflow-auto pr-2">
               <ul className="space-y-3">
-                {history.map(h => (
-                  <li key={h.id} className="border border-white/10 rounded-lg p-3 bg-slate-800/40 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs text-slate-500">
-                        {new Date(h.createdAt).toLocaleString()} 
-                        {h.usedModel && <span className="ml-1 text-brand-400">●</span>} 
-                        {h.pending && <span className="ml-1 text-amber-400">…</span>}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => { 
-                            setInput(h.input); 
-                            setOutput(h.output); 
-                            setHistoryOpen(false); // Close history when loading
-                          }} 
-                          className="text-xs px-2 py-1 rounded bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 hover:text-brand-300 transition-colors"
-                        >
-                          Load
-                        </button>
-                        {userId && !h.localOnly && !h.pending && (
-                          <button 
-                            onClick={() => handleDeleteHistoryEntry(h.id)}
-                            className="text-xs px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-colors"
-                            title="Delete this entry"
+                {history.map(h => {
+                  const isExpanded = expandedHistoryId === h.id;
+                  return (
+                    <li key={h.id} className="border border-white/10 rounded-lg bg-slate-800/40 overflow-hidden">
+                      {/* Compact Header - Always Visible */}
+                      <div className="p-3 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <button
+                            onClick={() => setExpandedHistoryId(isExpanded ? null : h.id)}
+                            className="flex-1 text-left flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
                           >
-                            ✕
+                            <svg 
+                              className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                            <span>
+                              {new Date(h.createdAt).toLocaleString()} 
+                              {h.usedModel && <span className="ml-1 text-brand-400">●</span>} 
+                              {h.pending && <span className="ml-1 text-amber-400">…</span>}
+                            </span>
                           </button>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => { 
+                                setInput(h.input); 
+                                setOutput(h.output); 
+                                setHistoryOpen(false); // Close history when loading
+                              }} 
+                              className="text-xs px-2 py-1 rounded bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 hover:text-brand-300 transition-colors"
+                            >
+                              Load
+                            </button>
+                            {userId && !h.localOnly && !h.pending && (
+                              <button 
+                                onClick={() => handleDeleteHistoryEntry(h.id)}
+                                className="text-xs px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-colors"
+                                title="Delete this entry"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Compact Preview - One line each */}
+                        {!isExpanded && (
+                          <div className="text-xs text-slate-400 space-y-1 pl-6">
+                            <div className="truncate">
+                              <span className="text-slate-500">In:</span> {h.input}
+                            </div>
+                            <div className="truncate text-brand-300">
+                              <span className="text-slate-500">Out:</span> {h.output}
+                            </div>
+                          </div>
                         )}
                       </div>
-                    </div>
-                    <div className="grid gap-2">
-                      <div className="text-xs text-slate-400">
-                        <div className="font-medium text-slate-300 mb-1">Input:</div>
-                        <div className="line-clamp-3 whitespace-pre-wrap bg-slate-900/40 rounded p-2">{h.input}</div>
-                      </div>
-                      <div className="text-xs text-slate-200">
-                        <div className="font-medium text-brand-300 mb-1">Output:</div>
-                        <div className="line-clamp-3 whitespace-pre-wrap bg-slate-900/40 rounded p-2 border-l-2 border-brand-500/40">{h.output}</div>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <textarea
-                        placeholder="Add note..."
-                        value={h.note}
-                        onChange={e => {
-                          const v = e.target.value; 
-                          setHistory(list => list.map(item => item.id === h.id ? { ...item, note: v } : item));
-                        }}
-                        onBlur={e => { 
-                          if (userId && !h.pending && !h.localOnly) updateHistoryNote(h.id, e.target.value); 
-                        }}
-                        rows={2}
-                        className="w-full bg-slate-900/60 border border-white/10 rounded p-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-200"
-                      />
-                    </div>
-                  </li>
-                ))}
+
+                      {/* Expanded Details - Only visible when expanded */}
+                      {isExpanded && (
+                        <div className="px-3 pb-3 space-y-3 border-t border-white/5">
+                          <div className="grid gap-2 mt-3">
+                            <div className="text-xs text-slate-400">
+                              <div className="font-medium text-slate-300 mb-1">Input:</div>
+                              <div className="whitespace-pre-wrap bg-slate-900/40 rounded p-2 max-h-32 overflow-auto">{h.input}</div>
+                            </div>
+                            <div className="text-xs text-slate-200">
+                              <div className="font-medium text-brand-300 mb-1">Output:</div>
+                              <div className="whitespace-pre-wrap bg-slate-900/40 rounded p-2 border-l-2 border-brand-500/40 max-h-32 overflow-auto">{h.output}</div>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <textarea
+                              placeholder="Add note..."
+                              value={h.note}
+                              onChange={e => {
+                                const v = e.target.value; 
+                                setHistory(list => list.map(item => item.id === h.id ? { ...item, note: v } : item));
+                              }}
+                              onBlur={e => { 
+                                if (userId && !h.pending && !h.localOnly) updateHistoryNote(h.id, e.target.value); 
+                              }}
+                              rows={2}
+                              className="w-full bg-slate-900/60 border border-white/10 rounded p-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-200"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           </div>
@@ -465,7 +514,7 @@ export default function ParaphrasePage() {
           </div>
         </div>
         {(error || output) && (
-          <div className="glass-panel p-5 space-y-3">
+          <div ref={resultsRef} className="glass-panel p-5 space-y-3 scroll-mt-8">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-brand-300 flex items-center gap-2">
                 Result 
@@ -545,35 +594,38 @@ export default function ParaphrasePage() {
           </div>
         )}
       </div>
-      <aside className="lg:col-span-2 space-y-8">
-        <div className="glass-panel p-6"><StyleProfileManager onSelect={p => setProfile(p)} /></div>
-        <div className="glass-panel p-6 text-sm space-y-4">
-          <h2 className="font-semibold text-brand-300 text-lg">Current Style Profile</h2>
+      <aside className="lg:col-span-2 space-y-4">
+        <div className="glass-panel p-4">
+          <h2 className="font-semibold text-brand-300 text-base mb-2">Current Style Profile</h2>
           {profile ? (
-            <ul className="text-sm space-y-2 text-slate-300">
-              <li className="flex justify-between"><span>Tone:</span> <span className="text-white">{profile.tone}</span></li>
-              <li className="flex justify-between"><span>Formality:</span> <span className="text-white">{pct(profile.formality)}</span></li>
-              <li className="flex justify-between"><span>Pacing:</span> <span className="text-white">{pct(profile.pacing)}</span></li>
-              <li className="flex justify-between"><span>Descriptiveness:</span> <span className="text-white">{pct(profile.descriptiveness)}</span></li>
-              <li className="flex justify-between"><span>Directness:</span> <span className="text-white">{pct(profile.directness)}</span></li>
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-300">
+                <div className="flex justify-between"><span className="text-slate-400">Tone:</span> <span className="text-white font-medium">{profile.tone}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">Formality:</span> <span className="text-white font-medium">{pct(profile.formality)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">Pacing:</span> <span className="text-white font-medium">{pct(profile.pacing)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">Descriptiveness:</span> <span className="text-white font-medium">{pct(profile.descriptiveness)}</span></div>
+                <div className="flex justify-between col-span-2"><span className="text-slate-400">Directness:</span> <span className="text-white font-medium">{pct(profile.directness)}</span></div>
+              </div>
               {profile.customLexicon.length > 0 && (
-                <li className="pt-2 border-t border-white/10">
-                  <div className="text-xs text-slate-400 mb-1">Keywords:</div>
+                <div className="pt-2 border-t border-white/10">
+                  <div className="text-[10px] text-slate-400 mb-1">Keywords:</div>
                   <div className="flex flex-wrap gap-1">
                     {profile.customLexicon.map(word => (
-                      <span key={word} className="px-2 py-1 bg-brand-500/20 text-brand-300 rounded text-xs">{word}</span>
+                      <span key={word} className="px-1.5 py-0.5 bg-brand-500/20 text-brand-300 rounded text-[10px]">{word}</span>
                     ))}
                   </div>
-                </li>
+                </div>
               )}
-              {profile.notes && <li className="pt-2 border-t border-white/10"><div className="text-xs text-slate-400 mb-1">Notes:</div><div className="text-sm">{profile.notes}</div></li>}
-            </ul>
-          ) : <p className="text-slate-400">No profile loaded.</p>}
+              {/* {profile.notes && (
+                <div className="pt-2 border-t border-white/10">
+                  <div className="text-[10px] text-slate-400 mb-1">Notes:</div>
+                  <div className="text-xs text-slate-300 line-clamp-2">{profile.notes}</div>
+                </div>
+              )} */}
+            </div>
+          ) : <p className="text-xs text-slate-400">No profile loaded.</p>}
         </div>
-        
-        <div className="glass-panel p-6 text-xs text-slate-400 space-y-2">
-          <p>AI-powered text transformation. Always cite sources and disclose AI assistance.</p>
-        </div>
+        <div className="glass-panel p-4"><StyleProfileManager onSelect={p => setProfile(p)} /></div>
       </aside>
         </div>
         {busy && <FullScreenSpinner label="Generating paraphrase" />}
