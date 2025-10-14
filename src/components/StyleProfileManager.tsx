@@ -123,6 +123,16 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
     }
     setProfiles(list);
     setActive(active);
+    
+    // Auto-navigate to the page containing the active profile
+    if (active && list.length > 0) {
+      const activeIndex = list.findIndex(p => p.id === active);
+      if (activeIndex >= 0) {
+        const pageContainingActive = Math.floor(activeIndex / profilesPerPage) + 1;
+        setCurrentPage(pageContainingActive);
+      }
+    }
+    
     if (onSelect) {
       const found = list.find(p => p.id === active) || null;
       onSelect(found);
@@ -136,6 +146,14 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
 
   function setActiveProfile(id: string) {
     setActiveProfileId(id);
+    
+    // Navigate to the page containing this profile
+    const activeIndex = profiles.findIndex(p => p.id === id);
+    if (activeIndex >= 0) {
+      const pageContainingActive = Math.floor(activeIndex / profilesPerPage) + 1;
+      setCurrentPage(pageContainingActive);
+    }
+    
     refresh();
   }
 

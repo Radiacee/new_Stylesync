@@ -72,10 +72,6 @@ body {
   animation: slide-up 0.4s ease-out;
 }
 
-.animate-fade-in {
-  animation: fade-in 0.6s ease-out;
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.8s ease-out;
+.animate-fadeIn {
+  animation: fade-in 0.4s ease-out;
 }
