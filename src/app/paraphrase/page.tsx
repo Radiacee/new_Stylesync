@@ -604,7 +604,7 @@ export default function ParaphrasePage() {
                 <div className="flex justify-between"><span className="text-slate-400">Formality:</span> <span className="text-white font-medium">{pct(profile.formality)}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Pacing:</span> <span className="text-white font-medium">{pct(profile.pacing)}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Descriptiveness:</span> <span className="text-white font-medium">{pct(profile.descriptiveness)}</span></div>
-                <div className="flex justify-between col-span-2"><span className="text-slate-400">Directness:</span> <span className="text-white font-medium">{pct(profile.directness)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">Directness:</span> <span className="text-white font-medium">{pct(profile.directness)}</span></div>
               </div>
               {profile.customLexicon.length > 0 && (
                 <div className="pt-2 border-t border-white/10">
