@@ -202,9 +202,29 @@ function buildFocusedPrompt(profile: any): string {
   const base = STYLE_RULE_PROMPT + '\n\nCRITICAL: Preserve exact meaning and all factual content. Focus on sentence construction patterns and natural language flow.';
   if (!profile) return base;
   
-  let stylePrompt = base + `\n\nUSER STYLE PROFILE:`;
+  let stylePrompt = base + `\n\n🎯 USER STYLE PROFILE:`;
+  
+  // FORMALITY - Make this the most prominent
+  const formalityPercent = Math.round(profile.formality * 100);
+  stylePrompt += `\n\n⚠️ FORMALITY LEVEL: ${formalityPercent}% ${formalityPercent >= 80 ? '(HIGHLY FORMAL - STRICT)' : formalityPercent >= 60 ? '(FORMAL)' : formalityPercent >= 40 ? '(NEUTRAL)' : '(CASUAL)'}`;
+  
+  if (formalityPercent >= 80) {
+    stylePrompt += '\n  ✓ NO contractions (do not, cannot, will not)';
+    stylePrompt += '\n  ✓ NO informal words (stuff, things, get, got, lots)';
+    stylePrompt += '\n  ✓ NO personal pronouns (I, we, you) - use passive/impersonal voice';
+    stylePrompt += '\n  ✓ USE formal vocabulary (utilize, demonstrate, establish)';
+    stylePrompt += '\n  ✓ USE formal transitions (Moreover, Furthermore, Consequently)';
+  } else if (formalityPercent >= 60) {
+    stylePrompt += '\n  ✓ Minimal contractions';
+    stylePrompt += '\n  ✓ Professional vocabulary';
+    stylePrompt += '\n  ✓ Limited personal pronouns';
+  } else if (formalityPercent <= 40) {
+    stylePrompt += '\n  ✓ Use contractions naturally';
+    stylePrompt += '\n  ✓ Conversational vocabulary';
+    stylePrompt += '\n  ✓ Personal voice is fine';
+  }
+  
   stylePrompt += `\n- Tone: ${profile.tone}`;
-  stylePrompt += `\n- Formality: ${Math.round(profile.formality * 100)}%`;
   stylePrompt += `\n- Pacing: ${Math.round(profile.pacing * 100)}%`;
   stylePrompt += `\n- Descriptiveness: ${Math.round(profile.descriptiveness * 100)}%`;
   stylePrompt += `\n- Directness: ${Math.round(profile.directness * 100)}%`;
@@ -238,6 +258,7 @@ function buildFocusedPrompt(profile: any): string {
   stylePrompt += '\n\n=== OUTPUT REQUIREMENTS ===';
   stylePrompt += '\n• Output ONLY the paraphrased text';
   stylePrompt += '\n• Preserve ALL factual content exactly';
+  stylePrompt += `\n• MUST match ${formalityPercent}% formality level (this is critical!)`;
   stylePrompt += '\n• Match the style patterns above';
   stylePrompt += '\n• Use natural, human-like language';
   stylePrompt += '\n• Avoid repetition and filler phrases';
@@ -355,6 +376,81 @@ function identifyDistinctiveFeatures(analysis: any): Array<{priority: number, de
   return features.sort((a, b) => b.priority - a.priority);
 }
 
+function calculateFormalityScore(text: string): number {
+  // Calculate formality based on multiple indicators
+  let formalityScore = 0.5; // Start at neutral
+  let indicators = 0;
+  
+  const words = text.toLowerCase().split(/\s+/);
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim());
+  
+  // 1. Contractions (very strong indicator)
+  const contractions = text.match(/\b(?:don't|doesn't|didn't|can't|couldn't|won't|wouldn't|isn't|aren't|wasn't|weren't|haven't|hasn't|hadn't|I'm|you're|he's|she's|it's|we're|they're|I've|you've|we've|they've|I'll|you'll|we'll|they'll|I'd|you'd|he'd|she'd|we'd|they'd)\b/gi);
+  const contractionRatio = contractions ? contractions.length / sentences.length : 0;
+  if (contractionRatio > 0.3) {
+    formalityScore -= 0.25; // Very informal
+  } else if (contractionRatio > 0.1) {
+    formalityScore -= 0.15; // Somewhat informal
+  } else if (contractionRatio === 0) {
+    formalityScore += 0.2; // Formal (no contractions)
+  }
+  indicators++;
+  
+  // 2. Complex vocabulary (3+ syllables, academic words)
+  const complexWords = words.filter(w => 
+    w.length > 8 || 
+    /^(therefore|however|moreover|furthermore|consequently|nevertheless|additionally|specifically|particularly|significantly|comprehensive|implementation|optimization|substantial|appropriate|demonstrate|establish|maintain|facilitate)$/i.test(w)
+  ).length;
+  const complexRatio = complexWords / words.length;
+  if (complexRatio > 0.15) {
+    formalityScore += 0.15; // Very formal vocabulary
+  } else if (complexRatio < 0.05) {
+    formalityScore -= 0.1; // Simple vocabulary
+  }
+  indicators++;
+  
+  // 3. Passive voice (formal indicator)
+  const passiveMatches = text.match(/\b(?:is|are|was|were|be|been|being)\s+(?:\w+ed|shown|given|made|done|taken|written|found)\b/gi);
+  const passiveRatio = passiveMatches ? passiveMatches.length / sentences.length : 0;
+  if (passiveRatio > 0.3) {
+    formalityScore += 0.1; // Formal passive voice
+  }
+  indicators++;
+  
+  // 4. Personal pronouns (informal indicator)
+  const personalPronouns = text.match(/\b(?:I|me|my|mine|we|us|our|ours|you|your|yours)\b/gi);
+  const pronounRatio = personalPronouns ? personalPronouns.length / words.length : 0;
+  if (pronounRatio > 0.05) {
+    formalityScore -= 0.15; // Very informal (personal)
+  } else if (pronounRatio < 0.01) {
+    formalityScore += 0.1; // Formal (impersonal)
+  }
+  indicators++;
+  
+  // 5. Sentence starters (formal: Moreover, Furthermore, etc.)
+  const formalStarters = sentences.filter(s => 
+    /^\s*(?:Moreover|Furthermore|Additionally|Consequently|Nevertheless|However|Therefore|Thus|Hence|Subsequently|Accordingly)/i.test(s)
+  ).length;
+  const formalStarterRatio = formalStarters / sentences.length;
+  if (formalStarterRatio > 0.2) {
+    formalityScore += 0.15; // Very formal transitions
+  }
+  indicators++;
+  
+  // 6. Colloquialisms and informal words
+  const informalWords = words.filter(w => 
+    /^(yeah|yep|nope|gonna|wanna|gotta|kinda|sorta|lots|tons|stuff|things|ok|okay|cool|nice|pretty|really|very|just|actually|basically)$/i.test(w)
+  ).length;
+  const informalRatio = informalWords / words.length;
+  if (informalRatio > 0.03) {
+    formalityScore -= 0.2; // Very informal language
+  }
+  indicators++;
+  
+  // Normalize to 0-1 range
+  return Math.max(0, Math.min(1, formalityScore));
+}
+
 function groupLexiconByCategory(lexicon: string[]): any {
   return {
     transitions: lexicon.filter(w => /^(however|therefore|moreover|furthermore|additionally|consequently|meanwhile|nevertheless|thus|hence)$/i.test(w)),
@@ -368,7 +464,20 @@ function enforceStylePatterns(text: string, analysis: any): string {
   
   console.log('Enforcing style patterns...');
   
-  // 1. Enforce contraction usage
+  // 1. CRITICAL: Enforce formality level (highest priority for your use case)
+  if (analysis.formalityScore !== undefined) {
+    const currentFormality = calculateFormalityScore(enforced);
+    const targetFormality = analysis.formalityScore;
+    
+    console.log(`Formality: current=${(currentFormality * 100).toFixed(0)}%, target=${(targetFormality * 100).toFixed(0)}%`);
+    
+    // If significantly different, apply corrections
+    if (Math.abs(currentFormality - targetFormality) > 0.2) {
+      enforced = adjustFormality(enforced, targetFormality, currentFormality);
+    }
+  }
+  
+  // 2. Enforce contraction usage
   if (analysis.usesContractions === false) {
     // Expand all contractions for formal style
     enforced = expandContractions(enforced);
@@ -377,17 +486,151 @@ function enforceStylePatterns(text: string, analysis: any): string {
     enforced = addContractionsIfNeeded(enforced, analysis.contractionRatio);
   }
   
-  // 2. Enforce sentence length distribution (if significantly different)
+  // 3. Enforce sentence length distribution (if significantly different)
   if (analysis.avgSentenceLength) {
     enforced = adjustSentenceLengths(enforced, analysis.avgSentenceLength);
   }
   
-  // 3. Enforce punctuation patterns
+  // 4. Enforce punctuation patterns
   if (analysis.commaPerSentence) {
     enforced = adjustCommaDensity(enforced, analysis.commaPerSentence);
   }
   
   return enforced;
+}
+
+function adjustFormality(text: string, targetFormality: number, currentFormality: number): string {
+  let adjusted = text;
+  
+  console.log(`Adjusting formality from ${(currentFormality * 100).toFixed(0)}% to ${(targetFormality * 100).toFixed(0)}%`);
+  
+  if (targetFormality > currentFormality) {
+    // INCREASE FORMALITY
+    
+    // 1. Remove all contractions
+    adjusted = expandContractions(adjusted);
+    
+    // 2. Replace informal words with formal equivalents
+    const informalToFormal: Record<string, string> = {
+      "gonna": "going to",
+      "wanna": "want to",
+      "gotta": "must",
+      "kinda": "somewhat",
+      "sorta": "somewhat",
+      "lots of": "numerous",
+      "a lot of": "many",
+      "tons of": "numerous",
+      "stuff": "items",
+      "things": "matters",
+      "ok": "acceptable",
+      "okay": "acceptable",
+      "big": "substantial",
+      "small": "minimal",
+      "get": "obtain",
+      "got": "obtained",
+      "make": "create",
+      "do": "perform",
+      "show": "demonstrate",
+      "use": "utilize",
+      "help": "assist",
+      "need": "require",
+      "want": "desire",
+      "start": "commence",
+      "end": "conclude",
+      "buy": "purchase",
+      "sell": "distribute",
+      "keep": "maintain",
+      "think": "consider",
+      "find out": "determine",
+      "talk about": "discuss",
+      "look at": "examine",
+      "point out": "indicate",
+      "bring up": "introduce",
+      "come up with": "develop",
+      "figure out": "ascertain",
+      "deal with": "address",
+      "go over": "review",
+      "look into": "investigate",
+      "really": "",
+      "very": "",
+      "pretty": "",
+      "quite": "",
+      "just": "",
+      "actually": "",
+      "basically": "",
+      "literally": ""
+    };
+    
+    for (const [informal, formal] of Object.entries(informalToFormal)) {
+      const regex = new RegExp(`\\b${informal}\\b`, 'gi');
+      adjusted = adjusted.replace(regex, formal);
+    }
+    
+    // 3. Remove personal pronouns where possible (convert to passive/impersonal)
+    // "I think" → "It is believed", "We found" → "It was found"
+    adjusted = adjusted.replace(/\bI think\b/gi, 'It can be argued');
+    adjusted = adjusted.replace(/\bI believe\b/gi, 'It is believed');
+    adjusted = adjusted.replace(/\bWe found\b/gi, 'It was found');
+    adjusted = adjusted.replace(/\bWe can see\b/gi, 'It can be observed');
+    adjusted = adjusted.replace(/\bYou can\b/gi, 'One can');
+    adjusted = adjusted.replace(/\bYou should\b/gi, 'One should');
+    adjusted = adjusted.replace(/\bYou need to\b/gi, 'It is necessary to');
+    adjusted = adjusted.replace(/\bYou have to\b/gi, 'It is required to');
+    
+    // 4. Add formal transition words if missing
+    const sentences = adjusted.split(/(?<=[.!?])\s+/);
+    if (sentences.length > 1) {
+      const formalTransitions = ['Moreover', 'Furthermore', 'Additionally', 'Consequently', 'Nevertheless', 'However'];
+      // Add transitions to some sentences without them
+      for (let i = 1; i < sentences.length; i++) {
+        if (i % 3 === 0 && !/^(Moreover|Furthermore|Additionally|Consequently|Nevertheless|However|Therefore|Thus)/i.test(sentences[i])) {
+          const transition = formalTransitions[i % formalTransitions.length];
+          sentences[i] = `${transition}, ${sentences[i].charAt(0).toLowerCase()}${sentences[i].slice(1)}`;
+        }
+      }
+      adjusted = sentences.join(' ');
+    }
+    
+  } else if (targetFormality < currentFormality) {
+    // DECREASE FORMALITY (make more casual)
+    
+    // 1. Add contractions
+    adjusted = addContractionsIfNeeded(adjusted, 0.3);
+    
+    // 2. Replace formal words with casual equivalents
+    const formalToInformal: Record<string, string> = {
+      "utilize": "use",
+      "commence": "start",
+      "conclude": "end",
+      "purchase": "buy",
+      "obtain": "get",
+      "require": "need",
+      "assist": "help",
+      "demonstrate": "show",
+      "ascertain": "figure out",
+      "determine": "find out",
+      "examine": "look at",
+      "substantial": "big",
+      "minimal": "small",
+      "numerous": "many"
+    };
+    
+    for (const [formal, informal] of Object.entries(formalToInformal)) {
+      const regex = new RegExp(`\\b${formal}\\b`, 'gi');
+      adjusted = adjusted.replace(regex, informal);
+    }
+    
+    // 3. Remove overly formal transitions
+    adjusted = adjusted.replace(/\bMoreover,\s*/gi, 'Also, ');
+    adjusted = adjusted.replace(/\bFurthermore,\s*/gi, 'Plus, ');
+    adjusted = adjusted.replace(/\bNevertheless,\s*/gi, 'But, ');
+    adjusted = adjusted.replace(/\bConsequently,\s*/gi, 'So, ');
+  }
+  
+  // Clean up any double spaces
+  adjusted = adjusted.replace(/\s{2,}/g, ' ');
+  
+  return adjusted;
 }
 
 function expandContractions(text: string): string {
@@ -495,10 +738,27 @@ function calculateStyleMatchScore(text: string, profile: any): {score: number, g
   const commas = (text.match(/,/g) || []).length;
   const commaPerSentence = commas / sentences.length;
   
-  // 1. Sentence length match (20% weight)
+  // 1. FORMALITY MATCH (30% weight - HIGHEST PRIORITY)
+  if (analysis.formalityScore !== undefined) {
+    const currentFormality = calculateFormalityScore(text);
+    const targetFormality = analysis.formalityScore;
+    const formalityDiff = Math.abs(currentFormality - targetFormality);
+    const formalityScore = Math.max(0, 1 - (formalityDiff * 2)); // Strict scoring
+    
+    totalScore += formalityScore * 0.3;
+    criteriaCount++;
+    
+    console.log(`Formality check: current=${(currentFormality * 100).toFixed(0)}%, target=${(targetFormality * 100).toFixed(0)}%, score=${(formalityScore * 100).toFixed(0)}%`);
+    
+    if (formalityScore < 0.7) {
+      gaps.push(`CRITICAL: Formality mismatch: ${(currentFormality * 100).toFixed(0)}% vs target ${(targetFormality * 100).toFixed(0)}%`);
+    }
+  }
+  
+  // 2. Sentence length match (15% weight)
   if (analysis.avgSentenceLength) {
     const lengthRatio = Math.min(avgSentenceLength, analysis.avgSentenceLength) / Math.max(avgSentenceLength, analysis.avgSentenceLength);
-    totalScore += lengthRatio * 0.2;
+    totalScore += lengthRatio * 0.15;
     criteriaCount++;
     
     if (lengthRatio < 0.7) {
@@ -506,11 +766,11 @@ function calculateStyleMatchScore(text: string, profile: any): {score: number, g
     }
   }
   
-  // 2. Comma density match (15% weight)
+  // 3. Comma density match (10% weight)
   if (analysis.commaPerSentence) {
     const commaDiff = Math.abs(commaPerSentence - analysis.commaPerSentence);
     const commaScore = Math.max(0, 1 - (commaDiff / 2)); // Normalize
-    totalScore += commaScore * 0.15;
+    totalScore += commaScore * 0.1;
     criteriaCount++;
     
     if (commaScore < 0.7) {
@@ -518,7 +778,7 @@ function calculateStyleMatchScore(text: string, profile: any): {score: number, g
     }
   }
   
-  // 3. Contraction usage (15% weight)
+  // 4. Contraction usage (15% weight)
   const hasContractions = /\b(?:don't|doesn't|didn't|can't|won't|isn't|aren't|I'm|you're|it's)\b/i.test(text);
   if (analysis.usesContractions !== undefined) {
     const contractionMatch = (hasContractions === analysis.usesContractions) ? 1 : 0;
@@ -530,22 +790,24 @@ function calculateStyleMatchScore(text: string, profile: any): {score: number, g
     }
   }
   
-  // 4. Question usage (10% weight)
+  // 5. Question usage (5% weight)
   const questions = (text.match(/\?/g) || []).length;
   const questionRatio = questions / sentences.length;
   if (analysis.questionRatio !== undefined) {
     const questionDiff = Math.abs(questionRatio - analysis.questionRatio);
     const questionScore = Math.max(0, 1 - (questionDiff * 5)); // Normalize
-    totalScore += questionScore * 0.1;
+    totalScore += questionScore * 0.05;
     criteriaCount++;
   }
   
-  // 5. General structure (40% - always included)
+  // 6. General structure (25% - always included)
   const structureScore = 0.7; // Baseline assumption
-  totalScore += structureScore * 0.4;
+  totalScore += structureScore * 0.25;
   criteriaCount++;
   
   const finalScore = criteriaCount > 0 ? totalScore : 0.5;
+  
+  console.log(`Overall match score: ${(finalScore * 100).toFixed(0)}%`);
   
   return {
     score: finalScore,
