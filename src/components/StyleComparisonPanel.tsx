@@ -82,17 +82,17 @@ export default function StyleComparisonPanel({
       {/* Detailed Comparison Table */}
       <div className="p-6">
         <h4 className="text-lg font-medium text-white mb-4">Detailed Metrics Comparison</h4>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto -mx-6 px-6">
+          <table className="w-full min-w-[800px]">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="text-left py-3 px-2 text-sm font-medium text-slate-400">Category</th>
-                <th className="text-left py-3 px-2 text-sm font-medium text-slate-400">Metric</th>
-                <th className="text-center py-3 px-2 text-sm font-medium text-slate-400">User Style</th>
-                <th className="text-center py-3 px-2 text-sm font-medium text-slate-400">Original</th>
-                <th className="text-center py-3 px-2 text-sm font-medium text-slate-400">Paraphrased</th>
-                <th className="text-left py-3 px-2 text-sm font-medium text-slate-400">Change</th>
-                <th className="text-center py-3 px-2 text-sm font-medium text-slate-400">Alignment</th>
+                <th className="text-left py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">Category</th>
+                <th className="text-left py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">Metric</th>
+                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">User</th>
+                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">Original</th>
+                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">Result</th>
+                <th className="text-left py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 min-w-[200px]">Change</th>
+                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">Alignment</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -101,22 +101,22 @@ export default function StyleComparisonPanel({
                   <td className="py-4 px-2">
                     <div className="flex items-center gap-2">
                       <span className="text-xs">{getImpactIcon(comparison.impact)}</span>
-                      <span className="text-sm text-slate-300">{comparison.category}</span>
+                      <span className="text-xs sm:text-sm text-slate-300 whitespace-nowrap">{comparison.category}</span>
                     </div>
                   </td>
-                  <td className="py-4 px-2 text-sm text-white font-medium">
+                  <td className="py-4 px-2 text-xs sm:text-sm text-white font-medium whitespace-nowrap">
                     {comparison.metric}
                   </td>
-                  <td className="py-4 px-2 text-center text-sm text-slate-300 font-mono">
+                  <td className="py-4 px-2 text-center text-xs sm:text-sm text-slate-300 font-mono whitespace-nowrap">
                     {comparison.userValue}
                   </td>
-                  <td className="py-4 px-2 text-center text-sm text-slate-300 font-mono">
+                  <td className="py-4 px-2 text-center text-xs sm:text-sm text-slate-300 font-mono whitespace-nowrap">
                     {comparison.originalValue}
                   </td>
-                  <td className="py-4 px-2 text-center text-sm text-white font-mono font-medium">
+                  <td className="py-4 px-2 text-center text-xs sm:text-sm text-white font-mono font-medium whitespace-nowrap">
                     {comparison.paraphrasedValue}
                   </td>
-                  <td className="py-4 px-2 text-sm text-slate-300 max-w-xs">
+                  <td className="py-4 px-2 text-xs sm:text-sm text-slate-300 min-w-[200px] max-w-[300px]">
                     {comparison.changeDescription}
                   </td>
                   <td className="py-4 px-2 text-center">

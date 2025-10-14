@@ -109,6 +109,24 @@ function applyAdvancedFormatting(text: string): string {
   // Fix paragraph separation
   cleaned = cleaned.replace(/([.!?])([A-Z])/g, '$1\n\n$2');
   
+  // Remove unnecessary filler phrases (common AI patterns)
+  // Handle malformed "in order" insertions that break sentence flow
+  cleaned = cleaned.replace(/\s+in order to\s+/gi, ' to '); // "late in order to meetings" -> "late to meetings"
+  cleaned = cleaned.replace(/\s+in order for\s+/gi, ' for '); // similar pattern with "for"
+  
+  // Fix specific incorrect patterns
+  cleaned = cleaned.replace(/\blate in order to\b/gi, 'late to'); // "late in order to meetings" -> "late to meetings"
+  cleaned = cleaned.replace(/\bsecondary in order to\b/gi, 'secondary to'); // "secondary in order to your" -> "secondary to your"
+  cleaned = cleaned.replace(/\bprior in order to\b/gi, 'prior to'); // similar patterns
+  cleaned = cleaned.replace(/\brelative in order to\b/gi, 'relative to'); // similar patterns
+  
+  // Then handle the standard verbose phrases
+  cleaned = cleaned.replace(/\bin order to\b/gi, 'to'); // "in order to" -> "to" (when used correctly)
+  cleaned = cleaned.replace(/\bin order for\b/gi, 'for'); // "in order for" -> "for"
+  cleaned = cleaned.replace(/\bdue to the fact that\b/gi, 'because'); // verbose -> concise
+  cleaned = cleaned.replace(/\bin the event that\b/gi, 'if'); // verbose -> concise
+  cleaned = cleaned.replace(/\bfor the purpose of\b/gi, 'to'); // verbose -> concise
+  
   // Enhanced repetition removal
   cleaned = cleaned.replace(/\b(\w+)(\s+\1){1,}/gi, '$1'); // "in order in order" -> "in order"
   cleaned = cleaned.replace(/\b(\w+\s+\w+)(\s+\1){1,}/gi, '$1'); // phrase repetitions
@@ -178,11 +196,18 @@ CRITICAL REQUIREMENTS:
 5. Avoid repetitive words or phrases within your output
 6. Do not add explanatory notes, commentary, or vocabulary lists
 
+FORBIDDEN PHRASES - DO NOT USE THESE:
+- "in order to" (use "to" instead)
+- "in order for" (rephrase directly)
+- Unnecessary filler phrases that don't appear in the original text
+- Awkward insertions that break sentence flow
+
 STYLE MATCHING PRIORITY:
 - Sentence structure and complexity patterns are most important
 - Punctuation and pacing habits should be replicated
 - Word choice should feel natural while matching user preferences  
 - Overall flow and readability must remain high
+- Keep sentences concise and direct unless the user's style indicates otherwise
 
 OUTPUT ONLY the paraphrased text with no additional content.
 
@@ -191,14 +216,6 @@ ${text}` }
       ]
     });
   const raw = completion.choices?.[0]?.message?.content?.trim() || '';
-  
-  // 🔍 LOG ACTUAL MODEL USED BY API
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('✅ ACTUAL MODEL USED BY GROQ API:');
-  console.log('   Model in response:', completion.model);
-  console.log('   Response ID:', completion.id);
-  console.log('   Tokens used:', completion.usage?.total_tokens || 'N/A');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   
   console.log('AI raw response:', JSON.stringify(raw.slice(-100)));
   let cleaned = humanizeText(sanitizeModelOutput(raw));

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { loadProfile, type StyleProfile, listProfiles, getActiveProfileId, setActiveProfileId, loadProfileRemote, upsertProfileLocal, loadProfilesRemote, syncLocalProfilesToRemote } from '../../lib/styleProfile.ts';
 import { paraphraseWithProfile, analyzeSampleStyle } from '../../lib/paraphrase.ts';
@@ -28,6 +29,7 @@ export default function ParaphrasePage() {
   const [history, setHistory] = useState<ParaphraseEntry[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [copied, setCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [styleTransformation, setStyleTransformation] = useState<StyleTransformation | null>(null);
@@ -73,6 +75,12 @@ export default function ParaphrasePage() {
     const legacy = loadProfile();
     if (legacy) setProfile(legacy);
   }, [router]);
+
+  // Mount check for portal rendering
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
 
   // When userId becomes available, attempt to hydrate a remote style profile if none locally
   useEffect(() => {
@@ -552,17 +560,6 @@ export default function ParaphrasePage() {
             <p className="text-[10px] text-slate-500">Review output carefully. Cite sources and disclose AI assistance.</p>
           </div>
         )}
-        
-        {/* AI Transparency Panel - Show how AI applied the user's style */}
-        {output && profile && usedModel && (
-          <AITransparencyPanel 
-            profile={profile}
-            originalText={input}
-            paraphrasedText={output}
-            usedModel={usedModel}
-            className="mt-6"
-          />
-        )}
 
         {/* Style Verification - Proof that user's style was applied */}
         {output && input && (
@@ -573,27 +570,41 @@ export default function ParaphrasePage() {
             onScoreCalculated={handleVerificationScore}
           />
         )}
-
-        {/* Style Comparison Panel - Detailed style transformation analysis */}
-        {showStyleAnalysis && styleTransformation && (
-          <div className="mt-4 sm:mt-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-              <h3 className="text-lg sm:text-xl font-semibold text-brand-300">Style Transformation Analysis</h3>
-              <button 
-                onClick={() => setShowStyleAnalysis(false)}
-                className="w-full sm:w-auto px-3 py-1 rounded text-xs bg-slate-600/30 hover:bg-slate-600/50 text-slate-300"
-              >
-                Close ✕
-              </button>
-            </div>
-            <StyleComparisonPanel 
-              transformation={styleTransformation} 
-              originalText={input}
-              paraphrasedText={output}
-            />
-          </div>
-        )}
       </div>
+      
+      {/* Style Transformation Analysis Modal */}
+      {showStyleAnalysis && styleTransformation && isMounted && createPortal(
+        <div 
+          className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-50 overflow-y-auto"
+          onClick={() => setShowStyleAnalysis(false)}
+        >
+          <div className="min-h-screen flex items-center justify-center p-2 sm:p-4 md:p-6">
+            <div 
+              className="w-full max-w-[95vw] lg:max-w-6xl my-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="glass-panel p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-slate-900/90 backdrop-blur-sm pb-4 border-b border-white/10 z-10">
+                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">Style Transformation Analysis</h3>
+                  <button 
+                    onClick={() => setShowStyleAnalysis(false)}
+                    className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors flex-shrink-0"
+                  >
+                    Close ✕
+                  </button>
+                </div>
+                <StyleComparisonPanel 
+                  transformation={styleTransformation} 
+                  originalText={input}
+                  paraphrasedText={output}
+                />
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      
       <aside className="lg:col-span-2 space-y-4 order-first lg:order-last">
         <div className="glass-panel p-4">
           <h2 className="font-semibold text-brand-300 text-sm sm:text-base mb-2">Current Style Profile</h2>
