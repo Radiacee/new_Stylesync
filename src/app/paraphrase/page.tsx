@@ -561,14 +561,17 @@ export default function ParaphrasePage() {
           </div>
         )}
 
-        {/* Style Verification - Proof that user's style was applied */}
+        {/* Style Verification - Hidden (user doesn't need to see this) */}
+        {/* Still calculates score in background for analytics */}
         {output && input && (
-          <StyleVerification 
-            original={input}
-            transformed={output}
-            profile={profile}
-            onScoreCalculated={handleVerificationScore}
-          />
+          <div style={{ display: 'none' }}>
+            <StyleVerification 
+              original={input}
+              transformed={output}
+              profile={profile}
+              onScoreCalculated={handleVerificationScore}
+            />
+          </div>
         )}
       </div>
       
