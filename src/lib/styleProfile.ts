@@ -10,11 +10,16 @@ export interface StyleProfile {
   pacing: number; // 0-1
   descriptiveness: number; // 0-1
   directness: number; // 0-1
-  sampleExcerpt: string;
+  sampleExcerpt: string; // combined text (for backward compatibility)
+  sampleExcerpts?: string[]; // multiple samples for better style adoption
   customLexicon: string[];
   notes: string;
   userId?: string;
   styleAnalysis?: SampleStyle; // computed analysis of sample excerpt for AI prompting
+  // NEW: Advanced style metrics (Step 1)
+  lexicalDensity?: number;
+  sentenceLengthVariety?: number;
+  paragraphLengthVariety?: number;
 }
 
 const KEY = 'stylesync.profile.v1';

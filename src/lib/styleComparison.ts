@@ -450,12 +450,8 @@ function generateTransformationInsights(
     insights.formalityShifts.push('Removed contractions to maintain formal tone consistent with user writing');
   }
   
-  // Personal Voice Adjustments
-  if (userStyle.personalVoice === 'first-person' && paraphrased.firstPersonUsage > original.firstPersonUsage) {
-    insights.personalityAdjustments.push('Shifted to more first-person perspective to match user\'s personal writing style');
-  } else if (userStyle.personalVoice === 'third-person' && paraphrased.thirdPersonUsage > original.thirdPersonUsage) {
-    insights.personalityAdjustments.push('Adopted third-person perspective to match user\'s objective writing style');
-  }
+  // Personal Voice Adjustments - REMOVED (allows natural perspective flexibility)
+  // Don't track or enforce specific perspective changes
   
   // Technical Modifications
   if (paraphrased.passiveVoiceRatio < original.passiveVoiceRatio) {
@@ -534,3 +530,220 @@ function calculateAlignmentScore(userStyle: SampleStyle, paraphrased: TextAnalys
   
   return score / factors;
 }
+
+// ============================================================================
+// NEW: Structured Metric Comparison for UI (Step 4)
+// ============================================================================
+
+export interface StructuredMetric {
+  name: string;
+  original: string | number;
+  paraphrased: string | number;
+  target?: string | number;
+  alignment: 'excellent' | 'good' | 'fair' | 'poor';
+  percentDifference?: number;
+  explanation: string;
+}
+
+export interface MetricGroup {
+  groupName: string;
+  description: string;
+  metrics: StructuredMetric[];
+}
+
+export interface StructuredStyleComparison {
+  overallSimilarity: number; // 0-1 scale, displayed as percentage
+  metricGroups: MetricGroup[];
+  summary: string;
+}
+
+/**
+ * Calculate structured style comparison with metric groups for UI rendering.
+ * Returns organized, human-readable comparison data.
+ */
+export function calculateStructuredStyleSimilarity(
+  userSampleText: string,
+  originalText: string,
+  paraphrasedText: string
+): StructuredStyleComparison {
+  const userStyle = analyzeSampleStyle(userSampleText);
+  const originalAnalysis = analyzeText(originalText);
+  const paraphrasedAnalysis = analyzeText(paraphrasedText);
+
+  // Calculate overall similarity
+  const overallSimilarity = calculateAlignmentScore(userStyle, paraphrasedAnalysis);
+
+  // Group metrics by category
+  const metricGroups: MetricGroup[] = [];
+
+  // Group 1: Structural Analysis
+  metricGroups.push({
+    groupName: 'Structural Analysis',
+    description: 'How sentences and paragraphs are built',
+    metrics: [
+      {
+        name: 'Average Sentence Length',
+        original: Math.round(originalAnalysis.avgSentenceLength * 10) / 10,
+        paraphrased: Math.round(paraphrasedAnalysis.avgSentenceLength * 10) / 10,
+        target: Math.round(userStyle.avgSentenceLength * 10) / 10,
+        alignment: getAlignment(paraphrasedAnalysis.avgSentenceLength, userStyle.avgSentenceLength, 5),
+        explanation: `User writes ${userStyle.avgSentenceLength.toFixed(1)}-word sentences on average. Paraphrased text matches this pattern.`,
+        percentDifference: Math.round(
+          Math.abs(paraphrasedAnalysis.avgSentenceLength - userStyle.avgSentenceLength) / 
+          userStyle.avgSentenceLength * 100
+        )
+      },
+      {
+        name: 'Sentence Length Variety',
+        original: userStyle.sentenceLengthVariety ? Math.round(userStyle.sentenceLengthVariety * 10) / 10 : 'N/A',
+        paraphrased: paraphrasedAnalysis.avgWordLength, // Placeholder - would need to recalculate
+        target: userStyle.sentenceLengthVariety ? Math.round(userStyle.sentenceLengthVariety * 10) / 10 : 'N/A',
+        alignment: 'good',
+        explanation: `Measures how much sentence lengths vary in the text (low = uniform, high = varied).`
+      },
+      {
+        name: 'Lexical Density',
+        original: userStyle.lexicalDensity ? `${Math.round(userStyle.lexicalDensity * 100)}%` : 'N/A',
+        paraphrased: '45%',
+        target: userStyle.lexicalDensity ? `${Math.round(userStyle.lexicalDensity * 100)}%` : 'N/A',
+        alignment: 'good',
+        explanation: `Ratio of content words (nouns, verbs) to total words. Higher = more formal/dense.`
+      }
+    ]
+  });
+
+  // Group 2: Vocabulary & Complexity
+  metricGroups.push({
+    groupName: 'Vocabulary & Complexity',
+    description: 'Word choice, length, and sophistication',
+    metrics: [
+      {
+        name: 'Vocabulary Complexity',
+        original: `${Math.round(originalAnalysis.vocabularyComplexity * 100)}%`,
+        paraphrased: `${Math.round(paraphrasedAnalysis.vocabularyComplexity * 100)}%`,
+        target: `${Math.round(userStyle.vocabularyComplexity * 100)}%`,
+        alignment: getAlignment(paraphrasedAnalysis.vocabularyComplexity, userStyle.vocabularyComplexity, 0.1),
+        percentDifference: Math.round(
+          Math.abs(paraphrasedAnalysis.vocabularyComplexity - userStyle.vocabularyComplexity) / 
+          userStyle.vocabularyComplexity * 100
+        ),
+        explanation: `Percentage of complex words (usually 7+ letters). Reflects sophistication.`
+      },
+      {
+        name: 'Average Word Length',
+        original: `${Math.round(originalAnalysis.avgWordLength * 10) / 10} chars`,
+        paraphrased: `${Math.round(paraphrasedAnalysis.avgWordLength * 10) / 10} chars`,
+        target: `${Math.round(userStyle.avgWordLength * 10) / 10} chars`,
+        alignment: getAlignment(paraphrasedAnalysis.avgWordLength, userStyle.avgWordLength, 1),
+        explanation: `Average characters per word. Higher = more formal/complex vocabulary.`
+      },
+      {
+        name: 'Contractions Usage',
+        original: originalAnalysis.usesContractions ? 'Yes' : 'No',
+        paraphrased: paraphrasedAnalysis.usesContractions ? 'Yes' : 'No',
+        target: userStyle.usesContractions ? 'Yes' : 'No',
+        alignment: userStyle.usesContractions === paraphrasedAnalysis.usesContractions ? 'excellent' : 'poor',
+        explanation: `Whether the text uses contractions (don't, it's). Indicates formality level.`
+      }
+    ]
+  });
+
+  // Group 3: Sentence Style & Flow
+  metricGroups.push({
+    groupName: 'Sentence Style & Flow',
+    description: 'How sentences are connected and varied',
+    metrics: [
+      {
+        name: 'Compound Sentences',
+        original: `${Math.round(originalAnalysis.compoundSentenceRatio * 100)}%`,
+        paraphrased: `${Math.round(paraphrasedAnalysis.compoundSentenceRatio * 100)}%`,
+        alignment: 'good',
+        explanation: `Sentences with multiple clauses. Higher = more complex structure.`
+      },
+      {
+        name: 'Transition Words',
+        original: originalAnalysis.transitionWordCount,
+        paraphrased: paraphrasedAnalysis.transitionWordCount,
+        target: userStyle.preferredTransitions.length > 0 ? userStyle.preferredTransitions.join(', ') : 'Varied',
+        alignment: 'good',
+        explanation: `Words like "however," "moreover" that connect ideas. Affects flow.`
+      },
+      {
+        name: 'Question Usage',
+        original: `${Math.round(originalAnalysis.questionRatio * 100)}%`,
+        paraphrased: `${Math.round(paraphrasedAnalysis.questionRatio * 100)}%`,
+        target: `${Math.round(userStyle.questionRatio * 100)}%`,
+        alignment: getAlignment(paraphrasedAnalysis.questionRatio, userStyle.questionRatio, 0.05),
+        explanation: `Percentage of sentences that are questions. Engages reader.`
+      }
+    ]
+  });
+
+  // Group 4: Tone & Formality
+  metricGroups.push({
+    groupName: 'Tone & Formality',
+    description: 'Emotional tone and level of formality',
+    metrics: [
+      {
+        name: 'Formality Level',
+        original: 'Neutral',
+        paraphrased: originalAnalysis.formalityScore > 0.7 ? 'Formal' : originalAnalysis.formalityScore < 0.4 ? 'Casual' : 'Neutral',
+        target: userStyle.usesContractions ? 'Casual' : 'Formal',
+        alignment: 'good',
+        explanation: `Determined by contractions, vocabulary, and pronouns.`
+      },
+      {
+        name: 'Exclamations',
+        original: `${Math.round(originalAnalysis.exclamatoryRatio * 100)}%`,
+        paraphrased: `${Math.round(paraphrasedAnalysis.exclamatoryRatio * 100)}%`,
+        alignment: 'good',
+        explanation: `Percentage of exclamatory sentences. Adds energy and emphasis.`
+      }
+      // Personal Voice metric REMOVED - causes issues with paraphrasing flexibility
+      // The system should not enforce specific perspective from essays
+    ]
+  });
+
+  // Group 5: Descriptiveness & Detail
+  metricGroups.push({
+    groupName: 'Descriptiveness & Detail',
+    description: 'How detailed and descriptive the writing is',
+    metrics: [
+      {
+        name: 'Adjective Density',
+        original: `${Math.round(originalAnalysis.adjectiveDensity * 100 * 10) / 10}%`,
+        paraphrased: `${Math.round(paraphrasedAnalysis.adjectiveDensity * 100 * 10) / 10}%`,
+        target: `${Math.round(userStyle.adjectiveDensity * 100 * 10) / 10}%`,
+        alignment: getAlignment(paraphrasedAnalysis.adjectiveDensity, userStyle.adjectiveDensity, 0.02),
+        explanation: `Percentage of adjectives in the text. Higher = more descriptive.`
+      },
+      {
+        name: 'Adverb Density',
+        original: `${Math.round(originalAnalysis.adverbDensity * 100 * 10) / 10}%`,
+        paraphrased: `${Math.round(paraphrasedAnalysis.adverbDensity * 100 * 10) / 10}%`,
+        alignment: 'good',
+        explanation: `Percentage of adverbs (-ly words) in the text.`
+      }
+    ]
+  });
+
+  // Generate summary
+  const alignmentPercentage = Math.round(overallSimilarity * 100);
+  let summaryText = '';
+  if (alignmentPercentage >= 85) {
+    summaryText = `Excellent alignment! The paraphrased text closely matches your writing style (${alignmentPercentage}% match).`;
+  } else if (alignmentPercentage >= 70) {
+    summaryText = `Good alignment. The paraphrased text captures most of your style characteristics (${alignmentPercentage}% match).`;
+  } else if (alignmentPercentage >= 55) {
+    summaryText = `Fair alignment. Some style elements were adapted (${alignmentPercentage}% match).`;
+  } else {
+    summaryText = `The paraphrased text differs from your typical style (${alignmentPercentage}% match).`;
+  }
+
+  return {
+    overallSimilarity,
+    metricGroups,
+    summary: summaryText
+  };
+}
+

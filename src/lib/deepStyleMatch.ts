@@ -6,6 +6,106 @@ import { analyzeSampleStyle, type SampleStyle } from './paraphrase';
  * from their sample excerpt
  */
 
+// ============================================================================
+// NEW METRICS: Lexical Density, Sentence Variety, Paragraph Variety
+// ============================================================================
+
+/**
+ * Calculate lexical density: ratio of content words (nouns, verbs, adjectives, adverbs)
+ * to total words. Higher = more dense/formal; Lower = more conversational.
+ * 
+ * Range: 0.0 to 1.0 (typically 0.3-0.7 for most prose)
+ */
+export function calculateLexicalDensity(text: string): number {
+  if (!text || !text.trim()) return 0;
+  // Tokenize words conservatively: include alphabetic sequences and contractions
+  const words = text.toLowerCase().match(/[a-z']{1,}/g) || [];
+  // Filter out tokens that are purely apostrophes or single non-content tokens
+  const filtered = words.filter(w => /[a-z]/.test(w));
+  if (filtered.length === 0) return 0;
+
+  // Function words (low content)
+  const functionWords = new Set([
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+    'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
+    'will', 'would', 'should', 'could', 'can', 'may', 'might', 'must', 'shall',
+    'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them',
+    'my', 'your', 'his', 'her', 'its', 'our', 'their', 'this', 'that', 'these', 'those',
+    'as', 'if', 'when', 'where', 'why', 'how', 'which', 'who', 'whom', 'what',
+    'am', 'from', 'up', 'out', 'so', 'than', 'then', 'there', 'about', 'over', 'under',
+    'before', 'after', 'during', 'through', 'between', 'among', 'into', 'onto', 'such',
+    'no', 'not', 'nor', 'very', 'just', 'only', 'also', 'even', 'quite', 'rather'
+  ]);
+
+  // Count content words (words not in function words list)
+  const contentWords = filtered.filter(w => !functionWords.has(w)).length;
+
+  // Lexical density = content words / total words (clamped 0..1)
+  const density = contentWords / filtered.length;
+  if (!isFinite(density)) return 0;
+  return Math.max(0, Math.min(1, density));
+}
+
+/**
+ * Calculate sentence length variety (standard deviation of sentence lengths).
+ * Higher = more variety (mixes short and long); Lower = more uniform.
+ * 
+ * Returns standard deviation of word counts per sentence.
+ */
+export function calculateSentenceLengthVariety(text: string): number {
+  if (!text || !text.trim()) return 0;
+  // Split sentences by punctuation but avoid empty fragments
+  const sentences = text.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+  if (sentences.length < 2) return 0;
+
+  // Get word count for each sentence (ignore extremely short tokens)
+  const sentenceLengths = sentences.map(s => {
+    const words = (s.match(/[a-zA-Z']{1,}/g) || []).filter(w => /[a-zA-Z]/.test(w));
+    return Math.max(0, words.length);
+  }).filter(n => n > 0);
+
+  if (sentenceLengths.length < 2) return 0;
+
+  // Calculate mean
+  const mean = sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length;
+
+  // Calculate variance (population std)
+  const variance = sentenceLengths.reduce((sum, len) => sum + Math.pow(len - mean, 2), 0) / sentenceLengths.length;
+
+  // Return standard deviation
+  return Math.sqrt(variance);
+}
+
+/**
+ * Calculate paragraph length variety (standard deviation of paragraph lengths).
+ * Similar to sentence variety but for paragraph-level structure.
+ * 
+ * Returns standard deviation of word counts per paragraph.
+ */
+export function calculateParagraphLengthVariety(text: string): number {
+  if (!text || !text.trim()) return 0;
+  // Split by two or more newlines as paragraph separators
+  const paragraphs = text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+  if (paragraphs.length < 2) return 0;
+
+  // Get word count for each paragraph
+  const paragraphLengths = paragraphs.map(p => {
+    const words = (p.match(/[a-zA-Z']{1,}/g) || []).filter(w => /[a-zA-Z]/.test(w));
+    return Math.max(0, words.length);
+  }).filter(n => n > 0);
+
+  if (paragraphLengths.length < 2) return 0;
+
+  // Calculate mean
+  const mean = paragraphLengths.reduce((a, b) => a + b, 0) / paragraphLengths.length;
+
+  // Calculate variance
+  const variance = paragraphLengths.reduce((sum, len) => sum + Math.pow(len - mean, 2), 0) / paragraphLengths.length;
+
+  // Return standard deviation
+  return Math.sqrt(variance);
+}
+
 interface DeepStylePatterns {
   // Sentence structure patterns
   sentenceStarters: string[];

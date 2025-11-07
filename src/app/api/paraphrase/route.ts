@@ -4,6 +4,7 @@ import { applyDeepStyleMatch } from '../../../lib/deepStyleMatch.ts';
 import { STYLE_RULE_PROMPT } from '../../../lib/styleRules.ts';
 import { rateLimit, formatRateLimitHeaders } from '../../../lib/rateLimit.ts';
 import { z } from 'zod';
+import { detectPOV, povLabel } from '../../../lib/pov.ts';
 
 const bodySchema = z.object({
   text: z.string().min(1).max(8000),
@@ -205,29 +206,29 @@ async function intelligentParaphrase(text: string, profile: any): Promise<string
 }
 
 function buildFocusedPrompt(profile: any): string {
-  const base = STYLE_RULE_PROMPT + '\n\nCRITICAL: Preserve exact meaning and all factual content. Focus on sentence construction patterns and natural language flow.';
+  const base = STYLE_RULE_PROMPT + '\n\n🎯 YOUR GOAL: Transform the sentence structure to match the user\'s writing style from their essay samples.\n\n🚨 ABSOLUTE RULES (NEVER VIOLATE):\n1. Keep 100% of the content - no summarizing, no omitting\n2. ONLY change HOW sentences are structured, not WHAT they say\n3. Match the user\'s writing style completely (including their perspective, vocabulary, and patterns)\n4. Think: "How would this user write this same information?"';
   if (!profile) return base;
   
-  let stylePrompt = base + `\n\n🎯 USER STYLE PROFILE:`;
+  let stylePrompt = base + `\n\n📝 USER'S WRITING STYLE (from their essay samples):`;
   
-  // FORMALITY - Make this the most prominent
+  // FORMALITY
   const formalityPercent = Math.round(profile.formality * 100);
   stylePrompt += `\n\n⚠️ FORMALITY LEVEL: ${formalityPercent}% ${formalityPercent >= 80 ? '(HIGHLY FORMAL - STRICT)' : formalityPercent >= 60 ? '(FORMAL)' : formalityPercent >= 40 ? '(NEUTRAL)' : '(CASUAL)'}`;
   
   if (formalityPercent >= 80) {
     stylePrompt += '\n  ✓ NO contractions (do not, cannot, will not)';
     stylePrompt += '\n  ✓ NO informal words (stuff, things, get, got, lots)';
-    stylePrompt += '\n  ✓ NO personal pronouns (I, we, you) - use passive/impersonal voice';
     stylePrompt += '\n  ✓ USE formal vocabulary (utilize, demonstrate, establish)';
     stylePrompt += '\n  ✓ USE formal transitions (Moreover, Furthermore, Consequently)';
+    stylePrompt += '\n  ✓ Match the user\'s essay perspective style';
   } else if (formalityPercent >= 60) {
     stylePrompt += '\n  ✓ Minimal contractions';
     stylePrompt += '\n  ✓ Professional vocabulary';
-    stylePrompt += '\n  ✓ Limited personal pronouns';
+    stylePrompt += '\n  ✓ Match the user\'s essay style';
   } else if (formalityPercent <= 40) {
     stylePrompt += '\n  ✓ Use contractions naturally';
     stylePrompt += '\n  ✓ Conversational vocabulary';
-    stylePrompt += '\n  ✓ Personal voice is fine';
+    stylePrompt += '\n  ✓ Match the user\'s personal voice from essays';
   }
   
   stylePrompt += `\n- Tone: ${profile.tone}`;
@@ -322,6 +323,65 @@ function buildFocusedPrompt(profile: any): string {
     stylePrompt += '\n  → Use hedging and qualifiers (may, might, could)';
     stylePrompt += '\n  → Diplomatic, roundabout phrasing';
   }
+
+  // NEW: Advanced Style Metrics (Step 2)
+  if (profile.styleAnalysis) {
+    const analysis = profile.styleAnalysis;
+    
+    // Lexical Density
+    if (analysis.lexicalDensity !== undefined) {
+      const densityPercent = Math.round(analysis.lexicalDensity * 100);
+      stylePrompt += `\n\n📊 LEXICAL DENSITY: ${densityPercent}%`;
+      if (densityPercent >= 60) {
+        stylePrompt += ' (HIGH - content-rich, formal)';
+        stylePrompt += '\n  → Use more nouns, verbs, adjectives; fewer function words';
+        stylePrompt += '\n  → Dense, information-packed writing';
+      } else if (densityPercent >= 40) {
+        stylePrompt += ' (MODERATE)';
+        stylePrompt += '\n  → Balance content words with connectors';
+        stylePrompt += '\n  → Natural mix of information and flow words';
+      } else {
+        stylePrompt += ' (LOW - conversational, flowing)';
+        stylePrompt += '\n  → More function words and connectors';
+        stylePrompt += '\n  → Lighter, more accessible writing';
+      }
+    }
+    
+    // Sentence Length Variety
+    if (analysis.sentenceLengthVariety !== undefined) {
+      const varietyScore = Math.round(analysis.sentenceLengthVariety);
+      stylePrompt += `\n\n🔀 SENTENCE LENGTH VARIETY: ${varietyScore} (std deviation)`;
+      if (varietyScore > 12) {
+        stylePrompt += ' (HIGH - mixes long and short)';
+        stylePrompt += '\n  → Alternate between short punchy sentences and longer flowing ones';
+        stylePrompt += '\n  → Creates dynamic rhythm and keeps reader engaged';
+      } else if (varietyScore > 6) {
+        stylePrompt += ' (MODERATE)';
+        stylePrompt += '\n  → Vary sentence lengths naturally';
+      } else {
+        stylePrompt += ' (LOW - consistent lengths)';
+        stylePrompt += '\n  → Keep sentences roughly uniform in length';
+        stylePrompt += '\n  → Steady, predictable rhythm';
+      }
+    }
+    
+    // Paragraph Length Variety
+    if (analysis.paragraphLengthVariety !== undefined) {
+      const paraVarietyScore = Math.round(analysis.paragraphLengthVariety);
+      stylePrompt += `\n\n📄 PARAGRAPH VARIETY: ${paraVarietyScore} (std deviation)`;
+      if (paraVarietyScore > 8) {
+        stylePrompt += ' (HIGH - varied paragraph lengths)';
+        stylePrompt += '\n  → Mix short punchy paragraphs with longer detailed ones';
+        stylePrompt += '\n  → Emphasizes key points with short paras';
+      } else if (paraVarietyScore > 3) {
+        stylePrompt += ' (MODERATE)';
+        stylePrompt += '\n  → Vary paragraph lengths naturally';
+      } else {
+        stylePrompt += ' (LOW - uniform paragraph lengths)';
+        stylePrompt += '\n  → Keep paragraphs roughly the same size';
+      }
+    }
+  }
   
   // Add ONLY the most distinctive style features (top 5-8)
   if (profile.sampleExcerpt && profile.styleAnalysis) {
@@ -352,6 +412,9 @@ function buildFocusedPrompt(profile: any): string {
   stylePrompt += '\n\n=== OUTPUT REQUIREMENTS ===';
   stylePrompt += '\n• Output ONLY the paraphrased text';
   stylePrompt += '\n• Preserve ALL factual content exactly';
+  stylePrompt += '\n• Preserve the original person perspective (narrative POV) and grammatical subject relationships';
+  stylePrompt += '\n• Keep named entities, numbers, and dates unchanged';
+  stylePrompt += '\n• Do not convert statements to imperatives or instructions unless the original is imperative';
   stylePrompt += `\n• MUST match ${formalityPercent}% formality (contractions, vocabulary, voice)`;
   stylePrompt += `\n• MUST match ${pacingPercent}% pacing (sentence length and rhythm)`;
   stylePrompt += `\n• MUST match ${descriptPercent}% descriptiveness (adjective/adverb density)`;
@@ -546,13 +609,8 @@ function identifyDistinctiveFeatures(analysis: any): Array<{priority: number, de
     });
   }
   
-  // 18. Voice/perspective
-  if (analysis.personalVoice && analysis.personalVoice !== 'Third person neutral') {
-    features.push({
-      priority: 9,
-      description: `${analysis.personalVoice} perspective - maintain this voice consistently`
-    });
-  }
+  // Voice/perspective - REMOVED (causes issues with paraphrasing flexibility)
+  // The system should not force a specific perspective from the essays
   
   // 19. Transition sentence starters
   if (analysis.transitionStartRatio && analysis.transitionStartRatio > 0.25) {
@@ -1030,16 +1088,8 @@ function adjustFormality(text: string, targetFormality: number, currentFormality
       adjusted = adjusted.replace(regex, formal);
     }
     
-    // 3. Remove personal pronouns where possible (convert to passive/impersonal)
-    // "I think" → "It is believed", "We found" → "It was found"
-    adjusted = adjusted.replace(/\bI think\b/gi, 'It can be argued');
-    adjusted = adjusted.replace(/\bI believe\b/gi, 'It is believed');
-    adjusted = adjusted.replace(/\bWe found\b/gi, 'It was found');
-    adjusted = adjusted.replace(/\bWe can see\b/gi, 'It can be observed');
-    adjusted = adjusted.replace(/\bYou can\b/gi, 'One can');
-    adjusted = adjusted.replace(/\bYou should\b/gi, 'One should');
-    adjusted = adjusted.replace(/\bYou need to\b/gi, 'It is necessary to');
-    adjusted = adjusted.replace(/\bYou have to\b/gi, 'It is required to');
+  // 3. DO NOT change person perspective (no pronoun-to-impersonal conversions)
+  // Keep first/second/third person as in the original to preserve meaning and POV.
     
     // 4. Add formal transition words if missing
     const sentences = adjusted.split(/(?<=[.!?])\s+/);
@@ -1352,8 +1402,14 @@ async function tryGroqAPI(text: string, systemPrompt: string): Promise<string> {
     max_tokens: Math.min(2000, Math.max(100, text.length * 2)),
     messages: [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: `Paraphrase this text following the style requirements:
+      { role: 'user', content: `🎯 TASK: Rewrite this text to match the user's writing style completely.
 
+🚨 CRITICAL RULES:
+1. Keep 100% of content - do NOT summarize or remove anything
+2. Match the user's style completely (including sentence structure, vocabulary, and perspective)
+3. Make it sound EXACTLY like the user wrote it from their essay samples
+
+Input text to restructure:
 ${text}` }
     ]
   });
@@ -1381,7 +1437,15 @@ async function tryGeminiAPI(text: string, systemPrompt: string): Promise<string>
     body: JSON.stringify({
       contents: [{
         parts: [{
-          text: `${systemPrompt}\n\nParaphrase this text following the style requirements:\n\n${text}`
+          text: `${systemPrompt}\n\n🎯 TASK: Rewrite this text to match the user's writing style completely.
+
+🚨 CRITICAL RULES:
+1. Keep 100% of content - do NOT summarize or remove anything
+2. Match the user's style completely (including sentence structure, vocabulary, and perspective)
+3. Make it sound EXACTLY like the user wrote it from their essay samples
+
+Input text to restructure:
+${text}`
         }]
       }],
       generationConfig: {
@@ -1430,32 +1494,47 @@ async function modelParaphraseGroq(text: string, profile: any) {
       max_tokens: Math.min(2000, Math.max(100, text.length * 2)), // Prevent excessive length
       messages: [
         { role: 'system', content: system },
-        { role: 'user', content: `Paraphrase the following text while preserving EXACTLY the same meaning and all factual content. Your goal is to transform the writing style to match the user's patterns while keeping every piece of information identical.
+        { role: 'user', content: `🎯 YOUR ONLY JOB: Rewrite this text to match the user's writing style from their essay samples.
 
-CRITICAL REQUIREMENTS:
-1. Preserve ALL facts, concepts, data, and ideas exactly as written
-2. Maintain the original meaning completely - no additions, omissions, or changes to content
-3. Focus on mimicking the user's sentence construction, word choice patterns, and flow
-4. Use natural language that sounds human-written, not AI-generated
-5. Avoid repetitive words or phrases within your output
-6. Do not add explanatory notes, commentary, or vocabulary lists
+🚨 CRITICAL RULES (NEVER BREAK):
 
-FORBIDDEN PHRASES - DO NOT USE THESE:
-- "in order to" (use "to" instead)
-- "in order for" (rephrase directly)
-- Unnecessary filler phrases that don't appear in the original text
-- Awkward insertions that break sentence flow
+1. PRESERVE 100% OF THE CONTENT
+   - Every fact, detail, concept, and idea MUST stay identical
+   - Do NOT summarize, shorten, or omit anything
+   - Do NOT add new information or interpretations
+   - Keep ALL data, numbers, names, and specific details exactly as written
 
-STYLE MATCHING PRIORITY:
-- Sentence structure and complexity patterns are most important
-- Punctuation and pacing habits should be replicated
-- Word choice should feel natural while matching user preferences  
-- Overall flow and readability must remain high
-- Keep sentences concise and direct unless the user's style indicates otherwise
+2. MATCH THE USER'S STYLE COMPLETELY
+   - Match how they structure sentences (simple vs complex)
+   - Match their vocabulary level (formal vs casual)
+   - Match their punctuation patterns
+   - Match their perspective/pronouns (if their essays use "I", use "I"; if "you", use "you")
+   - Match their sentence length patterns
+   - Match their transitions and flow
+   - Make it sound EXACTLY like the user wrote it
 
-OUTPUT ONLY the paraphrased text with no additional content.
+3. OUTPUT FORMAT
+   - Return ONLY the rewritten text
+   - No explanations, no notes, no commentary
+   - No "Here's the rewritten version:" or similar prefixes
 
-Text to paraphrase:
+📝 WHAT TO MATCH FROM USER'S STYLE:
+- Sentence structure (simple vs complex)
+- Perspective/pronouns (first/second/third person from their essays)
+- Vocabulary level (formal vs casual)
+- Punctuation style (commas, dashes, semicolons)
+- Sentence length patterns
+- Transitions and flow
+
+❌ WHAT NOT TO DO:
+- Do NOT summarize or condense
+- Do NOT remove any information
+- Do NOT add your own thoughts
+- Do NOT change the meaning at all
+- Do NOT use awkward AI phrases like "in order to"
+- Do NOT make it sound robotic
+
+Input text to rewrite:
 ${text}` }
       ]
     });
@@ -1569,7 +1648,7 @@ function finalPunctuationCleanup(text: string): string {
 }
 
 function buildSystemPrompt(profile: any): string {
-  const base = STYLE_RULE_PROMPT + '\n\nCRITICAL: Preserve the exact meaning and all factual content. No fabrication of facts. Focus on sentence construction patterns and natural language flow. Maintain clarity and readability above all else.';
+  const base = STYLE_RULE_PROMPT + '\n\n🎯 YOUR MISSION: You are a writing style transformer. The user has provided their own essay samples. Your ONLY job is to restructure the input text to match HOW the user writes (sentence structure, flow, patterns, perspective) while keeping EVERY piece of information 100% intact.\n\n🚨 NON-NEGOTIABLE RULES:\n1. Do NOT summarize or condense - keep everything\n2. Do NOT add information - only restructure what exists\n3. Do NOT change facts, names, numbers, or specific details\n4. MATCH the user\'s writing style completely (including their perspective/pronouns)\n5. Make it sound EXACTLY like the user wrote it';
   if (!profile) return base;
   
   let stylePrompt = base + `\n\nUSER STYLE PROFILE:`;
@@ -1614,8 +1693,8 @@ function buildSystemPrompt(profile: any): string {
       stylePrompt += `\n- Uses exclamations for emphasis (${(analysis.exclamatoryRatio * 100).toFixed(0)}% of sentences)`;
     }
     
-    // VOICE AND PERSPECTIVE
-    stylePrompt += `\n- Writing perspective: ${analysis.personalVoice}`;
+    // VOICE AND PERSPECTIVE - REMOVED (allows natural perspective matching)
+    // Don't force a specific perspective - let the paraphraser match overall essay style naturally
     stylePrompt += `\n- Overall tone: ${analysis.toneBalance}`;
     
     // SENTENCE STARTERS

@@ -1,6 +1,7 @@
 import type { StyleProfile } from './styleProfile.ts';
 import { buildFrequencyMap, pickPreferred as pickFreqPreferred } from './styleFrequency.ts';
 import { enforceStyleRulesWithActions } from './styleRules.ts';
+import { calculateLexicalDensity, calculateSentenceLengthVariety, calculateParagraphLengthVariety } from './deepStyleMatch.ts';
 
 // Simple synonym map (demo only)
 const SYNONYMS: Record<string, string[]> = {
@@ -889,11 +890,135 @@ export interface SampleStyle {
     midSentenceAdverbs: number;
     endSentenceAdverbs: number;
   };
+  // NEW: Advanced style metrics (Step 1)
+  lexicalDensity?: number;
+  sentenceLengthVariety?: number;
+  paragraphLengthVariety?: number;
 }
 
 const TRANSITION_CANDIDATES = ['However,', 'Moreover,', 'Additionally,', 'Furthermore,', 'Meanwhile,', 'Instead,', 'Still,', 'Thus,', 'Therefore,'];
 
-export function analyzeSampleStyle(sample: string): SampleStyle {
+/**
+ * Analyze multiple samples with equal weighting to ensure unbiased style detection.
+ * If samples is an array, each sample is analyzed individually then aggregated.
+ * If samples is a string with \n\n separators, it will be split and analyzed separately.
+ */
+export function analyzeSampleStyle(sample: string | string[]): SampleStyle {
+  // Auto-detect multiple samples from combined text
+  let samples: string[];
+  if (typeof sample === 'string') {
+    // Split by double newline (how onboarding combines samples)
+    const parts = sample.split(/\n\n+/).filter(s => s.trim().length > 50);
+    samples = parts.length > 1 ? parts : [sample];
+  } else {
+    samples = sample;
+  }
+
+  // If multiple samples, analyze each separately and aggregate with equal weight
+  if (samples.length > 1) {
+    console.log(`📊 Analyzing ${samples.length} samples separately for unbiased results`);
+    const individualResults = samples.map((s, idx) => {
+      console.log(`  Sample ${idx + 1}: ${s.length} chars, ${s.split(/[.!?]/).length} sentences`);
+      return analyzeSingleSample(s);
+    });
+    return aggregateAnalyses(individualResults);
+  }
+
+  // Single sample - analyze directly
+  return analyzeSingleSample(samples[0]);
+}
+
+/**
+ * Aggregate multiple sample analyses with equal weighting (no bias toward longer samples).
+ */
+function aggregateAnalyses(analyses: SampleStyle[]): SampleStyle {
+  const n = analyses.length;
+  console.log(`📊 Aggregating ${n} analyses with equal weight per sample`);
+
+  // Numeric metrics: simple average
+  const avg = (key: keyof SampleStyle) => {
+    const values = analyses.map(a => typeof a[key] === 'number' ? a[key] as number : 0);
+    return values.reduce((sum, v) => sum + v, 0) / n;
+  };
+
+  // Boolean: majority vote
+  const usesContractions = analyses.filter(a => a.usesContractions).length > n / 2;
+
+  // Arrays: merge and deduplicate, taking top items by frequency across all samples
+  const mergeTopWords = (key: 'preferredTransitions' | 'highFrequencyWords' | 'topAdverbs' | 'commonStarters') => {
+    const allWords: string[] = [];
+    analyses.forEach(a => allWords.push(...(a[key] || [])));
+    const freq: Record<string, number> = {};
+    allWords.forEach(w => freq[w] = (freq[w] || 0) + 1);
+    return Object.entries(freq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, key === 'highFrequencyWords' ? 30 : key === 'commonStarters' ? 5 : 3)
+      .map(([word]) => word);
+  };
+
+  // Tone: majority vote
+  const tones = analyses.map(a => a.toneBalance);
+  const toneFreq: Record<string, number> = {};
+  tones.forEach(t => toneFreq[t] = (toneFreq[t] || 0) + 1);
+  const toneBalance = Object.entries(toneFreq).sort((a, b) => b[1] - a[1])[0][0] as 'positive' | 'negative' | 'neutral';
+
+  // Personal voice: majority vote
+  const voices = analyses.map(a => a.personalVoice);
+  const voiceFreq: Record<string, number> = {};
+  voices.forEach(v => voiceFreq[v] = (voiceFreq[v] || 0) + 1);
+  const personalVoice = Object.entries(voiceFreq).sort((a, b) => b[1] - a[1])[0][0] as string;
+
+  // Nested objects: average each field
+  const avgNested = (key: 'constructionPatterns' | 'punctuationPatterns' | 'modifierPatterns') => {
+    const result: any = {};
+    const firstSample = analyses[0][key];
+    if (!firstSample) return {};
+    
+    for (const field of Object.keys(firstSample)) {
+      const values = analyses.map(a => {
+        const obj = a[key] as any;
+        return typeof obj?.[field] === 'number' ? obj[field] : 0;
+      });
+      result[field] = values.reduce((sum, v) => sum + v, 0) / n;
+    }
+    return result;
+  };
+
+  return {
+    avgSentenceLength: avg('avgSentenceLength'),
+    sentenceLengthStd: avg('sentenceLengthStd'),
+    // Aggregate advanced metrics across samples
+    lexicalDensity: avg('lexicalDensity'),
+    sentenceLengthVariety: avg('sentenceLengthVariety'),
+    paragraphLengthVariety: avg('paragraphLengthVariety'),
+    usesContractions,
+    preferredTransitions: mergeTopWords('preferredTransitions'),
+    highFrequencyWords: mergeTopWords('highFrequencyWords'),
+    commaPerSentence: avg('commaPerSentence'),
+    semicolonRatio: avg('semicolonRatio'),
+    transitionStartRatio: avg('transitionStartRatio'),
+    topAdverbs: mergeTopWords('topAdverbs'),
+    avgWordLength: avg('avgWordLength'),
+    vocabularyComplexity: avg('vocabularyComplexity'),
+    questionRatio: avg('questionRatio'),
+    exclamatoryRatio: avg('exclamatoryRatio'),
+    commonStarters: mergeTopWords('commonStarters'),
+    conjunctionDensity: avg('conjunctionDensity'),
+    adjectiveDensity: avg('adjectiveDensity'),
+    toneBalance,
+    personalVoice,
+    constructionPatterns: avgNested('constructionPatterns') as any,
+    punctuationPatterns: avgNested('punctuationPatterns') as any,
+    avgClausesPerSentence: avg('avgClausesPerSentence'),
+    parallelStructureRatio: avg('parallelStructureRatio'),
+    modifierPatterns: avgNested('modifierPatterns') as any,
+  };
+}
+
+/**
+ * Core analysis function for a single sample text.
+ */
+function analyzeSingleSample(sample: string): SampleStyle {
   const sentences = sample.split(/(?<=[.!?])\s+/).filter(s => s.trim().length);
   const lengths = sentences.map(s => s.length);
   const avg = lengths.reduce((a,b)=>a+b,0) / (lengths.length || 1);
@@ -1130,6 +1255,10 @@ export function analyzeSampleStyle(sample: string): SampleStyle {
     avgClausesPerSentence,
     parallelStructureRatio,
     modifierPatterns,
+    // NEW: Advanced style metrics (Step 1)
+    lexicalDensity: calculateLexicalDensity(sample),
+    sentenceLengthVariety: calculateSentenceLengthVariety(sample),
+    paragraphLengthVariety: calculateParagraphLengthVariety(sample),
   };
 }
 

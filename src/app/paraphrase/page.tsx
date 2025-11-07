@@ -146,6 +146,14 @@ export default function ParaphrasePage() {
   setActions(data.actions || []);
   setMetrics(data.metrics || null);
   setUsedModel(!!data.usedModel);
+  
+  // Automatically run style analysis after getting output
+  if (enhancedProfile?.sampleExcerpt && input && data.result) {
+    setTimeout(() => {
+      runStyleAnalysisInBackground(input, data.result || '', enhancedProfile);
+    }, 500);
+  }
+  
   // Append to history
       if (userId) {
         const optimistic: ParaphraseEntry = { id: crypto.randomUUID(), userId, input, output: data.result || '', note: '', usedModel: !!data.usedModel, createdAt: new Date().toISOString(), pending: true };
@@ -264,6 +272,31 @@ export default function ParaphrasePage() {
       setError(err.message || 'Failed to analyze style transformation');
     } finally {
       setAnalyzingStyle(false);
+    }
+  }
+
+  // Run style analysis in background automatically
+  async function runStyleAnalysisInBackground(inputText: string, outputText: string, userProfile: StyleProfile) {
+    if (!userProfile?.sampleExcerpt) return;
+    
+    try {
+      const response = await fetch('/api/style-comparison', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userSampleText: userProfile.sampleExcerpt,
+          originalText: inputText,
+          paraphrasedText: outputText
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStyleTransformation(data.transformation);
+      }
+    } catch (err) {
+      // Silently fail - user can manually trigger analysis if needed
+      console.error('Background style analysis failed:', err);
     }
   }
 
@@ -558,6 +591,135 @@ export default function ParaphrasePage() {
             {error && <p className="text-xs text-amber-400">{error}</p>}
             {output && <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200">{output}</p>}
             <p className="text-[10px] text-slate-500">Review output carefully. Cite sources and disclose AI assistance.</p>
+          </div>
+        )}
+
+        {/* Style Application Comparison - Shows how user's style was applied */}
+        {output && input && profile && styleTransformation && (
+          <div className="glass-panel p-4 sm:p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-brand-300 flex items-center gap-2 text-sm sm:text-base">
+                <span className="text-lg">📊</span> How Your Style Was Applied
+              </h2>
+              <button
+                onClick={() => setShowStyleAnalysis(true)}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 hover:border-purple-400/50"
+              >
+                View Full Analysis
+              </button>
+            </div>
+
+            {/* Quick Metrics Comparison */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Formality */}
+              <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Formality</span>
+                  <span className="text-xs font-medium text-brand-300">
+                    {profile.formality !== undefined ? `Target: ${Math.round(profile.formality * 100)}%` : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all" 
+                      style={{ width: `${(styleTransformation.paraphrasedAnalysis.formalityScore || 0) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-white font-mono">
+                    {Math.round((styleTransformation.paraphrasedAnalysis.formalityScore || 0) * 100)}%
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  {Math.abs((profile.formality || 0) - (styleTransformation.paraphrasedAnalysis.formalityScore || 0)) < 0.15 
+                    ? '✓ Matches your target formality'
+                    : '⚠ Slightly different from target'}
+                </p>
+              </div>
+
+              {/* Sentence Length (Pacing) */}
+              <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Sentence Pacing</span>
+                  <span className="text-xs font-medium text-brand-300">
+                    Your style: {Math.round(styleTransformation.userStyle.avgSentenceLength)} words
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-slate-400">Original:</div>
+                  <div className="text-xs text-white font-mono">{Math.round(styleTransformation.originalAnalysis.avgSentenceLength)} words</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-emerald-400">Result:</div>
+                  <div className="text-xs text-white font-mono">{Math.round(styleTransformation.paraphrasedAnalysis.avgSentenceLength)} words</div>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  {Math.abs(styleTransformation.userStyle.avgSentenceLength - styleTransformation.paraphrasedAnalysis.avgSentenceLength) < 5
+                    ? '✓ Matches your writing rhythm'
+                    : `↔ Adjusted ${styleTransformation.paraphrasedAnalysis.avgSentenceLength > styleTransformation.userStyle.avgSentenceLength ? 'longer' : 'shorter'}`}
+                </p>
+              </div>
+
+              {/* Overall Match */}
+              <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Style Match</span>
+                  <span className={`text-xs font-medium ${
+                    styleTransformation.alignmentScore >= 0.8 ? 'text-emerald-400' :
+                    styleTransformation.alignmentScore >= 0.6 ? 'text-blue-400' :
+                    styleTransformation.alignmentScore >= 0.4 ? 'text-yellow-400' : 'text-red-400'
+                  }`}>
+                    {styleTransformation.alignmentScore >= 0.8 ? 'Excellent' :
+                     styleTransformation.alignmentScore >= 0.6 ? 'Good' :
+                     styleTransformation.alignmentScore >= 0.4 ? 'Fair' : 'Poor'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all ${
+                        styleTransformation.alignmentScore >= 0.8 ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
+                        styleTransformation.alignmentScore >= 0.6 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
+                        styleTransformation.alignmentScore >= 0.4 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 
+                        'bg-gradient-to-r from-red-500 to-pink-500'
+                      }`}
+                      style={{ width: `${styleTransformation.alignmentScore * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-white font-mono">
+                    {Math.round(styleTransformation.alignmentScore * 100)}%
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  {styleTransformation.alignmentScore >= 0.7 
+                    ? '✓ Your style successfully applied'
+                    : '📊 View full analysis for details'}
+                </p>
+              </div>
+            </div>
+
+            {/* Key Changes Explanation */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+              <h3 className="text-xs font-semibold text-blue-300 mb-2">What Changed:</h3>
+              <ul className="space-y-1 text-[10px] text-blue-200">
+                {styleTransformation.detailedComparison.slice(0, 3).map((detail, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="text-blue-400 mt-0.5">•</span>
+                    <span>
+                      <span className="font-medium">{detail.category}:</span> {detail.changeDescription}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {styleTransformation.detailedComparison.length > 3 && (
+                <button
+                  onClick={() => setShowStyleAnalysis(true)}
+                  className="text-[10px] text-blue-400 hover:text-blue-300 mt-2 underline"
+                >
+                  View all {styleTransformation.detailedComparison.length} style changes →
+                </button>
+              )}
+            </div>
           </div>
         )}
 

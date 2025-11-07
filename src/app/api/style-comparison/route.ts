@@ -1,9 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { compareStyleTransformation } from '../../../lib/styleComparison';
+import { compareStyleTransformation, calculateStructuredStyleSimilarity } from '../../../lib/styleComparison';
 
+/**
+ * POST /api/style-comparison
+ * 
+ * Supports both legacy and new structured style analysis formats.
+ * 
+ * Request body (legacy):
+ * {
+ *   userSampleText: string
+ *   originalText: string
+ *   paraphrasedText: string
+ * }
+ * 
+ * Request body (new - with structured parameter):
+ * {
+ *   userSampleText: string
+ *   originalText: string
+ *   paraphrasedText: string
+ *   structured: true
+ * }
+ * 
+ * Response (legacy):
+ * { transformation: StyleTransformation }
+ * 
+ * Response (new):
+ * { structured: StructuredStyleComparison }
+ */
 export async function POST(request: NextRequest) {
   try {
-    const { userSampleText, originalText, paraphrasedText } = await request.json();
+    const { userSampleText, originalText, paraphrasedText, structured } = await request.json();
 
     if (!userSampleText || !originalText || !paraphrasedText) {
       return NextResponse.json(
@@ -16,7 +42,21 @@ export async function POST(request: NextRequest) {
     console.log('User sample length:', userSampleText.length);
     console.log('Original text length:', originalText.length);
     console.log('Paraphrased text length:', paraphrasedText.length);
+    console.log('Structured format:', structured === true);
 
+    // If structured is true, return the new metric groups format
+    if (structured === true) {
+      console.log('Using new structured style comparison...');
+      const structuredComparison = calculateStructuredStyleSimilarity(
+        userSampleText,
+        originalText,
+        paraphrasedText
+      );
+      console.log('Structured comparison completed. Overall similarity:', structuredComparison.overallSimilarity);
+      return NextResponse.json({ structured: structuredComparison });
+    }
+
+    // Otherwise, use legacy format for backward compatibility
     const transformation = compareStyleTransformation(
       userSampleText,
       originalText,
