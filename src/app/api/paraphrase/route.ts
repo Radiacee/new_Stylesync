@@ -180,20 +180,14 @@ async function intelligentParaphrase(text: string, profile: any): Promise<string
   const optimizedPrompt = buildFocusedPrompt(profile);
   let output = await modelParaphraseGroqWithPrompt(text, optimizedPrompt);
   
-  // Stage 2: Style enforcement using rule-based patterns
-  if (profile?.styleAnalysis) {
-    console.log('Stage 2: Applying Rule-Based Style Enforcement');
-    output = enforceStylePatterns(output, profile.styleAnalysis, profile);
-  }
-  
-  // Stage 3: Calculate verification score
-  console.log('Stage 3: Verification Check');
+  // Stage 2: Verification Check (Enforcement removed to improve natural flow)
+  console.log('Stage 2: Verification Check');
   const verification = calculateStyleMatchScore(output, profile);
   console.log('Initial verification score:', verification.score);
   
-  // Stage 4: Iterate if score is too low (one refinement pass)
-  if (verification.score < 0.75 && profile?.styleAnalysis) {
-    console.log('Stage 4: Refinement Pass (score below 75%)');
+  // Stage 3: Iterate if score is too low (one refinement pass)
+  if (verification.score < 0.70 && profile?.styleAnalysis) { // Lowered threshold slightly to allow for natural variation
+    console.log('Stage 3: Refinement Pass (score below 70%)');
     console.log('Identified gaps:', verification.gaps);
     output = await refineWithFeedback(output, profile, verification.gaps);
     
@@ -383,30 +377,27 @@ function buildFocusedPrompt(profile: any): string {
     }
   }
   
+  // NEW: Add direct style examples (Few-Shot Prompting)
+  if (profile.sampleExcerpt) {
+    stylePrompt += '\n\n=== 🌟 STYLE EXAMPLES (MIMIC THIS VOICE) ===';
+    stylePrompt += '\nHere are actual excerpts from the user\'s writing. Your goal is to write EXACTLY as if you are this person.';
+    stylePrompt += '\nPay close attention to:';
+    stylePrompt += '\n1. How they start sentences';
+    stylePrompt += '\n2. Their vocabulary choices (simple vs complex)';
+    stylePrompt += '\n3. How they connect ideas';
+    stylePrompt += '\n\nUSER EXCERPTS:';
+    stylePrompt += `\n"""\n${profile.sampleExcerpt.slice(0, 1000)}${profile.sampleExcerpt.length > 1000 ? '...' : ''}\n"""`;
+  }
+
   // Add ONLY the most distinctive style features (top 5-8)
   if (profile.sampleExcerpt && profile.styleAnalysis) {
     const analysis = profile.styleAnalysis;
     const distinctiveFeatures = identifyDistinctiveFeatures(analysis);
     
-    stylePrompt += '\n\n=== KEY STYLE PATTERNS (REPLICATE THESE) ===';
-    distinctiveFeatures.slice(0, 8).forEach((feature, idx) => {
+    stylePrompt += '\n\n=== KEY STYLE PATTERNS ===';
+    distinctiveFeatures.slice(0, 5).forEach((feature, idx) => { // Reduced to top 5 to prevent over-constraining
       stylePrompt += `\n${idx + 1}. ${feature.description}`;
     });
-  }
-  
-  // Selective lexicon handling (only if naturally relevant)
-  if (profile.customLexicon && profile.customLexicon.length > 0) {
-    const grouped = groupLexiconByCategory(profile.customLexicon);
-    if (grouped.transitions.length || grouped.descriptors.length) {
-      stylePrompt += '\n\nVOCABULARY HINTS (use naturally):';
-      if (grouped.transitions.length) {
-        stylePrompt += `\n- Transitions: ${grouped.transitions.slice(0, 3).join(', ')}`;
-      }
-      if (grouped.descriptors.length) {
-        stylePrompt += `\n- Descriptors: ${grouped.descriptors.slice(0, 3).join(', ')}`;
-      }
-      stylePrompt += '\n⚠️ Only use if they fit naturally. Do NOT force.';
-    }
   }
   
   stylePrompt += '\n\n=== OUTPUT REQUIREMENTS ===';
