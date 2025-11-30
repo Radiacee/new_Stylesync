@@ -17,9 +17,9 @@ export default function StyleOnboardingPage() {
 function OnboardingInner() {
   const router = useRouter();
   
-  // Simple state
+  // Simple state (single textarea for multiple essays)
   const [profileName, setProfileName] = useState('');
-  const [currentSample, setCurrentSample] = useState('');
+  const [samplesText, setSamplesText] = useState('');
   const [samples, setSamples] = useState<string[]>([]);
   const [analysis, setAnalysis] = useState<SampleStyle | null>(null);
   const [busy, setBusy] = useState(false);
@@ -43,40 +43,25 @@ function OnboardingInner() {
     })();
   }, [router]);
 
-  // Add a sample
-  function handleAddSample() {
-    const wordCount = currentSample.trim().split(/\s+/).length;
-    
-    if (wordCount < 50) {
-      alert(`Sample too short (${wordCount} words). Please provide at least 50 words.`);
-      return;
-    }
-    
-    if (wordCount > 500) {
-      alert(`Sample too long (${wordCount} words). Please limit to 500 words per sample.`);
-      return;
-    }
-    
-    setSamples([...samples, currentSample.trim()]);
-    setCurrentSample('');
-    setAnalysis(null); // Reset analysis when adding new sample
+  // Parse pasted text into samples. Accept '---' delimiter or two+ blank lines.
+  function parseSamplesFromText(text: string) {
+    if (!text) return [];
+    const parts = text
+      .split(/\n-{3,}\n|(?:\n\s*\n){2,}/)
+      .map(s => s.trim())
+      .filter(Boolean);
+    return parts;
   }
 
-  // Remove a sample
-  function handleRemoveSample(index: number) {
-    setSamples(samples.filter((_, i) => i !== index));
-    setAnalysis(null); // Reset analysis when removing sample
-  }
-
-  // Analyze all samples
+  // Analyze parsed samples
   function handleAnalyze() {
-    if (samples.length === 0) {
-      alert('Please add at least one writing sample first.');
+    const parsed = parseSamplesFromText(samplesText);
+    if (parsed.length === 0) {
+      alert('Please paste at least one essay sample (separate multiple essays with a line of `---` or a blank line).');
       return;
     }
-    
-    // Analyze all samples together
-    const result = analyzeSampleStyle(samples);
+    setSamples(parsed);
+    const result = analyzeSampleStyle(parsed);
     setAnalysis(result);
   }
 
@@ -87,14 +72,17 @@ function OnboardingInner() {
       return;
     }
     
-    if (samples.length === 0) {
-      alert('Please add at least one writing sample.');
+    const parsed = parseSamplesFromText(samplesText);
+    if (parsed.length === 0) {
+      alert('Please paste at least one writing sample before saving.');
       return;
     }
-    
-    if (!analysis) {
-      alert('Please analyze your samples first.');
-      return;
+
+    // Ensure we have analysis (analyze automatically if missing)
+    let finalAnalysis = analysis;
+    if (!finalAnalysis) {
+      finalAnalysis = analyzeSampleStyle(parsed);
+      setAnalysis(finalAnalysis);
     }
 
     setBusy(true);
@@ -102,40 +90,40 @@ function OnboardingInner() {
     try {
       // Create profile from analysis
       const now = Date.now();
-      const combinedText = samples.join('\n\n');
+      const combinedText = parsed.join('\n\n');
       
       const newProfile: StyleProfile = {
         id: crypto.randomUUID(),
         createdAt: now,
         updatedAt: now,
         name: profileName.trim(),
-        tone: analysis.toneBalance === 'positive' ? 'encouraging' : 
-              analysis.toneBalance === 'negative' ? 'critical' : 'balanced',
+          tone: finalAnalysis!.toneBalance === 'positive' ? 'encouraging' : 
+            finalAnalysis!.toneBalance === 'negative' ? 'critical' : 'balanced',
         
         // Calculate formality from analysis
-        formality: analysis.usesContractions 
-          ? 0.2 + (1 - analysis.vocabularyComplexity) * 0.3
-          : 0.6 + (analysis.vocabularyComplexity * 0.3),
+        formality: finalAnalysis!.usesContractions 
+          ? 0.2 + (1 - finalAnalysis!.vocabularyComplexity) * 0.3
+          : 0.6 + (finalAnalysis!.vocabularyComplexity * 0.3),
         
         // Calculate pacing from sentence length
-        pacing: analysis.avgSentenceLength > 20 ? 0.3 :
-                analysis.avgSentenceLength < 12 ? 0.7 : 0.5,
+        pacing: finalAnalysis!.avgSentenceLength > 20 ? 0.3 :
+          finalAnalysis!.avgSentenceLength < 12 ? 0.7 : 0.5,
         
         // Descriptiveness from adjective density
-        descriptiveness: Math.min(0.9, Math.max(0.1, analysis.adjectiveDensity * 6)),
+        descriptiveness: Math.min(0.9, Math.max(0.1, finalAnalysis!.adjectiveDensity * 6)),
         
         // Directness from personal voice and questions
-        directness: analysis.personalVoice === 'second-person' ? 0.7 :
-                   analysis.personalVoice === 'first-person' ? 0.6 : 0.5,
+        directness: finalAnalysis!.personalVoice === 'second-person' ? 0.7 :
+             finalAnalysis!.personalVoice === 'first-person' ? 0.6 : 0.5,
         
         sampleExcerpt: combinedText,
-        sampleExcerpts: samples,
+        sampleExcerpts: parsed,
         customLexicon: [
-          ...analysis.topAdverbs.slice(0, 3),
-          ...analysis.preferredTransitions.slice(0, 2)
+          ...finalAnalysis!.topAdverbs.slice(0, 3),
+          ...finalAnalysis!.preferredTransitions.slice(0, 2)
         ].slice(0, 8),
         notes: '',
-        styleAnalysis: analysis
+        styleAnalysis: finalAnalysis!
       };
 
       // Ensure unique ID
@@ -175,11 +163,10 @@ function OnboardingInner() {
     }
   }
 
-  const currentWordCount = currentSample.trim().split(/\s+/).length;
-  const totalWords = samples.reduce((sum, s) => sum + s.trim().split(/\s+/).length, 0);
-  const canAddSample = currentWordCount >= 50 && currentWordCount <= 500;
-  const canAnalyze = samples.length > 0;
-  const canSave = profileName.trim() && samples.length > 0 && analysis;
+  const currentWordCount = samplesText.trim().split(/\s+/).filter(Boolean).length;
+  const totalWords = samples.reduce((sum, s) => sum + s.trim().split(/\s+/).filter(Boolean).length, 0);
+  const canAnalyze = samplesText.trim().length > 0;
+  const canSave = profileName.trim() && analysis;
 
   return (
     <div className="min-h-screen py-8">
@@ -206,73 +193,32 @@ function OnboardingInner() {
             />
           </div>
 
-          {/* Saved Samples */}
-          {samples.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-white">
-                  Your Samples ({samples.length}) • {totalWords} total words
-                </label>
-                {!analysis && (
-                  <button 
-                    onClick={handleAnalyze}
-                    className="px-3 py-1.5 text-xs rounded-md bg-blue-600 hover:bg-blue-500 text-white font-medium transition"
-                  >
-                    Analyze All
-                  </button>
-                )}
-              </div>
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                {samples.map((sample, index) => (
-                  <div key={index} className="glass-panel p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-brand-300">
-                        Sample {index + 1} • {sample.trim().split(/\s+/).length} words
-                      </span>
-                      <button
-                        onClick={() => handleRemoveSample(index)}
-                        className="text-xs text-slate-400 hover:text-red-400 transition px-2 py-1 rounded bg-slate-700 hover:bg-red-900/30"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <p className="text-xs text-slate-300 line-clamp-2">{sample}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Add New Sample */}
+          {/* Single textarea for multiple essays */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-white">
-                {samples.length === 0 ? 'Add Your First Sample' : 'Add Another Sample (Optional)'}
-              </label>
-              <span className={`text-xs ${currentWordCount < 50 ? 'text-amber-400' : currentWordCount > 500 ? 'text-amber-400' : 'text-emerald-400'}`}>
+              <label className="text-sm font-medium text-white">Paste Your Essays</label>
+              <span className={`text-xs ${currentWordCount < 50 ? 'text-amber-400' : 'text-emerald-400'}`}>
                 {currentWordCount} words
-                {currentWordCount < 50 && ' (need 50+)'}
-                {currentWordCount > 500 && ' (max 500)'}
               </span>
             </div>
-            <textarea 
-              value={currentSample} 
-              onChange={e => setCurrentSample(e.target.value)} 
-              rows={8} 
-              className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-brand-500" 
-              placeholder="Paste your writing here... (50-500 words per sample)"
+            <textarea
+              value={samplesText}
+              onChange={e => { setSamplesText(e.target.value); setAnalysis(null); }}
+              rows={10}
+              className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-brand-500"
+              placeholder={"Paste multiple essays here. Separate essays with a line of `---` or two blank lines for best results."}
             />
             <div className="flex items-center justify-between">
-              <p className="text-xs text-slate-400">
-                💡 Tip: Add 2-3 different samples for better accuracy
-              </p>
-              <button 
-                onClick={handleAddSample}
-                disabled={!canAddSample}
-                className="px-4 py-2 text-sm rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                + Add Sample
-              </button>
+              <p className="text-xs text-slate-400">💡 Tip: Paste 1–3 representative essays for best paraphrase matching</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAnalyze}
+                  disabled={!canAnalyze}
+                  className="px-3 py-1.5 text-xs rounded-md bg-blue-600 hover:bg-blue-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Analyze
+                </button>
+              </div>
             </div>
           </div>
 

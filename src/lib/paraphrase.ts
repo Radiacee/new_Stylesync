@@ -33,12 +33,29 @@ const SYNONYMS: Record<string, string[]> = {
   jumps: ['leaps', 'bounds']
 };
 
+function collectSampleText(profile?: StyleProfile): string {
+  if (!profile) return '';
+  if (profile.sampleExcerpts?.length) {
+    return profile.sampleExcerpts.map(s => s.trim()).filter(Boolean).join('\n\n') || profile.sampleExcerpt || '';
+  }
+  return profile.sampleExcerpt || '';
+}
+
+function ensureSampleStyle(profile?: StyleProfile): SampleStyle | null {
+  if (!profile) return null;
+  if (profile.styleAnalysis) return profile.styleAnalysis;
+  const sampleText = collectSampleText(profile);
+  if (!sampleText.trim()) return null;
+  return analyzeSampleStyle(sampleText);
+}
+
 export function paraphraseWithProfile(text: string, profile?: StyleProfile, options: { includeLexiconNotes?: boolean } = {}): string {
   if (!text.trim()) return '';
 
   // Build frequency map from user sample (once) to bias synonym choices toward familiar vocabulary.
-  const freqMap = profile?.sampleExcerpt ? buildFrequencyMap(profile.sampleExcerpt) : {};
-  const sampleStyle = profile?.sampleExcerpt ? analyzeSampleStyle(profile.sampleExcerpt) : null;
+  const sampleText = collectSampleText(profile);
+  const freqMap = sampleText ? buildFrequencyMap(sampleText) : {};
+  const sampleStyle = ensureSampleStyle(profile);
 
   // Basic sentence split
   const sentences = text.split(/(?<=[.!?])\s+/);
@@ -124,6 +141,13 @@ export function paraphraseWithProfile(text: string, profile?: StyleProfile, opti
         }
       }
       result = parts.join(' ');
+    }
+  }
+  // Final lexicon notes check: if any custom lexicon words are still missing, append notes (unless disabled)
+  if (profile && profile.customLexicon?.length && options.includeLexiconNotes !== false) {
+    const missingFinal = profile.customLexicon.filter(w => !new RegExp(`\b${escapeReg(w)}\b`, 'i').test(result));
+    if (missingFinal.length && !/Lexicon notes:/i.test(result)) {
+      result += '\n\nLexicon notes: ' + missingFinal.slice(0, 5).join(', ');
     }
   }
   return result.trim();
@@ -610,7 +634,7 @@ export function finalizeOutput(raw: string, profile?: StyleProfile, options: { i
   if (profile?.directness && profile.directness > 0.9) {
     out = simplifyFlowery(out);
   }
-  const sampleStyle = profile?.sampleExcerpt ? analyzeSampleStyle(profile.sampleExcerpt) : null;
+  const sampleStyle = ensureSampleStyle(profile);
   out = humanizeText(out, { allowContractions: sampleStyle ? sampleStyle.usesContractions : true, preferredTransitions: sampleStyle?.preferredTransitions || [] });
   if (sampleStyle) {
     // Use original raw text context not available here; adapt relative to current only.

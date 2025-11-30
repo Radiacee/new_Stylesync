@@ -13,8 +13,34 @@ import StyleComparisonPanel from '../../components/StyleComparisonPanel';
 import StyleVerification from '../../components/StyleVerification';
 import StyleOptionsHelp from '../../components/StyleOptionsHelp';
 import AnalyticsConsent from '../../components/AnalyticsConsent';
+import AIDetectionDisplay from '../../components/AIDetectionDisplay';
+import StyleProofPanel from '../../components/StyleProofPanel';
 import { type StyleTransformation } from '../../lib/styleComparison';
+import { detectAIContent } from '../../lib/aiDetection';
 import { shouldCollectAnalytics, prepareAnalyticsData, submitAnalytics, calculateVerificationScore, getUserConsent } from '../../lib/analytics';
+
+function combineProfileSamples(profile: StyleProfile | null): string {
+  if (!profile) return '';
+  if (profile.sampleExcerpts?.length) {
+    return profile.sampleExcerpts.map(s => s.trim()).filter(Boolean).join('\n\n');
+  }
+  return profile.sampleExcerpt?.trim() || '';
+}
+
+function ensureProfileHasAnalysis(profile: StyleProfile): StyleProfile {
+  const combinedSample = combineProfileSamples(profile);
+  if (!combinedSample) return profile;
+  const needsSampleSync = profile.sampleExcerpt !== combinedSample;
+  const needsAnalysis = !profile.styleAnalysis || needsSampleSync;
+  if (!needsSampleSync && !needsAnalysis) return profile;
+  const styleAnalysis = analyzeSampleStyle(combinedSample);
+  return {
+    ...profile,
+    sampleExcerpt: combinedSample,
+    sampleExcerpts: profile.sampleExcerpts?.length ? profile.sampleExcerpts : [combinedSample],
+    styleAnalysis
+  };
+}
 
 export default function ParaphrasePage() {
   const router = useRouter();
@@ -40,6 +66,15 @@ export default function ParaphrasePage() {
   const analyticsSubmittedRef = useRef<boolean>(false); // Use ref instead of state
   const resultsRef = useRef<HTMLDivElement>(null); // Ref for auto-scroll to results
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null); // Track expanded history item
+
+  // Ensure loaded profile always includes full analysis + merged samples
+  useEffect(() => {
+    if (!profile) return;
+    const prepared = ensureProfileHasAnalysis(profile);
+    if (prepared !== profile) {
+      setProfile(prepared);
+    }
+  }, [profile]);
 
   useEffect(() => {
     // Check authentication first
@@ -122,16 +157,13 @@ export default function ParaphrasePage() {
   async function handleParaphrase() {
     setBusy(true); setError(null); setUsedModel(false);
     analyticsSubmittedRef.current = false; // Reset analytics submission flag for new paraphrase
+    const preparedProfile = profile ? ensureProfileHasAnalysis(profile) : null;
+    if (preparedProfile && preparedProfile !== profile) {
+      setProfile(preparedProfile);
+    }
     try {
-      // Analyze sample style if available
-      let enhancedProfile = profile;
-      if (profile && profile.sampleExcerpt) {
-        const styleAnalysis = analyzeSampleStyle(profile.sampleExcerpt);
-        enhancedProfile = { ...profile, styleAnalysis };
-      }
-      
       // Always use AI model - removed useModel and debug options
-      const payload = { text: input, useModel: true, profile: enhancedProfile, debug: false };
+      const payload = { text: input, useModel: true, profile: preparedProfile, debug: false };
       const res = await fetch('/api/paraphrase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -142,19 +174,19 @@ export default function ParaphrasePage() {
         throw new Error(err.error || 'API error');
       }
       const data = await res.json();
-  setOutput(data.result || '');
-  setActions(data.actions || []);
-  setMetrics(data.metrics || null);
-  setUsedModel(!!data.usedModel);
+      setOutput(data.result || '');
+      setActions(data.actions || []);
+      setMetrics(data.metrics || null);
+      setUsedModel(!!data.usedModel);
   
-  // Automatically run style analysis after getting output
-  if (enhancedProfile?.sampleExcerpt && input && data.result) {
-    setTimeout(() => {
-      runStyleAnalysisInBackground(input, data.result || '', enhancedProfile);
-    }, 500);
-  }
+      // Automatically run style analysis after getting output
+      if (preparedProfile?.sampleExcerpt && input && data.result) {
+        setTimeout(() => {
+          runStyleAnalysisInBackground(input, data.result || '', preparedProfile);
+        }, 500);
+      }
   
-  // Append to history
+      // Append to history
       if (userId) {
         const optimistic: ParaphraseEntry = { id: crypto.randomUUID(), userId, input, output: data.result || '', note: '', usedModel: !!data.usedModel, createdAt: new Date().toISOString(), pending: true };
         setHistory(h => [optimistic, ...h].slice(0,50));
@@ -168,7 +200,7 @@ export default function ParaphrasePage() {
       }
     } catch (e: any) {
       // Fallback to local heuristic
-      const fallback = paraphraseWithProfile(input, profile || undefined);
+      const fallback = paraphraseWithProfile(input, preparedProfile || undefined);
       setOutput(fallback);
       setError(e.message || 'Failed to use model, showed heuristic result.');
       if (userId) {
@@ -594,132 +626,26 @@ export default function ParaphrasePage() {
           </div>
         )}
 
-        {/* Style Application Comparison - Shows how user's style was applied */}
-        {output && input && profile && styleTransformation && (
-          <div className="glass-panel p-4 sm:p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-brand-300 flex items-center gap-2 text-sm sm:text-base">
-                <span className="text-lg">📊</span> How Your Style Was Applied
-              </h2>
-              <button
-                onClick={() => setShowStyleAnalysis(true)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 hover:border-purple-400/50"
-              >
-                View Full Analysis
-              </button>
-            </div>
+        {/* Style Application Proof - Shows REAL evidence of style being applied */}
+        {output && input && profile?.sampleExcerpt && styleTransformation && (
+          <div className="glass-panel p-4 sm:p-5">
+            <StyleProofPanel
+              userSampleText={profile.sampleExcerpt}
+              originalInput={input}
+              paraphrasedOutput={output}
+              userStyle={styleTransformation.userStyle}
+            />
+          </div>
+        )}
 
-            {/* Quick Metrics Comparison */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Formality */}
-              <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Formality</span>
-                  <span className="text-xs font-medium text-brand-300">
-                    {profile.formality !== undefined ? `Target: ${Math.round(profile.formality * 100)}%` : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all" 
-                      style={{ width: `${(styleTransformation.paraphrasedAnalysis.formalityScore || 0) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-white font-mono">
-                    {Math.round((styleTransformation.paraphrasedAnalysis.formalityScore || 0) * 100)}%
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-500">
-                  {Math.abs((profile.formality || 0) - (styleTransformation.paraphrasedAnalysis.formalityScore || 0)) < 0.15 
-                    ? '✓ Matches your target formality'
-                    : '⚠ Slightly different from target'}
-                </p>
-              </div>
-
-              {/* Sentence Length (Pacing) */}
-              <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Sentence Pacing</span>
-                  <span className="text-xs font-medium text-brand-300">
-                    Your style: {Math.round(styleTransformation.userStyle.avgSentenceLength)} words
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-xs text-slate-400">Original:</div>
-                  <div className="text-xs text-white font-mono">{Math.round(styleTransformation.originalAnalysis.avgSentenceLength)} words</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="text-xs text-emerald-400">Result:</div>
-                  <div className="text-xs text-white font-mono">{Math.round(styleTransformation.paraphrasedAnalysis.avgSentenceLength)} words</div>
-                </div>
-                <p className="text-[10px] text-slate-500">
-                  {Math.abs(styleTransformation.userStyle.avgSentenceLength - styleTransformation.paraphrasedAnalysis.avgSentenceLength) < 5
-                    ? '✓ Matches your writing rhythm'
-                    : `↔ Adjusted ${styleTransformation.paraphrasedAnalysis.avgSentenceLength > styleTransformation.userStyle.avgSentenceLength ? 'longer' : 'shorter'}`}
-                </p>
-              </div>
-
-              {/* Overall Match */}
-              <div className="bg-slate-800/50 rounded-lg p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Style Match</span>
-                  <span className={`text-xs font-medium ${
-                    styleTransformation.alignmentScore >= 0.8 ? 'text-emerald-400' :
-                    styleTransformation.alignmentScore >= 0.6 ? 'text-blue-400' :
-                    styleTransformation.alignmentScore >= 0.4 ? 'text-yellow-400' : 'text-red-400'
-                  }`}>
-                    {styleTransformation.alignmentScore >= 0.8 ? 'Excellent' :
-                     styleTransformation.alignmentScore >= 0.6 ? 'Good' :
-                     styleTransformation.alignmentScore >= 0.4 ? 'Fair' : 'Poor'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full transition-all ${
-                        styleTransformation.alignmentScore >= 0.8 ? 'bg-gradient-to-r from-emerald-500 to-green-500' :
-                        styleTransformation.alignmentScore >= 0.6 ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
-                        styleTransformation.alignmentScore >= 0.4 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 
-                        'bg-gradient-to-r from-red-500 to-pink-500'
-                      }`}
-                      style={{ width: `${styleTransformation.alignmentScore * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-white font-mono">
-                    {Math.round(styleTransformation.alignmentScore * 100)}%
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-500">
-                  {styleTransformation.alignmentScore >= 0.7 
-                    ? '✓ Your style successfully applied'
-                    : '📊 View full analysis for details'}
-                </p>
-              </div>
-            </div>
-
-            {/* Key Changes Explanation */}
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-              <h3 className="text-xs font-semibold text-blue-300 mb-2">What Changed:</h3>
-              <ul className="space-y-1 text-[10px] text-blue-200">
-                {styleTransformation.detailedComparison.slice(0, 3).map((detail, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <span className="text-blue-400 mt-0.5">•</span>
-                    <span>
-                      <span className="font-medium">{detail.category}:</span> {detail.changeDescription}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              {styleTransformation.detailedComparison.length > 3 && (
-                <button
-                  onClick={() => setShowStyleAnalysis(true)}
-                  className="text-[10px] text-blue-400 hover:text-blue-300 mt-2 underline"
-                >
-                  View all {styleTransformation.detailedComparison.length} style changes →
-                </button>
-              )}
-            </div>
+        {/* AI Detection Panel */}
+        {output && input && (
+          <div className="glass-panel p-4 sm:p-5">
+            <AIDetectionDisplay 
+              originalText={input}
+              paraphrasedText={output}
+              showComparison={true}
+            />
           </div>
         )}
 
@@ -801,7 +727,7 @@ export default function ParaphrasePage() {
             </div>
           ) : <p className="text-xs text-slate-400">No profile loaded.</p>}
         </div>
-        <div className="glass-panel p-4"><StyleProfileManager onSelect={p => setProfile(p)} /></div>
+        <div className="glass-panel p-4"><StyleProfileManager onSelect={p => setProfile(p ? ensureProfileHasAnalysis(p) : null)} /></div>
       </aside>
         </div>
         {busy && <FullScreenSpinner label="Generating paraphrase" />}
