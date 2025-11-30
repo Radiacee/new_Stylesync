@@ -109,10 +109,9 @@ export function paraphraseWithProfile(text: string, profile?: StyleProfile, opti
   result = humanizeText(result, { allowContractions: sampleStyle ? sampleStyle.usesContractions : true, preferredTransitions: sampleStyle?.preferredTransitions || [] });
 
   // High-directness aggressive simplification (pre-empt flowery phrasing)
-  // DISABLED: Causing "robotic" and grammatical errors by forcing simple replacements without context
-  // if (profile?.directness && profile.directness > 0.9) {
-  //   result = aggressiveDirectSimplify(result);
-  // }
+  if (profile?.directness && profile.directness > 0.9) {
+    result = aggressiveDirectSimplify(result);
+  }
 
   // If effectively unchanged, apply a fallback diversification pass
   if (roughlyEqual(text, result)) {
@@ -120,13 +119,12 @@ export function paraphraseWithProfile(text: string, profile?: StyleProfile, opti
   }
 
   // Enforce minimum lexical change ratio for high directness/pacing: if too similar, force variation
-  // DISABLED: Causing unnatural word choices
-  // if (profile?.directness && profile.directness > 0.9) {
-  //   const ratio = lexicalChangeRatio(text, result);
-  //   if (ratio < 0.22) {
-  //     result = forceVariation(result, 0.25);
-  //   }
-  // }
+  if (profile?.directness && profile.directness > 0.9) {
+    const ratio = lexicalChangeRatio(text, result);
+    if (ratio < 0.22) {
+      result = forceVariation(result, 0.25);
+    }
+  }
   // If sample style has target sentence length significantly different, lightly adjust (post-pass)
   if (sampleStyle && sampleStyle.avgSentenceLength) {
     const target = sampleStyle.avgSentenceLength;
@@ -378,14 +376,35 @@ function lexicalChangeRatio(original: string, updated: string): number {
 
 // Force additional lexical variation by replacing a fraction of content words with synonyms / simplifications.
 function forceVariation(text: string, targetExtraRatio: number): string {
-  // DISABLED: This function blindly replaces words based on a dictionary, causing context errors.
-  // Returning original text to preserve grammatical correctness.
-  return text;
-
-  /* Original implementation commented out:
   const words = text.split(/(\s+)/);
   const CONTENT = /[A-Za-z]{5,}/;
-  const replBank: Record<string, string[]> = { ... };
+  const replBank: Record<string, string[]> = {
+    shimmering: ['bright', 'gleaming', 'clear'],
+    radiant: ['bright', 'vivid'],
+    expanse: ['area', 'domain'],
+    epoch: ['era', 'period'],
+    intertwines: ['links', 'connects', 'blends'],
+    seamlessly: ['smoothly', 'directly'],
+    symphony: ['system', 'blend'],
+    optimized: ['efficient', 'streamlined'],
+    existence: ['life'],
+    luminous: ['bright'],
+    corridors: ['paths', 'channels'],
+    resonance: ['flow', 'signal'],
+    quantified: ['scored', 'measured'],
+    archived: ['stored'],
+    refined: ['improved','honed'],
+    predictive: ['forecast'],
+    precision: ['accuracy'],
+    malleable: ['flexible'],
+    construct: ['form'],
+    streams: ['flows'],
+    continuum: ['blend', 'span'],
+    converge: ['merge', 'blend'],
+    limitations: ['limits'],
+    horizon: ['future edge','outlook'],
+    progress: ['advance','growth']
+  };
   let applied = 0;
   const target = Math.ceil(words.length * targetExtraRatio);
   for (let i = 0; i < words.length && applied < target; i++) {
@@ -400,7 +419,6 @@ function forceVariation(text: string, targetExtraRatio: number): string {
     }
   }
   return words.join('');
-  */
 }
 
 // Aggressive direct simplification of ornate metaphoric phrases (idempotent-ish).
