@@ -57,6 +57,16 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
                   Paraphrase
                 </Link>
                 <Link 
+                  href="/writing-guide" 
+                  className={`hover:text-white transition ${
+                    pathname === '/writing-guide' 
+                      ? 'text-brand-400 font-semibold' 
+                      : 'text-slate-300'
+                  }`}
+                >
+                  Writing Guide
+                </Link>
+                <Link 
                   href="/about" 
                   className={`hover:text-white transition ${
                     pathname === '/about' 
@@ -116,6 +126,17 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Paraphrase
+              </Link>
+              <Link 
+                href="/writing-guide" 
+                className={`block py-2 text-sm hover:text-white transition text-left ${
+                  pathname === '/writing-guide' 
+                    ? 'text-brand-400 font-semibold' 
+                    : 'text-slate-300'
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Writing Guide
               </Link>
               <Link 
                 href="/about" 

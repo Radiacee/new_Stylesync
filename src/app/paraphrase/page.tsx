@@ -15,7 +15,6 @@ import AnalyticsConsent from '../../components/AnalyticsConsent';
 import StyleProofPanel from '../../components/StyleProofPanel';
 import StyleSelector, { type StylePreset, getStyleInstructions } from '../../components/StyleSelector';
 import WritingSuggestionsPanel from '../../components/WritingSuggestionsPanel';
-import WritingTipsTooltip from '../../components/WritingTipsTooltip';
 import QualitySuggestions from '../../components/QualitySuggestions';
 import ReportButton from '../../components/ReportButton';
 import { type StyleTransformation } from '../../lib/styleComparison';
@@ -620,16 +619,8 @@ export default function ParaphrasePage() {
               <h1 className="text-2xl sm:text-3xl font-bold">Paraphrase</h1>
               <p className="text-sm sm:text-base text-slate-300">Transform text to match your writing style</p>
             </div>
-            {/* Writing Tips & Analytics Consent - Top right */}
-            <div className="flex items-center gap-2">
-              {profile && combineProfileSamples(profile) && (
-                <WritingTipsTooltip 
-                  profileEssay={combineProfileSamples(profile)} 
-                  profileName={profile.name}
-                />
-              )}
-              {userId && <AnalyticsConsent userId={userId} onConsentChange={setUserConsent} />}
-            </div>
+            {/* Analytics Consent - Top right */}
+            {userId && <AnalyticsConsent userId={userId} onConsentChange={setUserConsent} />}
           </div>
           {isParaphraseHistoryTableMissing() && (
             <div className="rounded border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-300 space-y-2">

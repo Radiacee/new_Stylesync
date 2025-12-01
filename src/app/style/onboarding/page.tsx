@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Lightbulb } from 'lucide-react';
 import { saveProfile, type StyleProfile, saveProfileRemote, upsertProfileLocal, setActiveProfileId, listProfiles } from '../../../lib/styleProfile.ts';
 import { analyzeSampleStyle, type SampleStyle } from '../../../lib/paraphrase.ts';
 import { supabase } from '../../../lib/supabaseClient.ts';
@@ -197,10 +199,21 @@ function OnboardingInner() {
       <div className="max-w-3xl mx-auto px-4">
         {/* Header */}
         <div className="glass-panel p-6 mb-6">
-          <h1 className="text-3xl font-bold text-brand-300 mb-2">Create Your Writing Style</h1>
-          <p className="text-slate-300">
-            Add one or more samples of your writing (essays, articles, etc.) and we'll learn your style to paraphrase text just like you write.
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-brand-300 mb-2">Create Your Writing Style</h1>
+              <p className="text-slate-300">
+                Add one or more samples of your writing (essays, articles, etc.) and we'll learn your style to paraphrase text just like you write.
+              </p>
+            </div>
+            <Link
+              href="/writing-guide"
+              className="flex-shrink-0 ml-4 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50 transition-all duration-200 group"
+              title="Writing Guide - Learn to improve your writing"
+            >
+              <Lightbulb className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            </Link>
+          </div>
         </div>
 
         {/* Main Form */}
