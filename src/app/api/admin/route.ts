@@ -37,6 +37,43 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const endpoint = url.searchParams.get('endpoint');
   
+  if (endpoint === 'reports') {
+    try {
+      const { supabase } = auth;
+      
+      // Try with service role for full access
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      let queryClient = supabase;
+      
+      if (serviceRoleKey) {
+        queryClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          serviceRoleKey
+        );
+      }
+      
+      const { data: reports, error } = await queryClient
+        .from('content_reports')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        if (error.code === '42P01' || error.message?.includes('does not exist')) {
+          return NextResponse.json({ reports: [], tableNotFound: true });
+        }
+        throw error;
+      }
+      
+      return NextResponse.json({ reports: reports || [] });
+    } catch (error) {
+      console.error('Admin reports fetch error:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch reports', reports: [] },
+        { status: 500 }
+      );
+    }
+  }
+  
   if (endpoint === 'users') {
     try {
       const { supabase } = auth;
@@ -187,6 +224,55 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error('Admin query error:', error);
+    return NextResponse.json(
+      { error: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/admin - Update resources (e.g., report status)
+export async function PUT(req: NextRequest) {
+  const auth = await checkAdminAuth(req);
+  if (!auth) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const { endpoint, reportId, status } = await req.json();
+    
+    if (endpoint === 'reports' && reportId && status) {
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (!serviceRoleKey) {
+        return NextResponse.json(
+          { error: 'Service role key required for updates' },
+          { status: 400 }
+        );
+      }
+      
+      const serviceClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        serviceRoleKey
+      );
+      
+      const { error } = await serviceClient
+        .from('content_reports')
+        .update({ 
+          status, 
+          reviewed_by: auth.user.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', reportId);
+      
+      if (error) throw error;
+      
+      return NextResponse.json({ success: true });
+    }
+    
+    return NextResponse.json({ error: 'Invalid endpoint' }, { status: 400 });
+  } catch (error) {
+    console.error('Admin update error:', error);
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 500 }

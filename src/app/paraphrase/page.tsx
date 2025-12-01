@@ -15,9 +15,13 @@ import StyleOptionsHelp from '../../components/StyleOptionsHelp';
 import AnalyticsConsent from '../../components/AnalyticsConsent';
 import AIDetectionDisplay from '../../components/AIDetectionDisplay';
 import StyleProofPanel from '../../components/StyleProofPanel';
+import StyleSelector, { type StylePreset, getStyleInstructions } from '../../components/StyleSelector';
+import WritingSuggestionsPanel from '../../components/WritingSuggestionsPanel';
+import ReportButton from '../../components/ReportButton';
 import { type StyleTransformation } from '../../lib/styleComparison';
 import { detectAIContent } from '../../lib/aiDetection';
 import { shouldCollectAnalytics, prepareAnalyticsData, submitAnalytics, calculateVerificationScore, getUserConsent } from '../../lib/analytics';
+import { moderateContent, type ModerationResult } from '../../lib/contentModeration';
 
 function combineProfileSamples(profile: StyleProfile | null): string {
   if (!profile) return '';
@@ -65,7 +69,13 @@ export default function ParaphrasePage() {
   const [userConsent, setUserConsent] = useState<boolean>(false);
   const analyticsSubmittedRef = useRef<boolean>(false); // Use ref instead of state
   const resultsRef = useRef<HTMLDivElement>(null); // Ref for auto-scroll to results
+  const suggestionsRef = useRef<HTMLDivElement>(null); // Ref for auto-scroll to suggestions
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null); // Track expanded history item
+  const [selectedStyle, setSelectedStyle] = useState<StylePreset>('original'); // Style selection
+  const [moderationResult, setModerationResult] = useState<ModerationResult | null>(null); // Content moderation
+  const [showSuggestions, setShowSuggestions] = useState(false); // Writing suggestions toggle
+
+  const hasUserEssay = input.trim().length > 0;
 
   // Ensure loaded profile always includes full analysis + merged samples
   useEffect(() => {
@@ -156,14 +166,36 @@ export default function ParaphrasePage() {
 
   async function handleParaphrase() {
     setBusy(true); setError(null); setUsedModel(false);
+    setModerationResult(null); // Reset moderation
     analyticsSubmittedRef.current = false; // Reset analytics submission flag for new paraphrase
+    
+    // Content moderation check
+    const moderation = moderateContent(input);
+    setModerationResult(moderation);
+    if (!moderation.isClean) {
+      const issues = moderation.flaggedWords.map(w => w.word).slice(0, 3).join(', ');
+      setError(`Content contains inappropriate words (${issues}). Please revise your input.`);
+      setBusy(false);
+      return;
+    }
+    
     const preparedProfile = profile ? ensureProfileHasAnalysis(profile) : null;
     if (preparedProfile && preparedProfile !== profile) {
       setProfile(preparedProfile);
     }
     try {
+      // Get style instructions based on selected style
+      const styleInstructions = selectedStyle !== 'original' ? getStyleInstructions(selectedStyle) : null;
+      
       // Always use AI model - removed useModel and debug options
-      const payload = { text: input, useModel: true, profile: preparedProfile, debug: false };
+      const payload = { 
+        text: input, 
+        useModel: true, 
+        profile: preparedProfile, 
+        debug: false,
+        stylePreset: selectedStyle,
+        styleInstructions
+      };
       const res = await fetch('/api/paraphrase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -560,6 +592,14 @@ export default function ParaphrasePage() {
             </div>
           )}
           {!profile && <p className="text-sm text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded p-3">No style profile found. Create one for better alignment.</p>}
+          
+          {/* Style Selection */}
+          <StyleSelector 
+            selectedStyle={selectedStyle}
+            onStyleChange={setSelectedStyle}
+            disabled={busy}
+          />
+          
           <div className="space-y-4">
             <label className="text-sm font-medium">Input Text</label>
             <textarea 
@@ -585,6 +625,24 @@ export default function ParaphrasePage() {
               Reset
             </button>
           </div>
+
+          {hasUserEssay && (
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
+              <button
+                onClick={() => {
+                  setShowSuggestions(!showSuggestions);
+                  if (!showSuggestions) {
+                    setTimeout(() => {
+                      suggestionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30"
+              >
+                💡 {showSuggestions ? 'Hide' : 'Show'} Writing Tips
+              </button>
+            </div>
+          )}
         </div>
         {(error || output) && (
           <div ref={resultsRef} className="glass-panel p-4 sm:p-5 space-y-3 scroll-mt-8">
@@ -607,21 +665,38 @@ export default function ParaphrasePage() {
                   >
                     {copied ? '✓ Copied!' : '📋 Copy'}
                   </button>
-                  {profile?.sampleExcerpt && input && (
-                    <button 
-                      onClick={handleStyleAnalysis}
-                      disabled={analyzingStyle}
-                      className="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 hover:border-purple-400/50 disabled:opacity-50 whitespace-nowrap"
-                      title="Analyze style transformation"
-                    >
-                      {analyzingStyle ? '⏳ Analyzing...' : '📊 Analysis'}
-                    </button>
-                  )}
                 </div>
               )}
             </div>
             {error && <p className="text-xs text-amber-400">{error}</p>}
             {output && <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200">{output}</p>}
+            
+            {/* Report button */}
+            {output && (
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
+                <ReportButton 
+                  contentText={output}
+                  userId={userId}
+                  variant="full"
+                />
+              </div>
+            )}
+            
+            {/* Content Moderation Warning */}
+            {moderationResult && !moderationResult.isClean && (
+              <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <h4 className="text-sm font-semibold text-red-400 mb-2">⚠️ Content Warning</h4>
+                <p className="text-xs text-red-300">
+                  Inappropriate content detected: {moderationResult.flaggedWords.map(w => `"${w.word}" (${w.category})`).join(', ')}
+                </p>
+                {moderationResult.suggestions.length > 0 && (
+                  <ul className="mt-2 text-xs text-slate-300">
+                    {moderationResult.suggestions.map((s, i) => <li key={i}>• {s}</li>)}
+                  </ul>
+                )}
+              </div>
+            )}
+            
             <p className="text-[10px] text-slate-500">Review output carefully. Cite sources and disclose AI assistance.</p>
           </div>
         )}
@@ -634,6 +709,17 @@ export default function ParaphrasePage() {
               originalInput={input}
               paraphrasedOutput={output}
               userStyle={styleTransformation.userStyle}
+            />
+          </div>
+        )}
+
+        {/* Writing Suggestions Panel */}
+        {showSuggestions && hasUserEssay && (
+          <div ref={suggestionsRef} className="glass-panel p-4 sm:p-5 scroll-mt-8">
+            <WritingSuggestionsPanel 
+              text={input}
+              styleType={selectedStyle === 'original' ? 'professional' : selectedStyle as 'academic' | 'casual' | 'professional' | 'creative'}
+              onClose={() => setShowSuggestions(false)}
             />
           </div>
         )}

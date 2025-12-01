@@ -17,10 +17,9 @@ export default function StyleOnboardingPage() {
 function OnboardingInner() {
   const router = useRouter();
   
-  // Simple state (single textarea for multiple essays)
+  // Multi-essay state
   const [profileName, setProfileName] = useState('');
-  const [samplesText, setSamplesText] = useState('');
-  const [samples, setSamples] = useState<string[]>([]);
+  const [essays, setEssays] = useState<string[]>(['']); // Start with one empty essay
   const [analysis, setAnalysis] = useState<SampleStyle | null>(null);
   const [busy, setBusy] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -43,25 +42,40 @@ function OnboardingInner() {
     })();
   }, [router]);
 
-  // Parse pasted text into samples. Accept '---' delimiter or two+ blank lines.
-  function parseSamplesFromText(text: string) {
-    if (!text) return [];
-    const parts = text
-      .split(/\n-{3,}\n|(?:\n\s*\n){2,}/)
-      .map(s => s.trim())
-      .filter(Boolean);
-    return parts;
+  // Add a new essay slot
+  function addEssay() {
+    setEssays([...essays, '']);
+    setAnalysis(null);
   }
 
-  // Analyze parsed samples
+  // Remove an essay by index
+  function removeEssay(index: number) {
+    if (essays.length <= 1) return;
+    setEssays(essays.filter((_, i) => i !== index));
+    setAnalysis(null);
+  }
+
+  // Update essay at index
+  function updateEssay(index: number, value: string) {
+    const updated = [...essays];
+    updated[index] = value;
+    setEssays(updated);
+    setAnalysis(null);
+  }
+
+  // Get non-empty essays
+  function getValidEssays() {
+    return essays.filter(e => e.trim().length > 0);
+  }
+
+  // Analyze all essays
   function handleAnalyze() {
-    const parsed = parseSamplesFromText(samplesText);
-    if (parsed.length === 0) {
-      alert('Please paste at least one essay sample (separate multiple essays with a line of `---` or a blank line).');
+    const valid = getValidEssays();
+    if (valid.length === 0) {
+      alert('Please paste at least one essay sample.');
       return;
     }
-    setSamples(parsed);
-    const result = analyzeSampleStyle(parsed);
+    const result = analyzeSampleStyle(valid);
     setAnalysis(result);
   }
 
@@ -72,8 +86,8 @@ function OnboardingInner() {
       return;
     }
     
-    const parsed = parseSamplesFromText(samplesText);
-    if (parsed.length === 0) {
+    const validEssays = getValidEssays();
+    if (validEssays.length === 0) {
       alert('Please paste at least one writing sample before saving.');
       return;
     }
@@ -81,7 +95,7 @@ function OnboardingInner() {
     // Ensure we have analysis (analyze automatically if missing)
     let finalAnalysis = analysis;
     if (!finalAnalysis) {
-      finalAnalysis = analyzeSampleStyle(parsed);
+      finalAnalysis = analyzeSampleStyle(validEssays);
       setAnalysis(finalAnalysis);
     }
 
@@ -90,7 +104,7 @@ function OnboardingInner() {
     try {
       // Create profile from analysis
       const now = Date.now();
-      const combinedText = parsed.join('\n\n');
+      const combinedText = validEssays.join('\n\n');
       
       const newProfile: StyleProfile = {
         id: crypto.randomUUID(),
@@ -117,7 +131,7 @@ function OnboardingInner() {
              finalAnalysis!.personalVoice === 'first-person' ? 0.6 : 0.5,
         
         sampleExcerpt: combinedText,
-        sampleExcerpts: parsed,
+        sampleExcerpts: validEssays,
         customLexicon: [
           ...finalAnalysis!.topAdverbs.slice(0, 3),
           ...finalAnalysis!.preferredTransitions.slice(0, 2)
@@ -163,9 +177,9 @@ function OnboardingInner() {
     }
   }
 
-  const currentWordCount = samplesText.trim().split(/\s+/).filter(Boolean).length;
-  const totalWords = samples.reduce((sum, s) => sum + s.trim().split(/\s+/).filter(Boolean).length, 0);
-  const canAnalyze = samplesText.trim().length > 0;
+  const validEssays = getValidEssays();
+  const totalWords = validEssays.reduce((sum, e) => sum + e.trim().split(/\s+/).filter(Boolean).length, 0);
+  const canAnalyze = validEssays.length > 0;
   const canSave = profileName.trim() && analysis;
 
   return (
@@ -193,32 +207,81 @@ function OnboardingInner() {
             />
           </div>
 
-          {/* Single textarea for multiple essays */}
-          <div className="space-y-2">
+          {/* Multi-Essay Interface */}
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-white">Paste Your Essays</label>
-              <span className={`text-xs ${currentWordCount < 50 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                {currentWordCount} words
+              <label className="text-sm font-medium text-white">Your Writing Samples</label>
+              <span className={`text-xs ${totalWords < 50 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                {validEssays.length} essay{validEssays.length !== 1 ? 's' : ''} · {totalWords} words total
               </span>
             </div>
-            <textarea
-              value={samplesText}
-              onChange={e => { setSamplesText(e.target.value); setAnalysis(null); }}
-              rows={10}
-              className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-brand-500"
-              placeholder={"Paste multiple essays here. Separate essays with a line of `---` or two blank lines for best results."}
-            />
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-slate-400">💡 Tip: Paste 1–3 representative essays for best paraphrase matching</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleAnalyze}
-                  disabled={!canAnalyze}
-                  className="px-3 py-1.5 text-xs rounded-md bg-blue-600 hover:bg-blue-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Analyze
-                </button>
-              </div>
+
+            {/* Essay Cards */}
+            <div className="space-y-3">
+              {essays.map((essay, index) => {
+                const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
+                return (
+                  <div key={index} className="bg-slate-800/40 rounded-xl border border-white/10 overflow-hidden">
+                    {/* Essay Header */}
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800/60 border-b border-white/10">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-xs font-bold text-brand-300">
+                          {index + 1}
+                        </div>
+                        <span className="text-sm font-medium text-white">Essay {index + 1}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-xs ${wordCount > 0 ? 'text-slate-400' : 'text-slate-500'}`}>
+                          {wordCount} words
+                        </span>
+                        {essays.length > 1 && (
+                          <button
+                            onClick={() => removeEssay(index)}
+                            className="p-1 rounded hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition"
+                            title="Remove this essay"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Essay Textarea */}
+                    <textarea
+                      value={essay}
+                      onChange={e => updateEssay(index, e.target.value)}
+                      rows={6}
+                      className="w-full bg-transparent px-4 py-3 text-sm leading-relaxed focus:outline-none resize-none text-slate-200 placeholder-slate-500"
+                      placeholder="Paste your essay or writing sample here..."
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Add New Essay Button */}
+            <button
+              onClick={addEssay}
+              className="w-full py-3 rounded-xl border-2 border-dashed border-slate-700 hover:border-brand-500/50 hover:bg-brand-500/5 text-slate-400 hover:text-brand-300 transition flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Another Essay
+            </button>
+
+            {/* Tips and Analyze Button */}
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-xs text-slate-400">💡 Tip: Add 2-3 essays for the best style matching</p>
+              <button
+                onClick={handleAnalyze}
+                disabled={!canAnalyze}
+                className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Analyze Style
+              </button>
             </div>
           </div>
 
@@ -233,7 +296,7 @@ function OnboardingInner() {
                   <h3 className="text-lg font-semibold text-white">Style Detected!</h3>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
                     <p className="text-slate-400 text-xs mb-1">Formality</p>
                     <p className="text-white font-medium">
@@ -243,10 +306,6 @@ function OnboardingInner() {
                   <div>
                     <p className="text-slate-400 text-xs mb-1">Sentence Length</p>
                     <p className="text-white font-medium">{Math.round(analysis.avgSentenceLength)} words avg</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400 text-xs mb-1">Voice</p>
-                    <p className="text-white font-medium">{analysis.personalVoice}</p>
                   </div>
                   <div>
                     <p className="text-slate-400 text-xs mb-1">Tone</p>
@@ -339,7 +398,7 @@ function OnboardingInner() {
           {!canSave && (
             <p className="text-xs text-center text-amber-400">
               {!profileName.trim() ? '↑ Enter a profile name' :
-               samples.length === 0 ? '↑ Add at least one writing sample' :
+               validEssays.length === 0 ? '↑ Add at least one writing sample' :
                !analysis ? '↑ Analyze your samples first' : ''}
             </p>
           )}

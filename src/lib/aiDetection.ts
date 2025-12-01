@@ -1,6 +1,8 @@
 /**
- * AI Content Detection - Real heuristic-based detection
- * Analyzes text patterns commonly found in AI-generated content
+ * AI Content Detection - Balanced heuristic-based detection
+ * IMPORTANT: This is a ROUGH ESTIMATE only. No algorithm can reliably detect AI content.
+ * Human-written academic/formal text can appear "AI-like" and vice versa.
+ * False positives are common, especially with formal writing styles.
  */
 
 export interface AIDetectionResult {
@@ -24,52 +26,51 @@ export interface AISignal {
   weight: number;
 }
 
-// Common AI vocabulary and phrases
+// Only flag HIGHLY specific AI vocabulary - words humans rarely use naturally
+// Removed common formal words that humans DO use (essential, significant, comprehensive, etc.)
 const AI_VOCABULARY = [
-  // Overused AI words
-  'delve', 'utilize', 'leverage', 'facilitate', 'paramount', 'multifaceted',
-  'comprehensive', 'robust', 'seamless', 'cutting-edge', 'innovative',
-  'streamline', 'synergy', 'optimize', 'holistic', 'dynamic',
-  'pivotal', 'crucial', 'essential', 'significant', 'substantial',
-  'endeavor', 'embark', 'foster', 'enhance', 'bolster',
-  'meticulous', 'intricate', 'nuanced', 'profound', 'compelling'
+  // Truly overused AI-specific words (ChatGPT favorites)
+  'delve', 'utilize', 'leverage', 'facilitate', 'multifaceted',
+  'streamline', 'synergy', 'holistic', 
+  'endeavor', 'embark', 'foster', 'bolster',
+  'meticulous', 'tapestry', 'realm', 'landscape'
 ];
 
+// Only flag very specific AI phrase patterns - reduced false positives
 const AI_PHRASES = [
-  /\bit('s| is) (important|worth|essential|crucial) to (note|mention|understand|recognize)/gi,
-  /\bin today('s| 's) (world|age|era|society|landscape)/gi,
-  /\b(let('s| us)|allow me to) (delve|dive|explore|examine)/gi,
-  /\bwhen it comes to\b/gi,
-  /\bat the end of the day\b/gi,
-  /\bin (conclusion|summary|essence)\b/gi,
-  /\bplays a (crucial|vital|key|important|significant|pivotal) role\b/gi,
-  /\b(game-?changer|paradigm shift)\b/gi,
-  /\btake .{1,30} to the next level\b/gi,
+  /\b(let('s| us)|allow me to) (delve|dive) (into|deeper)/gi,
   /\b(navigat(e|ing)|embark(ing)? on) (this|the|a) journey\b/gi,
   /\bunlock(ing)? (the|your|its) (full )?potential\b/gi,
-  /\b(first and foremost|last but not least)\b/gi,
   /\bIt('s| is) no secret that\b/gi,
-  /\bIn (light|view) of (this|the|these)\b/gi,
-  /\bAs (we|I) (delve|dive|explore)\b/gi,
-  /\bmoreover|furthermore|additionally|consequently\b/gi,
-  /\bnevertheless|nonetheless|hence|thus\b/gi,
+  /\bAs (we|I) delve\b/gi,
+  /\bin today's (ever-changing|fast-paced|rapidly evolving)\b/gi,
+  /\btake .{1,20} to the next level\b/gi,
+  /\bgame-?changer\b/gi,
+  /\bparadigm shift\b/gi,
 ];
 
+// Reduced - only flag if MANY formal transitions are used together
 const AI_TRANSITION_STARTERS = [
-  'Moreover', 'Furthermore', 'Additionally', 'Consequently',
-  'Nevertheless', 'Nonetheless', 'Hence', 'Thus', 'Therefore',
-  'Subsequently', 'Accordingly', 'In conclusion', 'To summarize',
-  'In essence', 'Ultimately', 'Notably', 'Significantly'
+  'Moreover', 'Furthermore', 'Subsequently', 'Accordingly'
 ];
 
-// Human writing markers
+// Human writing markers - EXPANDED to better detect human writing
 const HUMAN_MARKERS = {
   contractions: /\b(don't|won't|can't|isn't|aren't|wasn't|weren't|haven't|hasn't|hadn't|I'm|you're|he's|she's|it's|we're|they're|I've|you've|we've|they've|I'll|you'll|we'll|they'll|I'd|you'd|he'd|she'd|we'd|they'd|couldn't|wouldn't|shouldn't|didn't|doesn't|ain't|let's|that's|there's|here's|what's|who's|how's|where's|when's|why's)\b/gi,
   personalPronouns: /\b(I|me|my|mine|myself|we|us|our|ours|ourselves)\b/g,
-  informalWords: /\b(yeah|yep|nope|gonna|wanna|gotta|kinda|sorta|lots|tons|stuff|things|ok|okay|cool|nice|pretty|really|very|just|actually|basically|literally|honestly|seriously|totally|super|awesome|great|amazing|terrible|horrible|crazy|weird|funny|silly|dumb|smart)\b/gi,
-  fillerPhrases: /\b(you know|I mean|like|sort of|kind of|I think|I guess|I feel|to be honest|honestly|actually|basically)\b/gi,
+  secondPerson: /\b(you|your|yours|yourself)\b/gi,
+  informalWords: /\b(yeah|yep|nope|gonna|wanna|gotta|kinda|sorta|lots|tons|stuff|things|ok|okay|cool|nice|pretty|really|very|just|actually|basically|literally|honestly|seriously|totally|super|awesome|great|amazing|terrible|horrible|crazy|weird|funny|silly|dumb|smart|huge|big|small|good|bad|hard|easy|old|new|long|short)\b/gi,
+  fillerPhrases: /\b(you know|I mean|like|sort of|kind of|I think|I guess|I feel|to be honest|honestly|actually|basically|well|anyway|so|but|and|though)\b/gi,
   questions: /\?/g,
   exclamations: /!/g,
+  // New: Sentence starters that humans commonly use
+  humanStarters: /^(But|And|So|Well|Now|See|Look|Hey|Oh|Okay|Actually|Honestly|Personally|Anyway)\b/gim,
+  // New: Parenthetical asides - very human
+  parentheticals: /\([^)]{5,50}\)/g,
+  // New: Dashes for emphasis - human style
+  dashEmphasis: /—|--/g,
+  // New: Short sentences (under 6 words) interspersed
+  shortSentences: /[.!?]\s+[A-Z][^.!?]{1,25}[.!?]/g,
 };
 
 /**

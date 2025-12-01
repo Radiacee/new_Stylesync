@@ -7,7 +7,9 @@ const bodySchema = z.object({
   text: z.string().min(1).max(8000),
   useModel: z.boolean().optional(),
   profile: z.any().optional(),
-  debug: z.boolean().optional()
+  debug: z.boolean().optional(),
+  stylePreset: z.enum(['original', 'formal', 'casual', 'academic', 'professional', 'creative']).optional(),
+  styleInstructions: z.string().nullable().optional()
 });
 
 export const runtime = 'nodejs';
@@ -24,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     const json = await req.json();
-    const { text, useModel, profile } = bodySchema.parse(json);
+    const { text, useModel, profile, stylePreset, styleInstructions } = bodySchema.parse(json);
 
     const hasGroqKey = !!process.env.GROQ_API_KEY;
     const hasGeminiKey = !!process.env.GEMINI_API_KEY;
@@ -34,7 +36,7 @@ export async function POST(req: NextRequest) {
     let usedAIModel = false;
     
     if (canUseAI && (useModel ?? true)) {
-      output = await simpleStyleParaphrase(text, profile);
+      output = await simpleStyleParaphrase(text, profile, stylePreset, styleInstructions);
       usedAIModel = true;
     } else {
       output = paraphraseWithProfile(text, profile);
@@ -53,8 +55,13 @@ export async function POST(req: NextRequest) {
 // SIMPLE STYLE PARAPHRASE - Learn user's style structure, apply it cleanly
 // ============================================================================
 
-async function simpleStyleParaphrase(text: string, profile: any): Promise<string> {
-  const prompt = buildSimplePrompt(profile);
+async function simpleStyleParaphrase(
+  text: string, 
+  profile: any, 
+  stylePreset?: string, 
+  styleInstructions?: string | null
+): Promise<string> {
+  const prompt = buildSimplePrompt(profile, stylePreset, styleInstructions);
   
   // Try Groq first, then Gemini
   try {
@@ -70,7 +77,24 @@ async function simpleStyleParaphrase(text: string, profile: any): Promise<string
   }
 }
 
-function buildSimplePrompt(profile: any): string {
+function buildSimplePrompt(profile: any, stylePreset?: string, styleInstructions?: string | null): string {
+  // If using a preset style (not original), prioritize preset instructions
+  if (stylePreset && stylePreset !== 'original' && styleInstructions) {
+    return `You are a writing style transformer. Rewrite text in a specific style.
+
+## TARGET STYLE: ${stylePreset.toUpperCase()}
+${styleInstructions}
+
+## TASK
+Rewrite the input text to match this style.
+
+CRITICAL RULES:
+1. Keep ALL facts and information exactly the same - change nothing about the meaning
+2. Apply the style characteristics fully
+3. Use proper grammar - no errors
+4. Output ONLY the rewritten text - no explanations, notes, or commentary`;
+  }
+
   if (!profile?.sampleExcerpt) {
     return `Rewrite the following text naturally while keeping all facts and meaning intact. Use proper grammar. Output only the rewritten text with no explanations.`;
   }
