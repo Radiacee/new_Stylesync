@@ -16,6 +16,7 @@ import StyleProofPanel from '../../components/StyleProofPanel';
 import StyleSelector, { type StylePreset, getStyleInstructions } from '../../components/StyleSelector';
 import WritingSuggestionsPanel from '../../components/WritingSuggestionsPanel';
 import WritingTipsTooltip from '../../components/WritingTipsTooltip';
+import QualitySuggestions from '../../components/QualitySuggestions';
 import ReportButton from '../../components/ReportButton';
 import { type StyleTransformation } from '../../lib/styleComparison';
 import { shouldCollectAnalytics, prepareAnalyticsData, submitAnalytics, getUserConsent } from '../../lib/analytics';
@@ -777,6 +778,16 @@ export default function ParaphrasePage() {
                   </div>
                 )}
               </div>
+            )}
+            
+            {/* Context-Aware Quality Suggestions */}
+            {output && input && (
+              <QualitySuggestions
+                input={input}
+                output={output}
+                styleType={selectedStyle}
+                profileSample={profile?.sampleExcerpt}
+              />
             )}
             
             <p className="text-[10px] text-slate-500">Review output carefully. Cite sources and disclose AI assistance.</p>
