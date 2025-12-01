@@ -15,6 +15,7 @@ import AnalyticsConsent from '../../components/AnalyticsConsent';
 import StyleProofPanel from '../../components/StyleProofPanel';
 import StyleSelector, { type StylePreset, getStyleInstructions } from '../../components/StyleSelector';
 import WritingSuggestionsPanel from '../../components/WritingSuggestionsPanel';
+import WritingTipsTooltip from '../../components/WritingTipsTooltip';
 import ReportButton from '../../components/ReportButton';
 import { type StyleTransformation } from '../../lib/styleComparison';
 import { shouldCollectAnalytics, prepareAnalyticsData, submitAnalytics, getUserConsent } from '../../lib/analytics';
@@ -618,8 +619,16 @@ export default function ParaphrasePage() {
               <h1 className="text-2xl sm:text-3xl font-bold">Paraphrase</h1>
               <p className="text-sm sm:text-base text-slate-300">Transform text to match your writing style</p>
             </div>
-            {/* Analytics Consent Button - Top right corner */}
-            {userId && <AnalyticsConsent userId={userId} onConsentChange={setUserConsent} />}
+            {/* Writing Tips & Analytics Consent - Top right */}
+            <div className="flex items-center gap-2">
+              {profile && combineProfileSamples(profile) && (
+                <WritingTipsTooltip 
+                  profileEssay={combineProfileSamples(profile)} 
+                  profileName={profile.name}
+                />
+              )}
+              {userId && <AnalyticsConsent userId={userId} onConsentChange={setUserConsent} />}
+            </div>
           </div>
           {isParaphraseHistoryTableMissing() && (
             <div className="rounded border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-300 space-y-2">
@@ -639,39 +648,6 @@ export default function ParaphrasePage() {
             onStyleChange={setSelectedStyle}
             disabled={busy}
           />
-
-          {hasUserEssay && (
-            <div ref={suggestionsRef} className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4 space-y-3">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-blue-200">Writing Tips</p>
-                  <p className="text-xs text-blue-200/70">We analyze the essay you pasted so you can polish it before paraphrasing.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowSuggestions(!showSuggestions);
-                    if (!showSuggestions) {
-                      setTimeout(() => {
-                        suggestionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      }, 100);
-                    }
-                  }}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold transition-all bg-blue-500/20 hover:bg-blue-500/30 text-blue-100 border border-blue-400/40"
-                >
-                  {showSuggestions ? 'Hide Tips' : 'Show Writing Tips'}
-                </button>
-              </div>
-              {showSuggestions && (
-                <div className="pt-2 border-t border-white/10">
-                  <WritingSuggestionsPanel 
-                    text={input}
-                    styleType={selectedStyle === 'original' ? 'professional' : selectedStyle as 'academic' | 'casual' | 'professional' | 'creative'}
-                    onClose={() => setShowSuggestions(false)}
-                  />
-                </div>
-              )}
-            </div>
-          )}
           
           <div className="space-y-4">
             <label className="text-sm font-medium">Input Text</label>
@@ -712,24 +688,7 @@ export default function ParaphrasePage() {
           <div ref={resultsRef} className="glass-panel p-4 sm:p-5 space-y-3 scroll-mt-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <h2 className="font-semibold text-brand-300 flex items-center gap-2 text-sm sm:text-base">
-                Result 
-                {usedModel && <span className="text-[10px] px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">Model</span>} 
-                {!usedModel && output && <span className="text-[10px] px-2 py-0.5 rounded bg-slate-500/20 text-slate-300 border border-white/10">Heuristic</span>}
-                {styleMatch && styleMatch.overallMatch >= 85 && (
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                    ✓ {styleMatch.overallMatch}% Style Match
-                  </span>
-                )}
-                {styleMatch && styleMatch.overallMatch >= 70 && styleMatch.overallMatch < 85 && (
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                    ~ {styleMatch.overallMatch}% Style Match
-                  </span>
-                )}
-                {styleMatch && styleMatch.overallMatch < 70 && (
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 flex items-center gap-1">
-                    ⚠ {styleMatch.overallMatch}% Style Match
-                  </span>
-                )}
+                Result
               </h2>
               {output && (
                 <div className="flex gap-2 w-full sm:w-auto">
