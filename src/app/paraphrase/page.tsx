@@ -8,19 +8,16 @@ import { FullScreenSpinner } from '../../components/FullScreenSpinner';
 import { StyleProfileManager } from '../../components/StyleProfileManager';
 import { fetchHistory, addHistoryEntry, updateHistoryNote, deleteHistoryEntry, deleteAllHistory, type ParaphraseEntry, isParaphraseHistoryTableMissing, PARAPHRASE_HISTORY_SQL } from '../../lib/paraphraseHistory.ts';
 import { supabase } from '../../lib/supabaseClient.ts';
-import AITransparencyPanel from '../../components/AITransparencyPanel';
 import StyleComparisonPanel from '../../components/StyleComparisonPanel';
 import StyleVerification from '../../components/StyleVerification';
 import StyleOptionsHelp from '../../components/StyleOptionsHelp';
 import AnalyticsConsent from '../../components/AnalyticsConsent';
-import AIDetectionDisplay from '../../components/AIDetectionDisplay';
 import StyleProofPanel from '../../components/StyleProofPanel';
 import StyleSelector, { type StylePreset, getStyleInstructions } from '../../components/StyleSelector';
 import WritingSuggestionsPanel from '../../components/WritingSuggestionsPanel';
 import ReportButton from '../../components/ReportButton';
 import { type StyleTransformation } from '../../lib/styleComparison';
-import { detectAIContent } from '../../lib/aiDetection';
-import { shouldCollectAnalytics, prepareAnalyticsData, submitAnalytics, calculateVerificationScore, getUserConsent } from '../../lib/analytics';
+import { shouldCollectAnalytics, prepareAnalyticsData, submitAnalytics, getUserConsent } from '../../lib/analytics';
 import { moderateContent, type ModerationResult } from '../../lib/contentModeration';
 
 function combineProfileSamples(profile: StyleProfile | null): string {
@@ -74,8 +71,46 @@ export default function ParaphrasePage() {
   const [selectedStyle, setSelectedStyle] = useState<StylePreset>('original'); // Style selection
   const [moderationResult, setModerationResult] = useState<ModerationResult | null>(null); // Content moderation
   const [showSuggestions, setShowSuggestions] = useState(false); // Writing suggestions toggle
+  const [styleMatch, setStyleMatch] = useState<{ overallMatch: number; issues: string[] } | null>(null); // Style match report
 
   const hasUserEssay = input.trim().length > 0;
+  const hasStyleDiagnostics = Boolean(metrics) || actions.length > 0;
+
+  const styleMetricData = metrics ? [
+    { label: 'Sentences', value: metrics.sentenceCount ?? '—' },
+    { label: 'Avg sentence length', value: metrics.avgSentenceLength ? `${Math.max(1, Math.round(metrics.avgSentenceLength / 6))} words` : '—' },
+    { label: 'Unique vocab', value: typeof metrics.uniqueTokenRatio === 'number' ? `${Math.round(metrics.uniqueTokenRatio * 100)}%` : '—' },
+    { label: 'Lexicon hits', value: metrics.customLexiconPresent ?? 0 },
+  ] : [];
+
+  const describeAction = (action: { code: string; meta?: any }) => {
+    switch (action.code) {
+      case 'removeOpener':
+        return 'Removed AI-sounding preface';
+      case 'replaceEmDash':
+        return 'Split em dash sentences to match your pacing';
+      case 'replaceSemicolon':
+        return 'Converted semicolons into shorter sentences';
+      case 'stripBullets':
+        return 'Flattened bullet formatting into prose';
+      case 'removeBanned':
+        return action.meta ? `Softened "${action.meta}" so it reads naturally` : 'Softened robotic filler phrase';
+      case 'splitLongSentence':
+        return action.meta?.length ? `Split a ${action.meta.length}-word sentence to mirror your rhythm` : 'Split an overly long sentence';
+      case 'collapsePeriods':
+        return 'Cleaned extra punctuation';
+      case 'applyContractions':
+        return `Applied contractions for ${action.meta || 'casual'} tone`;
+      case 'expandContractions':
+        return `Expanded contractions for ${action.meta || 'formal'} tone`;
+      case 'matchSentenceLength':
+        return action.meta?.target ? `Matched sentence length (~${action.meta.target} words)` : 'Matched your sentence rhythm';
+      case 'addTransitions':
+        return action.meta ? `Used transitions like "${action.meta}"` : 'Added transition words';
+      default:
+        return `Applied style rule: ${action.code}`;
+    }
+  };
 
   // Ensure loaded profile always includes full analysis + merged samples
   useEffect(() => {
@@ -167,6 +202,7 @@ export default function ParaphrasePage() {
   async function handleParaphrase() {
     setBusy(true); setError(null); setUsedModel(false);
     setModerationResult(null); // Reset moderation
+    setStyleMatch(null); // Reset style match
     analyticsSubmittedRef.current = false; // Reset analytics submission flag for new paraphrase
     
     // Content moderation check
@@ -210,6 +246,7 @@ export default function ParaphrasePage() {
       setActions(data.actions || []);
       setMetrics(data.metrics || null);
       setUsedModel(!!data.usedModel);
+      setStyleMatch(data.styleMatch || null);
   
       // Automatically run style analysis after getting output
       if (preparedProfile?.sampleExcerpt && input && data.result) {
@@ -235,6 +272,9 @@ export default function ParaphrasePage() {
       const fallback = paraphraseWithProfile(input, preparedProfile || undefined);
       setOutput(fallback);
       setError(e.message || 'Failed to use model, showed heuristic result.');
+      setActions([]);
+      setMetrics(null);
+      setStyleTransformation(null);
       if (userId) {
         const optimistic: ParaphraseEntry = { id: crypto.randomUUID(), userId, input, output: fallback, note: '', usedModel: false, createdAt: new Date().toISOString(), pending: true };
         setHistory(h => [optimistic, ...h].slice(0,50));
@@ -599,6 +639,39 @@ export default function ParaphrasePage() {
             onStyleChange={setSelectedStyle}
             disabled={busy}
           />
+
+          {hasUserEssay && (
+            <div ref={suggestionsRef} className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4 space-y-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-blue-200">Writing Tips</p>
+                  <p className="text-xs text-blue-200/70">We analyze the essay you pasted so you can polish it before paraphrasing.</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowSuggestions(!showSuggestions);
+                    if (!showSuggestions) {
+                      setTimeout(() => {
+                        suggestionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 100);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold transition-all bg-blue-500/20 hover:bg-blue-500/30 text-blue-100 border border-blue-400/40"
+                >
+                  {showSuggestions ? 'Hide Tips' : 'Show Writing Tips'}
+                </button>
+              </div>
+              {showSuggestions && (
+                <div className="pt-2 border-t border-white/10">
+                  <WritingSuggestionsPanel 
+                    text={input}
+                    styleType={selectedStyle === 'original' ? 'professional' : selectedStyle as 'academic' | 'casual' | 'professional' | 'creative'}
+                    onClose={() => setShowSuggestions(false)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
           
           <div className="space-y-4">
             <label className="text-sm font-medium">Input Text</label>
@@ -619,30 +692,21 @@ export default function ParaphrasePage() {
               {busy ? 'Processing…' : 'Paraphrase'}
             </button>
             <button 
-              onClick={() => { setInput(''); setOutput(''); setError(null); setUsedModel(false); }} 
+              onClick={() => { 
+                setInput(''); 
+                setOutput(''); 
+                setError(null); 
+                setUsedModel(false); 
+                setActions([]); 
+                setMetrics(null); 
+                setModerationResult(null); 
+              }} 
               className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-lg border border-white/10 hover:border-brand-400/60 text-slate-200 text-sm transition text-center"
             >
               Reset
             </button>
           </div>
 
-          {hasUserEssay && (
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
-              <button
-                onClick={() => {
-                  setShowSuggestions(!showSuggestions);
-                  if (!showSuggestions) {
-                    setTimeout(() => {
-                      suggestionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 100);
-                  }
-                }}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30"
-              >
-                💡 {showSuggestions ? 'Hide' : 'Show'} Writing Tips
-              </button>
-            </div>
-          )}
         </div>
         {(error || output) && (
           <div ref={resultsRef} className="glass-panel p-4 sm:p-5 space-y-3 scroll-mt-8">
@@ -651,6 +715,21 @@ export default function ParaphrasePage() {
                 Result 
                 {usedModel && <span className="text-[10px] px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">Model</span>} 
                 {!usedModel && output && <span className="text-[10px] px-2 py-0.5 rounded bg-slate-500/20 text-slate-300 border border-white/10">Heuristic</span>}
+                {styleMatch && styleMatch.overallMatch >= 85 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                    ✓ {styleMatch.overallMatch}% Style Match
+                  </span>
+                )}
+                {styleMatch && styleMatch.overallMatch >= 70 && styleMatch.overallMatch < 85 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                    ~ {styleMatch.overallMatch}% Style Match
+                  </span>
+                )}
+                {styleMatch && styleMatch.overallMatch < 70 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30 flex items-center gap-1">
+                    ⚠ {styleMatch.overallMatch}% Style Match
+                  </span>
+                )}
               </h2>
               {output && (
                 <div className="flex gap-2 w-full sm:w-auto">
@@ -696,6 +775,50 @@ export default function ParaphrasePage() {
                 )}
               </div>
             )}
+
+            {hasStyleDiagnostics && (
+              <div className="mt-4 rounded-lg border border-brand-500/30 bg-brand-500/5 p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-brand-300/80">Style lock</p>
+                    <p className="text-sm text-white">Every pass is tuned to your samples.</p>
+                  </div>
+                  {metrics && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded border ${metrics.isHumanized ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : 'bg-amber-500/15 border-amber-500/40 text-amber-300'}`}>
+                      {metrics.isHumanized ? 'Aligned' : 'Adjusting'} · {metrics.passes ?? 0} passes
+                    </span>
+                  )}
+                </div>
+
+                {metrics && (
+                  <div className="grid grid-cols-2 gap-3 text-xs text-slate-200">
+                    {styleMetricData.map(metric => (
+                      <div key={metric.label} className="bg-slate-900/40 rounded-md border border-white/5 p-2">
+                        <p className="text-[10px] uppercase tracking-wide text-slate-400">{metric.label}</p>
+                        <p className="text-base font-semibold text-white">{metric.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {actions.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-semibold text-brand-200 mb-1">Micro-adjustments ({actions.length})</p>
+                    <ul className="space-y-1 text-xs text-slate-200">
+                      {actions.slice(0, 4).map((action, idx) => (
+                        <li key={`${action.code}-${idx}`} className="flex items-start gap-2">
+                          <span className="text-brand-300">•</span>
+                          <span>{describeAction(action)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {actions.length > 4 && (
+                      <p className="text-[10px] text-slate-500 mt-1">+{actions.length - 4} more adjustments</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             
             <p className="text-[10px] text-slate-500">Review output carefully. Cite sources and disclose AI assistance.</p>
           </div>
@@ -703,34 +826,12 @@ export default function ParaphrasePage() {
 
         {/* Style Application Proof - Shows REAL evidence of style being applied */}
         {output && input && profile?.sampleExcerpt && styleTransformation && (
-          <div className="glass-panel p-4 sm:p-5">
+          <div className="glass-panel p-4 sm:p-5 border-2 border-brand-500/50">
             <StyleProofPanel
               userSampleText={profile.sampleExcerpt}
               originalInput={input}
               paraphrasedOutput={output}
               userStyle={styleTransformation.userStyle}
-            />
-          </div>
-        )}
-
-        {/* Writing Suggestions Panel */}
-        {showSuggestions && hasUserEssay && (
-          <div ref={suggestionsRef} className="glass-panel p-4 sm:p-5 scroll-mt-8">
-            <WritingSuggestionsPanel 
-              text={input}
-              styleType={selectedStyle === 'original' ? 'professional' : selectedStyle as 'academic' | 'casual' | 'professional' | 'creative'}
-              onClose={() => setShowSuggestions(false)}
-            />
-          </div>
-        )}
-
-        {/* AI Detection Panel */}
-        {output && input && (
-          <div className="glass-panel p-4 sm:p-5">
-            <AIDetectionDisplay 
-              originalText={input}
-              paraphrasedText={output}
-              showComparison={true}
             />
           </div>
         )}

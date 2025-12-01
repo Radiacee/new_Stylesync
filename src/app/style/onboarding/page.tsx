@@ -75,7 +75,8 @@ function OnboardingInner() {
       alert('Please paste at least one essay sample.');
       return;
     }
-    const result = analyzeSampleStyle(valid);
+    // Join all essays for analysis
+    const result = analyzeSampleStyle(valid.join('\n\n'));
     setAnalysis(result);
   }
 
@@ -95,7 +96,7 @@ function OnboardingInner() {
     // Ensure we have analysis (analyze automatically if missing)
     let finalAnalysis = analysis;
     if (!finalAnalysis) {
-      finalAnalysis = analyzeSampleStyle(validEssays);
+      finalAnalysis = analyzeSampleStyle(validEssays.join('\n\n'));
       setAnalysis(finalAnalysis);
     }
 
@@ -111,20 +112,20 @@ function OnboardingInner() {
         createdAt: now,
         updatedAt: now,
         name: profileName.trim(),
-          tone: finalAnalysis!.toneBalance === 'positive' ? 'encouraging' : 
-            finalAnalysis!.toneBalance === 'negative' ? 'critical' : 'balanced',
+        // Determine tone from analysis
+        tone: 'balanced',
         
         // Calculate formality from analysis
         formality: finalAnalysis!.usesContractions 
-          ? 0.2 + (1 - finalAnalysis!.vocabularyComplexity) * 0.3
-          : 0.6 + (finalAnalysis!.vocabularyComplexity * 0.3),
+          ? 0.3
+          : 0.7,
         
         // Calculate pacing from sentence length
         pacing: finalAnalysis!.avgSentenceLength > 20 ? 0.3 :
           finalAnalysis!.avgSentenceLength < 12 ? 0.7 : 0.5,
         
-        // Descriptiveness from adjective density
-        descriptiveness: Math.min(0.9, Math.max(0.1, finalAnalysis!.adjectiveDensity * 6)),
+        // Descriptiveness
+        descriptiveness: 0.5,
         
         // Directness from personal voice and questions
         directness: finalAnalysis!.personalVoice === 'second-person' ? 0.7 :
@@ -133,8 +134,8 @@ function OnboardingInner() {
         sampleExcerpt: combinedText,
         sampleExcerpts: validEssays,
         customLexicon: [
-          ...finalAnalysis!.topAdverbs.slice(0, 3),
-          ...finalAnalysis!.preferredTransitions.slice(0, 2)
+          ...(finalAnalysis!.topAdverbs || []).slice(0, 3),
+          ...(finalAnalysis!.preferredTransitions || []).slice(0, 2)
         ].slice(0, 8),
         notes: '',
         styleAnalysis: finalAnalysis!
@@ -181,6 +182,15 @@ function OnboardingInner() {
   const totalWords = validEssays.reduce((sum, e) => sum + e.trim().split(/\s+/).filter(Boolean).length, 0);
   const canAnalyze = validEssays.length > 0;
   const canSave = profileName.trim() && analysis;
+
+  // Show loading spinner until auth is checked
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <FullScreenSpinner label="Checking authentication..." />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen py-8">
@@ -308,35 +318,16 @@ function OnboardingInner() {
                     <p className="text-white font-medium">{Math.round(analysis.avgSentenceLength)} words avg</p>
                   </div>
                   <div>
-                    <p className="text-slate-400 text-xs mb-1">Tone</p>
-                    <p className="text-white font-medium">{analysis.toneBalance}</p>
+                    <p className="text-slate-400 text-xs mb-1">Voice</p>
+                    <p className="text-white font-medium">{analysis.personalVoice}</p>
                   </div>
                 </div>
 
-                {/* New metrics: lexical density & variety scores */}
-                <div className="grid grid-cols-3 gap-4 text-sm mt-3">
-                  <div>
-                    <p className="text-slate-400 text-xs mb-1">Lexical Density</p>
-                    <p className="text-white font-medium">{typeof analysis.lexicalDensity === 'number' ? `${Math.round(analysis.lexicalDensity * 100)}%` : 'N/A'}</p>
-                    <p className="text-xs text-slate-400">% content words vs function words</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400 text-xs mb-1">Sentence Variety</p>
-                    <p className="text-white font-medium">{typeof analysis.sentenceLengthVariety === 'number' ? `${analysis.sentenceLengthVariety.toFixed(1)} sd` : 'N/A'}</p>
-                    <p className="text-xs text-slate-400">Std dev of words per sentence</p>
-                  </div>
-                  <div>
-                    <p className="text-slate-400 text-xs mb-1">Paragraph Variety</p>
-                    <p className="text-white font-medium">{typeof analysis.paragraphLengthVariety === 'number' ? `${analysis.paragraphLengthVariety.toFixed(1)} sd` : 'N/A'}</p>
-                    <p className="text-xs text-slate-400">Std dev of words per paragraph</p>
-                  </div>
-                </div>
-
-                {analysis.topAdverbs.length > 0 && (
+                {(analysis.topAdverbs?.length ?? 0) > 0 && (
                   <div>
                     <p className="text-slate-400 text-xs mb-2">Common Words in Your Style</p>
                     <div className="flex flex-wrap gap-2">
-                      {[...analysis.topAdverbs.slice(0, 3), ...analysis.preferredTransitions.slice(0, 2)].map((word, i) => (
+                      {[...(analysis.topAdverbs || []).slice(0, 3), ...analysis.preferredTransitions.slice(0, 2)].map((word, i) => (
                         <span key={i} className="px-2 py-1 bg-brand-500/20 text-brand-300 rounded text-xs">
                           {word}
                         </span>
@@ -406,7 +397,6 @@ function OnboardingInner() {
       </div>
 
       {busy && <FullScreenSpinner label="Saving your style profile..." />}
-      {!authChecked && <FullScreenSpinner label="Checking authentication..." />}
 
       {/* Before/After Comparison Modal */}
       {showComparison && analysis && (
@@ -496,7 +486,7 @@ function OnboardingInner() {
                   {!analysis.usesContractions && (
                     <li>• Kept formal language without contractions (matching your style)</li>
                   )}
-                  {analysis.topAdverbs.length > 0 && (
+                  {analysis.topAdverbs && analysis.topAdverbs.length > 0 && (
                     <li>• Used words you commonly use: {analysis.topAdverbs.slice(0, 2).join(', ')}</li>
                   )}
                 </ul>

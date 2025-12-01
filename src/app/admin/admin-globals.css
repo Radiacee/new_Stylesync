@@ -22,39 +22,35 @@ body {
   display: none !important;
 }
 
-/* Admin-specific glass morphism styles */
+/* Admin-specific styles - Clean and Professional */
 .admin-glass {
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgb(30, 41, 59);
+  border: 1px solid rgb(51, 65, 85);
 }
 
 .admin-glass-light {
-  background: rgba(30, 41, 59, 0.6);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgb(51, 65, 85);
+  border: 1px solid rgb(71, 85, 105);
 }
 
-/* Admin button styles */
+/* Admin button styles - Flat and Professional */
 .admin-btn-primary {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  backdrop-filter: blur(8px);
+  background: rgb(51, 65, 85);
+  border: 1px solid rgb(71, 85, 105);
   transition: all 0.2s ease;
 }
 
 .admin-btn-primary:hover {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
-  border-color: rgba(59, 130, 246, 0.5);
-  transform: translateY(-1px);
+  background: rgb(71, 85, 105);
+  border-color: rgb(100, 116, 139);
 }
 
 .admin-btn-danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgb(51, 65, 85);
+  border: 1px solid rgb(71, 85, 105);
 }
 
 .admin-btn-danger:hover {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
-  border-color: rgba(239, 68, 68, 0.5);
+  background: rgb(185, 28, 28);
+  border-color: rgb(220, 38, 38);
 }

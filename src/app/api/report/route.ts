@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
 }
 
 // SQL for creating the reports table (run in Supabase SQL editor)
-export const REPORTS_TABLE_SQL = `
+// Note: This is documentation only, not exported
+/*
 create table if not exists public.content_reports (
   id uuid primary key default gen_random_uuid(),
   report_type text not null,
@@ -94,4 +95,4 @@ create policy "Allow insert reports" on public.content_reports
 -- Only admins can view reports (you'll need to set up admin role)
 create policy "Allow admin select" on public.content_reports 
   for select using (auth.jwt() ->> 'role' = 'admin');
-`;
+*/

@@ -154,12 +154,23 @@ create policy "Service role full access" on public.content_reports
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-              <Flag className="w-6 h-6 text-slate-400" />
-              Content Reports
-            </h2>
-            <p className="text-slate-500 mt-1">Review and manage reported content</p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition border border-slate-700"
+              title="Go Back"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </button>
+            <div>
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                <Flag className="w-6 h-6 text-slate-400" />
+                Content Reports
+              </h2>
+              <p className="text-slate-500 mt-1">Review and manage reported content</p>
+            </div>
           </div>
           <button
             onClick={fetchReports}

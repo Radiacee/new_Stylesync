@@ -62,10 +62,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   if (loading) {
     return (
-      <div className="admin-container fixed inset-0 bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex items-center justify-center z-50">
-        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
-          <p className="text-white mt-4 text-center">Checking admin access...</p>
+      <div className="admin-container fixed inset-0 bg-slate-900 flex items-center justify-center z-50">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-400 mx-auto"></div>
+          <p className="text-slate-300 mt-4 text-center">Checking admin access...</p>
         </div>
       </div>
     );
@@ -73,13 +73,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   if (!isAdmin) {
     return (
-      <div className="admin-container fixed inset-0 bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex items-center justify-center z-50">
-        <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-8 text-center">
+      <div className="admin-container fixed inset-0 bg-slate-900 flex items-center justify-center z-50">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
-          <p className="text-gray-300 mb-6">You don't have admin privileges.</p>
+          <p className="text-slate-400 mb-6">You don't have admin privileges.</p>
           <button
             onClick={() => router.push('/paraphrase')}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
+            className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg transition-colors border border-slate-600"
           >
             Go to App
           </button>
@@ -89,30 +89,30 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <div className="admin-container fixed inset-0 bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 overflow-auto z-50">
+    <div className="admin-container fixed inset-0 bg-slate-900 overflow-auto z-50">
       {/* Admin Header */}
-      <header className="bg-black/20 backdrop-blur-sm border-b border-white/10 sticky top-0 z-50">
+      <header className="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold text-white">
                 StyleSync Admin
               </h1>
-              <p className="text-gray-400 text-sm">Database & User Management</p>
+              <p className="text-slate-500 text-sm">Database & User Management</p>
             </div>
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => router.push('/paraphrase')}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition-colors border border-slate-600"
               >
                 Go to App
               </button>
-              <span className="text-gray-300 text-sm">
-                Welcome, {user?.email}
+              <span className="text-slate-400 text-sm">
+                {user?.email}
               </span>
               <button
                 onClick={handleSignOut}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                className="bg-slate-700 hover:bg-red-600 text-slate-300 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors border border-slate-600 hover:border-red-500"
               >
                 Sign Out
               </button>

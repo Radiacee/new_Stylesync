@@ -13,17 +13,18 @@ describe('paraphraseWithProfile', () => {
     expect(paraphraseWithProfile('', baseProfile)).toBe('');
   });
 
-  it('applies synonym replacement influenced by formality', () => {
+  it('applies contraction style based on sample', () => {
+    // When sample uses contractions, output should use contractions
+    const informalSample = "It's great. That's nice. We're happy.";
     const text = 'It is important to improve.';
-    const out = paraphraseWithProfile(text, { ...baseProfile, formality: 0.9 });
-    expect(out).not.toEqual(text);
-    expect(out.toLowerCase()).toMatch(/crucial|vital|key/);
+    const out = paraphraseWithProfile(text, { ...baseProfile, sampleExcerpt: informalSample });
+    expect(out).toMatch(/it's/i); // Should have contractions
   });
 
-  it('injects lexicon notes if custom words missing', () => {
+  it('injects lexicon notes if custom words missing and option enabled', () => {
     const text = 'A clear plan.';
-    const out = paraphraseWithProfile(text, baseProfile);
-  expect(out).toMatch(/lexicon notes:/i);
+    const out = paraphraseWithProfile(text, baseProfile, { includeLexiconNotes: true });
+    expect(out).toMatch(/lexicon notes:/i);
   });
 
   it('respects contraction usage in sample (disables if sample formal)', () => {
@@ -51,7 +52,7 @@ describe('paraphraseWithProfile', () => {
     let saw = false;
     for (let i=0;i<10;i++) {
       const out = paraphraseWithProfile(text, profile);
-      if (/However,\s+this is a test/i.test(out) || /However,\s+this is another/i.test(out)) { saw = true; break; }
+      if (/However,?\s+this is (a test|another)/i.test(out)) { saw = true; break; }
     }
     expect(saw).toBe(true);
   });

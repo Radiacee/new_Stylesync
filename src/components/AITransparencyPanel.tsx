@@ -54,43 +54,13 @@ export default function AITransparencyPanel({
       const analysis = profile.styleAnalysis;
       prompt += `Writing Pattern Analysis:\n`;
       prompt += `• Average sentence length: ${Math.round(analysis.avgSentenceLength)} words\n`;
-      prompt += `• Word complexity: ${(analysis.vocabularyComplexity * 100).toFixed(1)}% complex vocabulary\n`;
       prompt += `• Contractions: ${analysis.usesContractions ? 'Uses contractions' : 'Avoids contractions'}\n`;
       
       if (analysis.preferredTransitions && analysis.preferredTransitions.length > 0) {
         prompt += `• Preferred transitions: ${analysis.preferredTransitions.slice(0, 3).join(', ')}\n`;
       }
       
-      if (analysis.questionRatio > 0.1) {
-        prompt += `• Question usage: ${(analysis.questionRatio * 100).toFixed(1)}% of sentences\n`;
-      }
-      
-      if (analysis.commonStarters && analysis.commonStarters.length > 0) {
-        prompt += `• Common sentence starters: ${analysis.commonStarters.slice(0, 3).join(', ')}\n`;
-      }
-      
       prompt += `• Voice perspective: ${analysis.personalVoice}\n`;
-      prompt += `• Tone balance: ${analysis.toneBalance}\n`;
-      
-      if (analysis.constructionPatterns) {
-        prompt += `\nSentence Construction Patterns:\n`;
-        const cp = analysis.constructionPatterns;
-        if (cp.subordinateClauseRatio > 0.3) {
-          prompt += `• Subordinate clauses: ${(cp.subordinateClauseRatio * 100).toFixed(0)}% of sentences\n`;
-        }
-        if (cp.coordinateClauseRatio > 0.3) {
-          prompt += `• Coordinate clauses: ${(cp.coordinateClauseRatio * 100).toFixed(0)}% of sentences\n`;
-        }
-        if (cp.parentheticalRatio > 0.2) {
-          prompt += `• Parenthetical elements: ${(cp.parentheticalRatio * 100).toFixed(0)}% of sentences\n`;
-        }
-        if (analysis.avgClausesPerSentence > 2) {
-          prompt += `• Average clauses per sentence: ${analysis.avgClausesPerSentence.toFixed(1)}\n`;
-        }
-        if (analysis.parallelStructureRatio > 0.1) {
-          prompt += `• Parallel structure: ${(analysis.parallelStructureRatio * 100).toFixed(0)}% of sentences\n`;
-        }
-      }
     }
 
     return prompt;

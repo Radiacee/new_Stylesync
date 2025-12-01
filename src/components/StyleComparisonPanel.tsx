@@ -237,26 +237,21 @@ export default function StyleComparisonPanel({
       {/* User Style Summary */}
       <div className="p-6 border-t border-white/10 bg-slate-800/20">
         <h4 className="text-lg font-medium text-white mb-4">Your Writing Style Profile</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
           <div>
             <div className="text-slate-400 mb-1">Sentence Length</div>
             <div className="text-white font-medium">{Math.round(transformation.userStyle.avgSentenceLength)} words</div>
-            <div className="text-slate-400 text-xs">±{Math.round(transformation.userStyle.sentenceLengthStd)}</div>
-          </div>
-          <div>
-            <div className="text-slate-400 mb-1">Word Complexity</div>
-            <div className="text-white font-medium">{(transformation.userStyle.vocabularyComplexity * 100).toFixed(1)}%</div>
-            <div className="text-slate-400 text-xs">complex words</div>
+            <div className="text-slate-400 text-xs">average per sentence</div>
           </div>
           <div>
             <div className="text-slate-400 mb-1">Contractions</div>
             <div className="text-white font-medium">{transformation.userStyle.usesContractions ? 'Yes' : 'No'}</div>
-            <div className="text-slate-400 text-xs">{transformation.userStyle.usesContractions ? 'casual' : 'formal'}</div>
+            <div className="text-slate-400 text-xs">{transformation.userStyle.usesContractions ? 'casual style' : 'formal style'}</div>
           </div>
           <div>
-            <div className="text-slate-400 mb-1">Questions</div>
-            <div className="text-white font-medium">{(transformation.userStyle.questionRatio * 100).toFixed(1)}%</div>
-            <div className="text-slate-400 text-xs">of sentences</div>
+            <div className="text-slate-400 mb-1">Voice</div>
+            <div className="text-white font-medium">{transformation.userStyle.personalVoice}</div>
+            <div className="text-slate-400 text-xs">perspective</div>
           </div>
         </div>
         
@@ -268,20 +263,6 @@ export default function StyleComparisonPanel({
               {transformation.userStyle.preferredTransitions.slice(0, 5).map((transition, index) => (
                 <span key={index} className="px-2 py-1 bg-brand-500/20 text-brand-300 rounded text-xs">
                   {transition}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Common Starters */}
-        {transformation.userStyle.commonStarters.length > 0 && (
-          <div className="mt-3">
-            <div className="text-slate-400 text-sm mb-2">Your Common Sentence Starters</div>
-            <div className="flex flex-wrap gap-2">
-              {transformation.userStyle.commonStarters.slice(0, 5).map((starter, index) => (
-                <span key={index} className="px-2 py-1 bg-slate-700/50 text-slate-300 rounded text-xs">
-                  {starter}
                 </span>
               ))}
             </div>

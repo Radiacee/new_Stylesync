@@ -39,14 +39,46 @@ Your job: Rewrite text to match the user's sentence structure and writing patter
 
 
 const BANNED_PATTERNS: RegExp[] = [
-  /\bcan\b/gi, /\bmay\b/gi, /\bjust\b/gi, /\bvery\b/gi, /\breally\b/gi, /\bliterally\b/gi, /\bactually\b/gi,
-  /\bcertainly\b/gi, /\bprobably\b/gi, /\bbasically\b/gi, /\bcould\b/gi, /\bmaybe\b/gi, /delve/gi, /embark/gi,
-  /enlightening/gi, /esteemed/gi, /shed light/gi, /craft(?:ing)?/gi, /imagine/gi, /\brealm\b/gi, /game-?changer/gi, /unlock/gi,
-  /skyrocket(?:ing)?/gi, /abyss/gi, /not alone/gi, /in a world where/gi, /revolutionize/gi, /disruptive/gi, /utiliz(?:e|ing)/gi,
-  /dive deep/gi, /tapestry/gi, /illuminat(?:e|ing)/gi, /unveil/gi, /pivotal/gi, /intricate/gi, /elucidate/gi, /hence/gi,
-  /furthermore/gi, /however/gi, /harness/gi, /exciting/gi, /groundbreaking/gi, /cutting-edge/gi, /remarkable/gi,
-  /remains to be seen/gi, /glimpse into/gi, /navigating/gi, /landscape/gi, /stark/gi, /testament/gi, /in summary/gi,
-  /in conclusion/gi, /moreover/gi, /boost/gi, /opened up/gi, /powerful/gi, /inquiries/gi, /ever-evolving/gi
+  /delve/gi,
+  /embark/gi,
+  /enlightening/gi,
+  /esteemed/gi,
+  /shed light/gi,
+  /craft(?:ing)?/gi,
+  /imagine this/gi,
+  /\brealm\b/gi,
+  /game-?changer/gi,
+  /unlock/gi,
+  /skyrocket(?:ing)?/gi,
+  /abyss/gi,
+  /in a world where/gi,
+  /revolutionize/gi,
+  /disruptive/gi,
+  /utiliz(?:e|ing)/gi,
+  /dive deep/gi,
+  /tapestry/gi,
+  /illuminat(?:e|ing)/gi,
+  /unveil/gi,
+  /pivotal/gi,
+  /intricate/gi,
+  /elucidate/gi,
+  /harness/gi,
+  /exciting/gi,
+  /groundbreaking/gi,
+  /cutting-edge/gi,
+  /remarkable/gi,
+  /remains to be seen/gi,
+  /glimpse into/gi,
+  /navigating/gi,
+  /ever-evolving/gi,
+  /shimmering/gi,
+  /testament/gi,
+  /in summary/gi,
+  /in conclusion/gi,
+  /moreover/gi,
+  /furthermore/gi,
+  /meanwhile/gi,
+  /consequently/gi
 ];
 
 const FORBIDDEN_OPENERS = [
@@ -112,49 +144,68 @@ export function enforceStyleRules(text: string, maxPasses = 3): string {
 
 function simpleReplacement(word: string): string {
   const map: Record<string, string> = {
-    'however': 'but',
-    'furthermore': 'also',
-    'moreover': 'also',
-    'hence': 'so',
-    'thus': 'so',
-    'therefore': 'so',
-    'actually': '',
-    'very': '',
-    // Avoid destructive removals: supply neutral substitutes
-    'tapestry': 'mesh',
-    'intricate': 'complex',
-    'pivotal': 'key',
+    'delve': 'explore',
+    'embark': 'start',
+    'enlightening': 'eye-opening',
+    'esteemed': 'respected',
+    'shed light': 'explain',
+    'craft': 'build',
+    'crafting': 'building',
+    'imagine this': 'imagine',
+    'realm': 'field',
+    'game-changer': 'major shift',
+    'unlock': 'open up',
+    'skyrocketing': 'soaring',
+    'skyrocket': 'soar',
+    'abyss': 'gap',
+    'in a world where': 'when',
+    'revolutionize': 'transform',
+    'disruptive': 'bold',
+    'utilize': 'use',
+    'utilizing': 'using',
+    'dive deep': 'explore',
+    'tapestry': 'mix',
     'illuminate': 'clarify',
     'illuminating': 'clarifying',
     'unveil': 'reveal',
+    'pivotal': 'key',
+    'intricate': 'complex',
+    'elucidate': 'clarify',
+    'harness': 'use',
+    'exciting': 'interesting',
     'groundbreaking': 'new',
     'cutting-edge': 'advanced',
     'remarkable': 'notable',
-    'exciting': 'interesting',
-    'powerful': 'strong',
+    'remains to be seen': 'is unclear',
+    'glimpse into': 'look at',
+    'navigating': 'handling',
     'ever-evolving': 'changing',
-    'landscape': 'field',
-    'realm': 'field',
-    'craft': 'build',
-    'crafting': 'building',
-    'harness': 'use',
-    'unlock': 'enable',
-    'game-changer': 'major shift',
-    'revolutionize': 'transform',
-    // Keep structural words that hurt grammar if removed
-    'that': '__KEEP__'
+    'shimmering': 'bright',
+    'testament': 'proof',
+    'in summary': 'in short',
+    'in conclusion': 'finally',
+    'moreover': 'also',
+    'furthermore': 'also',
+    'meanwhile': 'at the same time',
+    'consequently': 'so'
   };
   return map[word] !== undefined ? map[word] : '';
 }
 
 function cleanArtifacts(s: string): string {
-  return s
-    .replace(/,\./g, ',')
-    .replace(/\.,/g, '.')
-    .replace(/\s+'s\b/g, "'s")
-    .replace(/\bof\s+of\b/gi, 'of')
-    .replace(/\s{2,}/g, ' ')
-    .replace(/,\s*\./g, '.')
-    .replace(/\b(an)\s+(?=of\b)/gi, '') // remove stray 'an' before 'of' after adjective removal
-    .trim();
+  let result = s;
+  
+  // Fix punctuation issues - be thorough
+  result = result.replace(/,\s*\./g, '.'); // comma then period -> period
+  result = result.replace(/\.\s*,/g, '.'); // period then comma -> period
+  result = result.replace(/,,+/g, ','); // multiple commas -> single comma
+  result = result.replace(/\.\.+/g, '.'); // multiple periods -> single period
+  result = result.replace(/,\s*,/g, ','); // comma space comma -> single comma
+  result = result.replace(/\.\s*\./g, '.'); // period space period -> single period
+  result = result.replace(/\s+'s\b/g, "'s");
+  result = result.replace(/\bof\s+of\b/gi, 'of');
+  result = result.replace(/\s{2,}/g, ' ');
+  result = result.replace(/\b(an)\s+(?=of\b)/gi, ''); // remove stray 'an' before 'of' after adjective removal
+  
+  return result.trim();
 }
