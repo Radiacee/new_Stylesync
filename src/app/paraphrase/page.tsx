@@ -64,6 +64,7 @@ export default function ParaphrasePage() {
   const [showStyleAnalysis, setShowStyleAnalysis] = useState(false);
   const [analyzingStyle, setAnalyzingStyle] = useState(false);
   const [verificationScore, setVerificationScore] = useState<number>(0);
+  const [verification, setVerification] = useState<{ score: number; passed: boolean; issues: { type: string; severity: string; description: string }[] } | null>(null);
   const [userConsent, setUserConsent] = useState<boolean>(false);
   const analyticsSubmittedRef = useRef<boolean>(false); // Use ref instead of state
   const resultsRef = useRef<HTMLDivElement>(null); // Ref for auto-scroll to results
@@ -204,6 +205,7 @@ export default function ParaphrasePage() {
     setBusy(true); setError(null); setUsedModel(false);
     setModerationResult(null); // Reset moderation
     setStyleMatch(null); // Reset style match
+    setVerification(null); // Reset verification
     analyticsSubmittedRef.current = false; // Reset analytics submission flag for new paraphrase
     
     // Content moderation check
@@ -248,6 +250,7 @@ export default function ParaphrasePage() {
       setMetrics(data.metrics || null);
       setUsedModel(!!data.usedModel);
       setStyleMatch(data.styleMatch || null);
+      setVerification(data.verification || null);
   
       // Automatically run style analysis after getting output
       if (preparedProfile?.sampleExcerpt && input && data.result) {
@@ -316,6 +319,8 @@ export default function ParaphrasePage() {
     if (!userId || !confirm('Are you sure you want to delete all history? This cannot be undone.')) return;
     // Optimistically clear UI
     setHistory([]);
+    // Close the history panel since there's nothing to show
+    setHistoryOpen(false);
     // Delete from database
     const success = await deleteAllHistory();
     if (!success) {
@@ -793,6 +798,7 @@ export default function ParaphrasePage() {
               originalInput={input}
               paraphrasedOutput={output}
               userStyle={styleTransformation.userStyle}
+              verification={verification}
             />
           </div>
         )}

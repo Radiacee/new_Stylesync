@@ -20,12 +20,116 @@ interface Lesson {
 
 interface EssayIssue {
   id: string;
-  type: 'warning' | 'suggestion' | 'improvement';
+  type: 'warning' | 'suggestion' | 'improvement' | 'strength';
   category: string;
   title: string;
   description: string;
   examples?: string[];
   lessonLink?: string;
+}
+
+interface StyleSummary {
+  tone: 'casual' | 'neutral' | 'formal';
+  usesContractions: boolean;
+  avgSentenceLength: number;
+  vocabularyLevel: 'simple' | 'moderate' | 'advanced';
+  perspective: 'first-person' | 'second-person' | 'third-person';
+  strengths: string[];
+}
+
+// Analyze the user's writing style for summary display
+function analyzeWritingStyle(essay: string): StyleSummary {
+  if (!essay || essay.trim().length < 50) {
+    return {
+      tone: 'neutral',
+      usesContractions: false,
+      avgSentenceLength: 0,
+      vocabularyLevel: 'moderate',
+      perspective: 'third-person',
+      strengths: []
+    };
+  }
+
+  const sentences = essay.split(/[.!?]+/).filter(s => s.trim().length > 5);
+  const words = essay.split(/\s+/).filter(w => w.length > 0);
+  
+  // Contractions
+  const contractionPattern = /\b(don't|won't|can't|isn't|aren't|it's|that's|there's|I'm|you're|we're|they're|he's|she's|hasn't|haven't|couldn't|wouldn't|shouldn't|I've|I'll|I'd|we've|they've)\b/gi;
+  const expandedPattern = /\b(do not|will not|cannot|is not|are not|it is|that is|there is|I am|you are|we are|they are|he is|she is|has not|have not|could not|would not|should not)\b/gi;
+  const contractions = (essay.match(contractionPattern) || []).length;
+  const expanded = (essay.match(expandedPattern) || []).length;
+  const usesContractions = contractions > expanded;
+
+  // Sentence length
+  const avgSentenceLength = sentences.length > 0
+    ? Math.round(sentences.reduce((sum, s) => sum + s.trim().split(/\s+/).length, 0) / sentences.length)
+    : 0;
+
+  // Tone detection
+  const casualMarkers = /\b(gonna|wanna|gotta|kinda|sorta|yeah|yep|nope|cool|awesome|stuff|things|like|pretty|super|really|basically|actually)\b/gi;
+  const formalMarkers = /\b(therefore|consequently|furthermore|nevertheless|subsequently|thus|hence|regarding|pertaining|aforementioned|moreover|additionally|significant|substantial)\b/gi;
+  const casualCount = (essay.match(casualMarkers) || []).length;
+  const formalCount = (essay.match(formalMarkers) || []).length;
+  let tone: 'casual' | 'neutral' | 'formal' = 'neutral';
+  if (casualCount > formalCount + 3 || usesContractions) tone = 'casual';
+  if (formalCount > casualCount + 2 && !usesContractions) tone = 'formal';
+
+  // Vocabulary level
+  const complexWords = /\b\w{10,}\b/g;
+  const complexCount = (essay.match(complexWords) || []).length;
+  const complexRatio = complexCount / Math.max(words.length, 1);
+  let vocabularyLevel: 'simple' | 'moderate' | 'advanced' = 'moderate';
+  if (complexRatio > 0.08) vocabularyLevel = 'advanced';
+  else if (complexRatio < 0.02) vocabularyLevel = 'simple';
+
+  // Perspective
+  const firstPerson = /\b(I|me|my|mine|we|us|our|ours)\b/gi;
+  const secondPerson = /\b(you|your|yours)\b/gi;
+  const firstCount = (essay.match(firstPerson) || []).length;
+  const secondCount = (essay.match(secondPerson) || []).length;
+  let perspective: 'first-person' | 'second-person' | 'third-person' = 'third-person';
+  if (firstCount > words.length * 0.02) perspective = 'first-person';
+  else if (secondCount > words.length * 0.02) perspective = 'second-person';
+
+  // Identify strengths
+  const strengths: string[] = [];
+  
+  // Good variety in sentence starters
+  const starters = sentences.map(s => s.trim().split(/\s+/)[0]?.toLowerCase()).filter(Boolean);
+  const uniqueStarters = new Set(starters).size;
+  if (uniqueStarters / Math.max(starters.length, 1) > 0.6) {
+    strengths.push('Varied sentence starters');
+  }
+
+  // Good use of transitions
+  const transitionWords = ['however', 'moreover', 'furthermore', 'therefore', 'consequently', 'additionally', 'nevertheless', 'meanwhile', 'similarly', 'in contrast', 'for example'];
+  const transitionCount = transitionWords.filter(t => essay.toLowerCase().includes(t)).length;
+  if (transitionCount >= 3) {
+    strengths.push('Good use of transitions');
+  }
+
+  // Vocabulary variety
+  const uniqueWords = new Set(words.map(w => w.toLowerCase().replace(/[^a-z]/g, '')).filter(w => w.length > 3));
+  const vocabRichness = uniqueWords.size / Math.max(words.length, 1);
+  if (vocabRichness > 0.5) {
+    strengths.push('Rich vocabulary');
+  }
+
+  // Balanced sentence lengths
+  const sentenceLengths = sentences.map(s => s.trim().split(/\s+/).length);
+  const hasShort = sentenceLengths.some(l => l < 10);
+  const hasLong = sentenceLengths.some(l => l > 20);
+  if (hasShort && hasLong) {
+    strengths.push('Good sentence length variety');
+  }
+
+  // Active voice predominant
+  const passiveCount = (essay.match(/\b(was|were|is|are|been)\s+\w+ed\b/gi) || []).length;
+  if (passiveCount < sentences.length * 0.2) {
+    strengths.push('Strong active voice usage');
+  }
+
+  return { tone, usesContractions, avgSentenceLength, vocabularyLevel, perspective, strengths };
 }
 
 // Analyze essay and return issues with links to relevant lessons
@@ -37,47 +141,103 @@ function analyzeEssayForLessons(essay: string): EssayIssue[] {
   const sentences = essay.split(/[.!?]+/).filter(s => s.trim().length > 0);
   const words = essay.split(/\s+/).filter(w => w.length > 0);
   
-  // Check for filler words
-  const fillerWords = ['very', 'really', 'just', 'basically', 'actually', 'literally', 'simply', 'quite'];
+  // ========== DETECT STRENGTHS FIRST ==========
+  
+  // Check for good transition usage
+  const transitionWords = ['however', 'moreover', 'furthermore', 'therefore', 'consequently', 'additionally', 'nevertheless', 'meanwhile', 'similarly', 'in contrast', 'for example', 'specifically', 'in addition', 'on the other hand'];
+  const usedTransitions = transitionWords.filter(t => lowerEssay.includes(t));
+  if (usedTransitions.length >= 3) {
+    issues.push({
+      id: 'good-transitions',
+      type: 'strength',
+      category: 'Flow',
+      title: 'Excellent Use of Transitions',
+      description: `You effectively use transition words to connect ideas and guide readers through your writing.`,
+      examples: usedTransitions.slice(0, 4).map(t => `"${t.charAt(0).toUpperCase() + t.slice(1)}"`),
+    });
+  }
+
+  // Check for vocabulary variety
+  const contentWords = words
+    .map(w => w.toLowerCase().replace(/[^a-z]/g, ''))
+    .filter(w => w.length > 4);
+  const uniqueContentWords = new Set(contentWords);
+  const vocabRichness = uniqueContentWords.size / Math.max(contentWords.length, 1);
+  if (vocabRichness > 0.55 && contentWords.length > 30) {
+    issues.push({
+      id: 'good-vocabulary',
+      type: 'strength',
+      category: 'Vocabulary',
+      title: 'Strong Vocabulary Variety',
+      description: `Your writing shows excellent word choice with ${Math.round(vocabRichness * 100)}% unique content words.`,
+    });
+  }
+
+  // ========== DETECT ISSUES ==========
+  
+  // Check for filler words (more accurate - only flag if excessive)
+  const fillerPatterns: { word: string; regex: RegExp }[] = [
+    { word: 'very', regex: /\bvery\b/gi },
+    { word: 'really', regex: /\breally\b/gi },
+    { word: 'just', regex: /\bjust\b/gi },
+    { word: 'basically', regex: /\bbasically\b/gi },
+    { word: 'actually', regex: /\bactually\b/gi },
+    { word: 'literally', regex: /\bliterally\b/gi },
+    { word: 'simply', regex: /\bsimply\b/gi },
+    { word: 'quite', regex: /\bquite\b/gi },
+  ];
   const foundFillers: string[] = [];
-  fillerWords.forEach(w => {
-    const regex = new RegExp(`\\b${w}\\b`, 'gi');
+  let totalFillers = 0;
+  fillerPatterns.forEach(({ word, regex }) => {
     const matches = essay.match(regex);
     if (matches && matches.length > 0) {
-      foundFillers.push(`"${w}" (${matches.length}x)`);
+      totalFillers += matches.length;
+      if (matches.length >= 2) { // Only flag if used 2+ times
+        foundFillers.push(`"${word}" (${matches.length}x)`);
+      }
     }
   });
-  if (foundFillers.length > 0) {
+  // Only flag if filler ratio is high
+  const fillerRatio = totalFillers / Math.max(sentences.length, 1);
+  if (foundFillers.length > 0 && fillerRatio > 0.3) {
     issues.push({
       id: 'filler-words',
       type: 'suggestion',
       category: 'Clarity',
-      title: 'Filler Words Detected',
-      description: 'Your essay contains filler words that can be removed to strengthen your writing.',
-      examples: foundFillers.slice(0, 5),
+      title: 'Consider Reducing Filler Words',
+      description: 'Some filler words appear frequently. Removing them can make your writing more impactful.',
+      examples: foundFillers.slice(0, 4),
       lessonLink: 'clarity'
     });
   }
 
-  // Check for passive voice
+  // Check for passive voice (more accurate patterns)
   const passivePatterns = [
-    /\b(was|were)\s+\w+ed\b/gi,
+    /\b(was|were)\s+(\w+ed|written|done|made|taken|given|shown|seen|known|found)\b/gi,
     /\b(is|are)\s+being\s+\w+ed\b/gi,
-    /\b(has|have|had)\s+been\s+\w+ed\b/gi
+    /\b(has|have|had)\s+been\s+(\w+ed|written|done|made|taken|given|shown|seen|known|found)\b/gi,
+    /\b(will|would|could|should)\s+be\s+\w+ed\b/gi
   ];
   let passiveCount = 0;
+  const passiveExamples: string[] = [];
   passivePatterns.forEach(pattern => {
     const matches = essay.match(pattern);
-    if (matches) passiveCount += matches.length;
+    if (matches) {
+      passiveCount += matches.length;
+      passiveExamples.push(...matches.slice(0, 2));
+    }
   });
-  if (passiveCount > sentences.length * 0.3) {
+  // Only flag if passive ratio is high (>30% of sentences)
+  if (passiveCount > sentences.length * 0.3 && passiveCount >= 3) {
     issues.push({
       id: 'passive-voice',
       type: 'improvement',
       category: 'Clarity',
-      title: 'Heavy Passive Voice Usage',
-      description: `Found approximately ${passiveCount} passive constructions. Consider using more active voice for directness.`,
-      examples: ['Change "The report was written by me" to "I wrote the report"'],
+      title: 'Consider More Active Voice',
+      description: `Found ${passiveCount} passive constructions. Active voice is often more direct and engaging.`,
+      examples: passiveExamples.length > 0 
+        ? [`Examples found: "${passiveExamples[0]}"`, 'Tip: "The report was written" → "I wrote the report"']
+        : ['Change "The report was written by me" to "I wrote the report"'],
       lessonLink: 'clarity'
     });
   }
@@ -85,46 +245,50 @@ function analyzeEssayForLessons(essay: string): EssayIssue[] {
   // Check sentence length variety
   const sentenceLengths = sentences.map(s => s.split(/\s+/).filter(w => w.length > 0).length);
   const avgLength = sentenceLengths.reduce((a, b) => a + b, 0) / Math.max(sentenceLengths.length, 1);
-  const allSimilar = sentenceLengths.length > 3 && 
-    sentenceLengths.every(len => Math.abs(len - avgLength) < 5);
+  const lengthVariance = sentenceLengths.reduce((sum, len) => sum + Math.pow(len - avgLength, 2), 0) / Math.max(sentenceLengths.length, 1);
+  const lengthStdDev = Math.sqrt(lengthVariance);
   
-  if (allSimilar) {
+  // Only flag if variance is very low (truly monotonous)
+  if (sentenceLengths.length > 4 && lengthStdDev < 4) {
     issues.push({
       id: 'sentence-variety',
       type: 'improvement',
       category: 'Structure',
-      title: 'Monotonous Sentence Length',
-      description: `Your sentences average ${Math.round(avgLength)} words each with little variation. Mix short and long sentences for better rhythm.`,
+      title: 'Add Sentence Length Variety',
+      description: `Your sentences average ${Math.round(avgLength)} words with little variation. Mix short punchy sentences with longer flowing ones.`,
+      examples: ['Short: "This matters." (2 words)', 'Medium: "The team discussed options carefully." (5 words)', 'Long: "After reviewing all available data, we decided to proceed with the original plan." (13 words)'],
       lessonLink: 'structure'
     });
   }
 
-  // Check for very long sentences
-  const longSentences = sentenceLengths.filter(len => len > 35);
+  // Check for very long sentences (>40 words is clearer threshold)
+  const longSentences = sentences.filter(s => s.split(/\s+/).filter(w => w.length > 0).length > 40);
   if (longSentences.length > 0) {
     issues.push({
       id: 'long-sentences',
       type: 'warning',
-      category: 'Structure',
-      title: 'Very Long Sentences',
-      description: `${longSentences.length} sentence(s) exceed 35 words. Consider breaking them into smaller sentences for clarity.`,
+      category: 'Readability',
+      title: 'Very Long Sentences Detected',
+      description: `${longSentences.length} sentence(s) exceed 40 words. Consider breaking them up for easier reading.`,
+      examples: [`Longest: ${longSentences[0]?.split(/\s+/).length || 0} words`],
       lessonLink: 'clarity'
     });
   }
 
-  // Check for repetitive sentence starters
+  // Check for repetitive sentence starters (only if 4+ times)
   const starters = sentences.map(s => s.trim().split(/\s+/)[0]?.toLowerCase()).filter(Boolean);
   const starterCounts: Record<string, number> = {};
   starters.forEach(s => { starterCounts[s] = (starterCounts[s] || 0) + 1; });
-  const repetitiveStarters = Object.entries(starterCounts).filter(([_, count]) => count >= 3);
+  const repetitiveStarters = Object.entries(starterCounts)
+    .filter(([word, count]) => count >= 4 && !['the', 'a', 'an', 'this', 'it'].includes(word));
   if (repetitiveStarters.length > 0) {
     issues.push({
       id: 'repetitive-starters',
       type: 'suggestion',
       category: 'Structure',
       title: 'Repetitive Sentence Starters',
-      description: 'Multiple sentences begin with the same word, creating a monotonous pattern.',
-      examples: repetitiveStarters.map(([word, count]) => `"${word}" starts ${count} sentences`),
+      description: 'Some sentences begin with the same word repeatedly. Varying your openings adds interest.',
+      examples: repetitiveStarters.map(([word, count]) => `"${word.charAt(0).toUpperCase() + word.slice(1)}..." appears ${count} times`),
       lessonLink: 'structure'
     });
   }
@@ -135,7 +299,11 @@ function analyzeEssayForLessons(essay: string): EssayIssue[] {
     { phrase: 'due to the fact that', replacement: 'because' },
     { phrase: 'at this point in time', replacement: 'now' },
     { phrase: 'in the event that', replacement: 'if' },
-    { phrase: 'it is important to note that', replacement: '(remove entirely)' }
+    { phrase: 'it is important to note that', replacement: '(remove entirely)' },
+    { phrase: 'the fact that', replacement: 'that' },
+    { phrase: 'in spite of the fact that', replacement: 'although' },
+    { phrase: 'a large number of', replacement: 'many' },
+    { phrase: 'in the near future', replacement: 'soon' },
   ];
   const foundWeak: string[] = [];
   weakPhrases.forEach(({ phrase, replacement }) => {
@@ -148,61 +316,37 @@ function analyzeEssayForLessons(essay: string): EssayIssue[] {
       id: 'weak-phrases',
       type: 'suggestion',
       category: 'Clarity',
-      title: 'Wordy Phrases',
-      description: 'Your essay contains phrases that can be simplified.',
+      title: 'Wordy Phrases Found',
+      description: 'Some phrases can be simplified for clearer writing.',
       examples: foundWeak,
       lessonLink: 'clarity'
     });
   }
 
-  // Check for word repetition
-  const wordCounts: Record<string, number> = {};
-  const commonWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'is', 'it', 'that', 'this', 'with', 'as', 'be', 'are', 'was', 'were', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'i', 'you', 'he', 'she', 'we', 'they', 'my', 'your', 'his', 'her', 'our', 'their', 'its', 'not', 'so', 'if', 'when', 'what', 'which', 'who', 'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'only', 'own', 'same', 'than', 'too', 'very', 'just', 'also']);
-  words.forEach(w => {
-    const lower = w.toLowerCase().replace(/[^a-z]/g, '');
-    if (lower.length > 3 && !commonWords.has(lower)) {
-      wordCounts[lower] = (wordCounts[lower] || 0) + 1;
-    }
-  });
-  const overusedWords = Object.entries(wordCounts).filter(([_, count]) => count >= 5);
-  if (overusedWords.length > 0) {
-    issues.push({
-      id: 'word-repetition',
-      type: 'improvement',
-      category: 'Vocabulary',
-      title: 'Word Repetition',
-      description: 'Some words appear frequently. Consider using synonyms for variety.',
-      examples: overusedWords.slice(0, 4).map(([word, count]) => `"${word}" appears ${count} times`),
-      lessonLink: 'vocabulary'
-    });
-  }
-
-  // Check for missing transitions
-  const transitionWords = ['however', 'moreover', 'furthermore', 'therefore', 'consequently', 'additionally', 'nevertheless', 'meanwhile', 'similarly', 'in contrast', 'for example', 'specifically'];
-  const hasTransitions = transitionWords.some(t => lowerEssay.includes(t));
-  if (!hasTransitions && sentences.length > 5) {
+  // Check for missing transitions (only for longer essays)
+  if (!usedTransitions.length && sentences.length > 6) {
     issues.push({
       id: 'missing-transitions',
       type: 'suggestion',
-      category: 'Engagement',
-      title: 'Consider Adding Transitions',
-      description: 'Your essay could benefit from transition words to improve flow between ideas.',
-      examples: ['However, Moreover, Furthermore, Therefore, For example'],
+      category: 'Flow',
+      title: 'Add Transition Words',
+      description: 'Transition words help readers follow your ideas. Consider adding some to improve flow.',
+      examples: ['However, Moreover, Furthermore, Therefore, For example, In addition'],
       lessonLink: 'engagement'
     });
   }
 
-  // Sort by type priority
-  const typeOrder = { warning: 0, improvement: 1, suggestion: 2 };
+  // Sort: strengths first, then by type priority
+  const typeOrder = { strength: 0, warning: 1, improvement: 2, suggestion: 3 };
   issues.sort((a, b) => typeOrder[a.type] - typeOrder[b.type]);
 
   return issues;
 }
 
-// Calculate essay metrics
+// Calculate essay metrics with vocabulary richness
 function calculateEssayMetrics(essay: string) {
   if (!essay || essay.trim().length < 10) {
-    return { wordCount: 0, sentenceCount: 0, avgSentenceLength: 0, paragraphCount: 0, readability: 'N/A', uniqueWords: 0 };
+    return { wordCount: 0, sentenceCount: 0, avgSentenceLength: 0, paragraphCount: 0, readability: 'N/A', uniqueWords: 0, vocabRichness: 0 };
   }
   
   const words = essay.split(/\s+/).filter(w => w.length > 0);
@@ -214,15 +358,22 @@ function calculateEssayMetrics(essay: string) {
   const avgSentenceLength = sentenceCount > 0 ? Math.round(wordCount / sentenceCount) : 0;
   const paragraphCount = paragraphs.length;
   
-  // Unique words
-  const uniqueWords = new Set(words.map(w => w.toLowerCase().replace(/[^a-z]/g, '')).filter(w => w.length > 0)).size;
+  // Unique words (content words only, 4+ chars)
+  const contentWords = words.map(w => w.toLowerCase().replace(/[^a-z]/g, '')).filter(w => w.length > 3);
+  const uniqueWords = new Set(contentWords).size;
   
-  // Simple readability assessment
+  // Vocabulary richness (unique/total for content words)
+  const vocabRichness = contentWords.length > 0 ? Math.round((uniqueWords / contentWords.length) * 100) : 0;
+  
+  // Readability assessment based on sentence length and word complexity
+  const complexWords = words.filter(w => w.length >= 10).length;
+  const complexRatio = complexWords / Math.max(words.length, 1);
+  
   let readability = 'Moderate';
-  if (avgSentenceLength < 15) readability = 'Easy';
-  else if (avgSentenceLength > 25) readability = 'Complex';
+  if (avgSentenceLength < 12 && complexRatio < 0.05) readability = 'Easy';
+  else if (avgSentenceLength > 22 || complexRatio > 0.1) readability = 'Complex';
   
-  return { wordCount, sentenceCount, avgSentenceLength, paragraphCount, readability, uniqueWords };
+  return { wordCount, sentenceCount, avgSentenceLength, paragraphCount, readability, uniqueWords, vocabRichness };
 }
 
 const LESSONS: Lesson[] = [
@@ -576,6 +727,11 @@ export default function WritingGuidePage() {
   // Analyze essay
   const essayIssues = useMemo(() => analyzeEssayForLessons(profileEssay), [profileEssay]);
   const essayMetrics = useMemo(() => calculateEssayMetrics(profileEssay), [profileEssay]);
+  const styleSummary = useMemo(() => analyzeWritingStyle(profileEssay), [profileEssay]);
+
+  // Separate strengths from issues
+  const strengths = essayIssues.filter(i => i.type === 'strength');
+  const issuesOnly = essayIssues.filter(i => i.type !== 'strength');
 
   const toggleSection = (lessonId: string, sectionIndex: number) => {
     const key = `${lessonId}-${sectionIndex}`;
@@ -604,6 +760,7 @@ export default function WritingGuidePage() {
 
   const getIssueIcon = (type: EssayIssue['type']) => {
     switch (type) {
+      case 'strength': return <CheckCircle className="w-4 h-4 text-emerald-400" />;
       case 'warning': return <AlertTriangle className="w-4 h-4 text-amber-400" />;
       case 'improvement': return <TrendingUp className="w-4 h-4 text-blue-400" />;
       case 'suggestion': return <Lightbulb className="w-4 h-4 text-purple-400" />;
@@ -612,6 +769,7 @@ export default function WritingGuidePage() {
 
   const getIssueBg = (type: EssayIssue['type']) => {
     switch (type) {
+      case 'strength': return 'bg-emerald-500/10 border-emerald-500/30';
       case 'warning': return 'bg-amber-500/10 border-amber-500/30';
       case 'improvement': return 'bg-blue-500/10 border-blue-500/30';
       case 'suggestion': return 'bg-purple-500/10 border-purple-500/30';
@@ -660,17 +818,20 @@ export default function WritingGuidePage() {
               
               {/* Profile Selector */}
               {profiles.length > 1 && (
-                <select
-                  value={selectedProfileId || ''}
-                  onChange={(e) => handleProfileChange(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-slate-800 border border-white/10 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
-                >
-                  {profiles.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name || `Profile ${p.id.slice(0, 6)}`}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={selectedProfileId || ''}
+                    onChange={(e) => handleProfileChange(e.target.value)}
+                    className="appearance-none pl-4 pr-10 py-2.5 rounded-xl bg-slate-800/80 border border-white/20 text-sm text-white cursor-pointer hover:border-brand-500/50 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all"
+                  >
+                    {profiles.map(p => (
+                      <option key={p.id} value={p.id} className="bg-slate-800 text-white">
+                        {p.name || `Profile ${p.id.slice(0, 6)}`}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
               )}
             </div>
           </div>
@@ -709,15 +870,34 @@ export default function WritingGuidePage() {
           {/* Toggle Essay View */}
           <button
             onClick={() => setShowMyEssay(!showMyEssay)}
-            className="w-full flex items-center justify-between p-4 border-b border-white/10 hover:bg-white/5 transition"
+            className="w-full flex items-center justify-between p-4 border-b border-white/10 hover:bg-slate-800/50 transition-all group"
           >
-            <div className="flex items-center gap-2">
-              <Eye className="w-4 h-4 text-slate-400" />
-              <span className="text-sm font-medium text-slate-300">
-                {showMyEssay ? 'Hide' : 'Show'} Your Essay ({profile.name || 'Current Profile'})
-              </span>
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg transition-colors ${
+                showMyEssay 
+                  ? 'bg-brand-500/20 text-brand-400' 
+                  : 'bg-slate-700/50 text-slate-400 group-hover:bg-slate-700'
+              }`}>
+                <Eye className="w-4 h-4" />
+              </div>
+              <div className="text-left">
+                <span className="text-sm font-medium text-white block">
+                  {showMyEssay ? 'Hide' : 'Show'} Your Essay
+                </span>
+                <span className="text-xs text-slate-500">
+                  {profile.name || 'Current Profile'}
+                </span>
+              </div>
             </div>
-            {showMyEssay ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            <div className={`p-1.5 rounded-lg transition-all ${
+              showMyEssay 
+                ? 'bg-brand-500/20 rotate-180' 
+                : 'bg-slate-700/50 group-hover:bg-slate-700'
+            }`}>
+              <ChevronDown className={`w-4 h-4 transition-colors ${
+                showMyEssay ? 'text-brand-400' : 'text-slate-400'
+              }`} />
+            </div>
           </button>
 
           {/* Essay Content */}
@@ -729,24 +909,102 @@ export default function WritingGuidePage() {
             </div>
           )}
 
+          {/* Your Writing Style Summary */}
+          <div className="p-4 sm:p-5 border-b border-white/10 bg-slate-900/30">
+            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <PenTool className="w-4 h-4 text-brand-400" />
+              Your Writing Style
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                <p className={`text-sm font-semibold ${
+                  styleSummary.tone === 'casual' ? 'text-emerald-400' :
+                  styleSummary.tone === 'formal' ? 'text-blue-400' : 'text-slate-300'
+                }`}>
+                  {styleSummary.tone.charAt(0).toUpperCase() + styleSummary.tone.slice(1)}
+                </p>
+                <p className="text-[10px] text-slate-500 uppercase">Tone</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                <p className={`text-sm font-semibold ${styleSummary.usesContractions ? 'text-emerald-400' : 'text-blue-400'}`}>
+                  {styleSummary.usesContractions ? "Uses" : "Avoids"}
+                </p>
+                <p className="text-[10px] text-slate-500 uppercase">Contractions</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                <p className={`text-sm font-semibold ${
+                  styleSummary.vocabularyLevel === 'advanced' ? 'text-purple-400' :
+                  styleSummary.vocabularyLevel === 'simple' ? 'text-emerald-400' : 'text-slate-300'
+                }`}>
+                  {styleSummary.vocabularyLevel.charAt(0).toUpperCase() + styleSummary.vocabularyLevel.slice(1)}
+                </p>
+                <p className="text-[10px] text-slate-500 uppercase">Vocabulary</p>
+              </div>
+            </div>
+            
+            {/* Detected Strengths */}
+            {styleSummary.strengths.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {styleSummary.strengths.map((strength, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
+                    <CheckCircle className="w-3 h-3" />
+                    {strength}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Strengths Section */}
+          {strengths.length > 0 && (
+            <div className="p-4 sm:p-5 border-b border-white/10">
+              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                What You're Doing Well ({strengths.length})
+              </h3>
+              <div className="space-y-2">
+                {strengths.map(issue => (
+                  <div key={issue.id} className={`rounded-lg border p-3 ${getIssueBg(issue.type)}`}>
+                    <div className="flex items-start gap-3">
+                      {getIssueIcon(issue.type)}
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-white">{issue.title}</h4>
+                        <p className="text-xs text-slate-400 mt-0.5">{issue.description}</p>
+                        {issue.examples && issue.examples.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {issue.examples.map((ex, i) => (
+                              <span key={i} className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                                {ex}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Issues & Suggestions */}
           <div className="p-4 sm:p-5 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <Zap className="w-4 h-4 text-yellow-400" />
-                Areas to Optimize ({essayIssues.length})
+                Areas to Improve ({issuesOnly.length})
               </h3>
             </div>
 
-            {essayIssues.length === 0 ? (
+            {issuesOnly.length === 0 ? (
               <div className="text-center py-6">
                 <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
-                <p className="text-sm text-slate-300">Great job! No major issues detected.</p>
-                <p className="text-xs text-slate-500">Your writing follows good practices.</p>
+                <p className="text-sm text-slate-300">Excellent! No issues detected in your writing.</p>
+                <p className="text-xs text-slate-500">Your essay follows strong writing practices.</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {essayIssues.map(issue => (
+                {issuesOnly.map(issue => (
                   <div key={issue.id} className={`rounded-lg border p-4 ${getIssueBg(issue.type)}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3">

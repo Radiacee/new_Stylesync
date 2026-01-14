@@ -125,25 +125,6 @@ function analyzeQuality(input: string, output: string, styleType?: string, profi
     });
   }
 
-  // === REPETITION ANALYSIS ===
-  if (repetitiveWords.length > 0) {
-    const topRepeated = repetitiveWords.slice(0, 3).map(([word, count]) => `"${word}" (${count}x)`).join(', ');
-    suggestions.push({
-      id: 'word-repetition',
-      type: 'improvement',
-      priority: 'high',
-      category: 'Vocabulary',
-      title: 'Word Repetition Detected',
-      description: `Some words appear frequently: ${topRepeated}`,
-      action: context.domain === 'academic'
-        ? 'Academic writing benefits from varied vocabulary. Use synonyms or restructure sentences.'
-        : context.domain === 'technical'
-        ? 'Technical terms can repeat, but consider varying explanatory language.'
-        : 'Try using synonyms to make the text more engaging.',
-      context: `For ${context.audience} readers, varied vocabulary improves readability.`
-    });
-  }
-
   // === SENTENCE STRUCTURE ===
   if (allSimilarLength && outputSentences.length > 3) {
     suggestions.push({

@@ -370,15 +370,6 @@ function OnboardingInner() {
                         : "You balance short and longer sentences."
                     }
                   </p>
-                  <p>
-                    <span className="font-medium">Perspective:</span> {
-                      analysis.personalVoice === 'first-person'
-                        ? "You often use \"I\" and \"we\" (personal perspective)."
-                        : analysis.personalVoice === 'second-person'
-                        ? "You often address the reader as \"you\" (direct approach)."
-                        : "You use a neutral, third-person perspective."
-                    }
-                  </p>
                 </div>
                 <button
                   onClick={() => setShowComparison(true)}
@@ -485,9 +476,6 @@ function OnboardingInner() {
                   )}
                   {analysis.personalVoice === 'second-person' && (
                     <li>• Used "you" to match your direct, conversational approach</li>
-                  )}
-                  {analysis.personalVoice === 'first-person' && (
-                    <li>• Incorporated personal perspective like in your writing</li>
                   )}
                   <li>• {
                     analysis.avgSentenceLength > 20 

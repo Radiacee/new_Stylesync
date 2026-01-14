@@ -106,25 +106,6 @@ function analyzeEssay(essay: string): { issues: WritingIssue[]; metrics: { wordC
     });
   }
 
-  // Check word repetition
-  const wordCounts: Record<string, number> = {};
-  const commonWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'is', 'it', 'that', 'this', 'with', 'as', 'be', 'are', 'was', 'were', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'i', 'you', 'he', 'she', 'we', 'they', 'my', 'your', 'his', 'her', 'our', 'their']);
-  words.forEach(w => {
-    const lower = w.toLowerCase().replace(/[^a-z]/g, '');
-    if (lower.length > 3 && !commonWords.has(lower)) {
-      wordCounts[lower] = (wordCounts[lower] || 0) + 1;
-    }
-  });
-  const overusedWords = Object.entries(wordCounts).filter(([_, count]) => count >= 4);
-  if (overusedWords.length > 0) {
-    issues.push({
-      type: 'improvement',
-      title: 'Word Variety',
-      description: 'Some words appear frequently. Consider using synonyms.',
-      examples: overusedWords.slice(0, 3).map(([word, count]) => `"${word}" appears ${count} times`)
-    });
-  }
-
   // Add positive feedback if few issues
   if (issues.length === 0) {
     issues.push({

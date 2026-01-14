@@ -109,16 +109,6 @@ export function analyzeWriting(text: string): WritingAnalysis {
     });
   }
   
-  // Repetition issues
-  if (repetitionIssues.length > 0) {
-    suggestions.push({
-      category: 'vocabulary',
-      severity: 'warning',
-      title: 'Word repetition detected',
-      description: `The following words appear frequently: ${repetitionIssues.slice(0, 3).join(', ')}. Consider using synonyms.`,
-    });
-  }
-  
   // Check for weak phrases
   const weakPhrases = findWeakPhrases(text);
   if (weakPhrases.length > 0) {
