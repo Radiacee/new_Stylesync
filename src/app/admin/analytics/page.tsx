@@ -20,6 +20,7 @@ interface AnalyticsEntry {
   input_length: number;
   output_length: number;
   consent_given: boolean;
+  satisfaction?: 'like' | 'dislike' | null;
   created_at: string;
 }
 
@@ -32,6 +33,9 @@ interface AggregatedStats {
   averageDescriptiveness: number;
   averageDirectness: number;
   consentRate: number;
+  satisfactionRate: number;
+  likeCount: number;
+  dislikeCount: number;
 }
 
 export default function AnalyticsPage() {
@@ -165,6 +169,12 @@ export default function AnalyticsPage() {
     const averageDescriptiveness = data.reduce((sum, item) => sum + item.descriptiveness, 0) / totalSubmissions;
     const averageDirectness = data.reduce((sum, item) => sum + item.directness, 0) / totalSubmissions;
     const consentRate = (data.filter(item => item.consent_given).length / totalSubmissions) * 100;
+    
+    // Calculate satisfaction metrics
+    const likeCount = data.filter(item => item.satisfaction === 'like').length;
+    const dislikeCount = data.filter(item => item.satisfaction === 'dislike').length;
+    const withFeedback = likeCount + dislikeCount;
+    const satisfactionRate = withFeedback > 0 ? (likeCount / withFeedback) * 100 : 0;
 
     setStats({
       totalSubmissions,
@@ -174,7 +184,10 @@ export default function AnalyticsPage() {
       averagePacing: Math.round(averagePacing * 100) / 100,
       averageDescriptiveness: Math.round(averageDescriptiveness * 100) / 100,
       averageDirectness: Math.round(averageDirectness * 100) / 100,
-      consentRate: Math.round(consentRate * 10) / 10
+      consentRate: Math.round(consentRate * 10) / 10,
+      satisfactionRate: Math.round(satisfactionRate * 10) / 10,
+      likeCount,
+      dislikeCount
     });
   }
 
@@ -291,7 +304,7 @@ export default function AnalyticsPage() {
 
       {/* Summary Stats */}
       {stats && (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
           <div className="glass-panel p-6">
             <div className="text-sm text-slate-400 mb-1">Total Submissions</div>
             <div className="text-3xl font-bold text-brand-300">{stats.totalSubmissions}</div>
@@ -299,6 +312,11 @@ export default function AnalyticsPage() {
           <div className="glass-panel p-6">
             <div className="text-sm text-slate-400 mb-1">Average Score</div>
             <div className="text-3xl font-bold text-emerald-400">{stats.averageScore}%</div>
+          </div>
+          <div className="glass-panel p-6">
+            <div className="text-sm text-slate-400 mb-1">Satisfaction</div>
+            <div className="text-3xl font-bold text-blue-400">{stats.satisfactionRate}%</div>
+            <div className="text-xs text-slate-500">👍 {stats.likeCount} 👎 {stats.dislikeCount}</div>
           </div>
           <div className="glass-panel p-6">
             <div className="text-sm text-slate-400 mb-1">Consent Rate</div>
@@ -448,7 +466,7 @@ export default function AnalyticsPage() {
               {paginatedData.map(entry => (
                 <div key={entry.id} className="border border-white/10 rounded-lg p-4 bg-slate-800/40 space-y-3">
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
                         entry.verification_score >= 80 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
                         entry.verification_score >= 70 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
@@ -465,6 +483,15 @@ export default function AnalyticsPage() {
                       {entry.consent_given && (
                         <div className="px-2 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400 border border-purple-500/30">
                           ✓ Consent
+                        </div>
+                      )}
+                      {entry.satisfaction && (
+                        <div className={`px-2 py-0.5 rounded text-xs font-medium border ${
+                          entry.satisfaction === 'like'
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                            : 'bg-red-500/20 text-red-400 border-red-500/30'
+                        }`}>
+                          {entry.satisfaction === 'like' ? '👍 Helpful' : '👎 Not helpful'}
                         </div>
                       )}
                     </div>

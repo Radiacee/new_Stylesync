@@ -33,29 +33,10 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check if user has already submitted analytics for this saved profile
-    // Only ONE entry allowed per user per saved style profile (by profile_id)
-    if (profileId) {
-      const { data: existingEntry } = await supabase
-        .from('paraphrase_analytics')
-        .select('id, created_at, verification_score')
-        .eq('user_id', userId)
-        .eq('profile_id', profileId)
-        .single();
+    // Allow multiple entries per profile - each paraphrase is tracked separately
+    // (Removed duplicate profile_id check to track every paraphrase)
 
-      // If entry already exists for this profile, skip submission
-      if (existingEntry) {
-        console.log('Analytics already exists for this profile, skipping duplicate');
-        return NextResponse.json({ 
-          success: true,
-          skipped: true,
-          existingId: existingEntry.id,
-          message: 'Analytics already recorded for this saved style profile'
-        });
-      }
-    }
-
-    // Insert new analytics data (first time for this style profile)
+    // Insert new analytics data (every paraphrase creates a new entry)
     const { data, error } = await supabase
       .from('paraphrase_analytics')
       .insert({

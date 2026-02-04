@@ -74,6 +74,7 @@ export default function ParaphrasePage() {
   const [moderationResult, setModerationResult] = useState<ModerationResult | null>(null); // Content moderation
   const [showSuggestions, setShowSuggestions] = useState(false); // Writing suggestions toggle
   const [styleMatch, setStyleMatch] = useState<{ overallMatch: number; issues: string[] } | null>(null); // Style match report
+  const [satisfaction, setSatisfaction] = useState<'like' | 'dislike' | null>(null); // User satisfaction feedback
 
   const hasUserEssay = input.trim().length > 0;
   const hasStyleDiagnostics = Boolean(metrics) || actions.length > 0;
@@ -705,6 +706,71 @@ export default function ParaphrasePage() {
             </div>
             {error && <p className="text-xs text-amber-400">{error}</p>}
             {output && <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200">{output}</p>}
+            
+            {/* User Satisfaction Feedback */}
+            {output && (
+              <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/10">
+                <span className="text-xs text-slate-400">Is this result helpful?</span>
+                <button
+                  onClick={async () => {
+                    setSatisfaction(satisfaction === 'like' ? null : 'like');
+                    // Track satisfaction in analytics
+                    if (userId && profile && verificationScore > 0) {
+                      await fetch('/api/analytics/update-satisfaction', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          userId,
+                          profileId: profile.id,
+                          profileName: profile.name,
+                          verification_score: verificationScore,
+                          satisfaction: satisfaction === 'like' ? null : 'like',
+                          input_length: input.length,
+                          output_length: output.length,
+                          consent_given: userConsent
+                        })
+                      });
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    satisfaction === 'like'
+                      ? 'bg-emerald-500/30 text-emerald-400 border border-emerald-500/50'
+                      : 'bg-slate-700/30 hover:bg-slate-700/50 text-slate-400 border border-white/10 hover:text-slate-300'
+                  }`}
+                >
+                  👍 Helpful
+                </button>
+                <button
+                  onClick={async () => {
+                    setSatisfaction(satisfaction === 'dislike' ? null : 'dislike');
+                    // Track satisfaction in analytics
+                    if (userId && profile && verificationScore > 0) {
+                      await fetch('/api/analytics/update-satisfaction', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          userId,
+                          profileId: profile.id,
+                          profileName: profile.name,
+                          verification_score: verificationScore,
+                          satisfaction: satisfaction === 'dislike' ? null : 'dislike',
+                          input_length: input.length,
+                          output_length: output.length,
+                          consent_given: userConsent
+                        })
+                      });
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    satisfaction === 'dislike'
+                      ? 'bg-red-500/30 text-red-400 border border-red-500/50'
+                      : 'bg-slate-700/30 hover:bg-slate-700/50 text-slate-400 border border-white/10 hover:text-slate-300'
+                  }`}
+                >
+                  👎 Not helpful
+                </button>
+              </div>
+            )}
             
             {/* Report button */}
             {output && (
