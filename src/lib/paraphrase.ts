@@ -155,12 +155,124 @@ export function analyzeSampleStyle(sample: string): SampleStyle {
     personalVoice = 'second-person';
   }
 
+  // --- Compute all optional fields for complete analysis ---
+
+  // Sentence length standard deviation
+  const sentenceLengths = sentences.map(s => s.trim().split(/\s+/).length);
+  const sentenceLengthStd = sentenceLengths.length > 1
+    ? Math.sqrt(sentenceLengths.reduce((sum, len) => sum + Math.pow(len - avgSentenceLength, 2), 0) / sentenceLengths.length)
+    : 0;
+
+  // High frequency words (non-stopwords appearing 2+ times)
+  const stopWords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','could','should','may','might','shall','can','this','that','these','those','it','its','i','me','my','we','us','our','you','your','he','she','him','her','they','them','their','not','no','so','if','as','up','out','about','just','also','very','more','most','some','any','each','every','all','both','few','many','much','own','other','such','than','too','only']);
+  const lowerWords = sample.toLowerCase().match(/\b[a-z]{3,}\b/g) || [];
+  const wordFreq: Record<string, number> = {};
+  for (const w of lowerWords) {
+    if (!stopWords.has(w)) {
+      wordFreq[w] = (wordFreq[w] || 0) + 1;
+    }
+  }
+  const highFrequencyWords = Object.entries(wordFreq)
+    .filter(([_, c]) => c >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(([w]) => w);
+
+  // Commas per sentence
+  const commaCount = (sample.match(/,/g) || []).length;
+  const commaPerSentence = sentences.length > 0 ? commaCount / sentences.length : 0;
+
+  // Semicolon ratio
+  const semicolonCount = (sample.match(/;/g) || []).length;
+  const semicolonRatio = sentences.length > 0 ? semicolonCount / sentences.length : 0;
+
+  // Top adverbs (-ly words, excluding non-adverbs)
+  const nonAdverbLy = new Set(['only','early','family','likely','daily','lovely','holy','lonely','friendly','ugly','jolly','rally','belly','jelly','ally','bully','silly','fully','hilly','folly','really','supply','apply','reply','imply','multiply']);
+  const adverbMatches = sample.toLowerCase().match(/\b[a-z]+ly\b/g) || [];
+  const adverbFreq: Record<string, number> = {};
+  for (const a of adverbMatches) {
+    if (!nonAdverbLy.has(a)) {
+      adverbFreq[a] = (adverbFreq[a] || 0) + 1;
+    }
+  }
+  const topAdverbs = Object.entries(adverbFreq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([w]) => w);
+
+  // Average word length
+  const avgWordLength = lowerWords.length > 0
+    ? lowerWords.reduce((sum, w) => sum + w.length, 0) / lowerWords.length
+    : 5;
+
+  // Vocabulary complexity (ratio of 7+ letter words)
+  const complexWordCount = lowerWords.filter(w => w.length >= 7).length;
+  const vocabularyComplexity = lowerWords.length > 0 ? complexWordCount / lowerWords.length : 0;
+
+  // Question ratio
+  const questionMarks = (sample.match(/\?/g) || []).length;
+  const questionRatio = sentences.length > 0 ? questionMarks / sentences.length : 0;
+
+  // Exclamatory ratio
+  const exclamationMarks = (sample.match(/!/g) || []).length;
+  const exclamatoryRatio = sentences.length > 0 ? exclamationMarks / sentences.length : 0;
+
+  // Common sentence starters (first 2 words)
+  const starters = sentences
+    .map(s => s.trim().split(/\s+/).slice(0, 2).join(' ').toLowerCase())
+    .filter(s => s.length > 1);
+  const starterFreq: Record<string, number> = {};
+  for (const s of starters) { starterFreq[s] = (starterFreq[s] || 0) + 1; }
+  const commonStarters = Object.entries(starterFreq)
+    .filter(([_, c]) => c >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([s]) => s);
+
+  // Conjunction density (per sentence)
+  const conjunctions = (sample.match(/\b(and|but|or|so|yet|for|nor)\b/gi) || []).length;
+  const conjunctionDensity = sentences.length > 0 ? conjunctions / sentences.length : 0;
+
+  // Adjective density (suffix-based detection)
+  const adjPatterns = /\b\w+(ful|less|able|ible|ous|ive|al|ent|ant|ary|ory)\b/gi;
+  const adjectiveCount = (sample.match(adjPatterns) || []).length;
+  const adjectiveDensity = words.length > 0 ? adjectiveCount / words.length : 0;
+
+  // Tone balance
+  const positiveWords = new Set(['good','great','excellent','amazing','wonderful','fantastic','happy','love','beautiful','perfect','best','brilliant','outstanding','remarkable','enjoy','positive','success','achieve','benefit','improve','helpful','pleasure','delightful']);
+  const negativeWords = new Set(['bad','terrible','awful','horrible','worst','poor','hate','ugly','failure','problem','difficult','wrong','negative','unfortunately','sadly','struggle','issue','concern','worry','fear','danger','risk','threat']);
+  const allLowerWords = sample.toLowerCase().match(/\b[a-z]+\b/g) || [];
+  let positiveCount = 0, negativeCount = 0;
+  for (const w of allLowerWords) {
+    if (positiveWords.has(w)) positiveCount++;
+    if (negativeWords.has(w)) negativeCount++;
+  }
+  const totalSentiment = positiveCount + negativeCount || 1;
+  const toneBalance = {
+    positive: positiveCount / totalSentiment,
+    negative: negativeCount / totalSentiment,
+    neutral: Math.max(0, 1 - (positiveCount + negativeCount) / Math.max(allLowerWords.length, 1))
+  };
+
   return {
     avgSentenceLength,
     usesContractions,
     preferredTransitions,
     transitionStartRatio,
     personalVoice,
+    sentenceLengthStd,
+    highFrequencyWords,
+    commaPerSentence,
+    semicolonRatio,
+    topAdverbs,
+    avgWordLength,
+    vocabularyComplexity,
+    questionRatio,
+    exclamatoryRatio,
+    commonStarters,
+    conjunctionDensity,
+    adjectiveDensity,
+    toneBalance,
   };
 }
 

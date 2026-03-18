@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Lightbulb } from 'lucide-react';
 import { saveProfile, type StyleProfile, saveProfileRemote, upsertProfileLocal, setActiveProfileId, listProfiles } from '../../../lib/styleProfile.ts';
 import { analyzeSampleStyle, type SampleStyle } from '../../../lib/paraphrase.ts';
+import { calculateLexicalDensity, calculateSentenceLengthVariety, calculateParagraphLengthVariety } from '../../../lib/deepStyleMatch.ts';
 import { supabase } from '../../../lib/supabaseClient.ts';
 import { FullScreenSpinner } from '../../../components/FullScreenSpinner';
 
@@ -105,42 +106,80 @@ function OnboardingInner() {
     setBusy(true);
     
     try {
-      // Create profile from analysis
+      // Create profile from COMPLETE analysis
       const now = Date.now();
       const combinedText = validEssays.join('\n\n');
-      
+      const a = finalAnalysis!;
+
+      // --- Derive tone accurately from analysis ---
+      const formalMarkerCount = (combinedText.match(/\b(therefore|consequently|furthermore|nevertheless|subsequently|thus|hence|regarding|pertaining|aforementioned)\b/gi) || []).length;
+      const casualMarkerCount = (combinedText.match(/\b(gonna|wanna|gotta|kinda|sorta|yeah|yep|nope|cool|awesome|stuff|things)\b/gi) || []).length;
+      let tone = 'balanced';
+      if (a.usesContractions && casualMarkerCount > formalMarkerCount + 1) tone = 'casual';
+      else if (!a.usesContractions && formalMarkerCount > casualMarkerCount + 1) tone = 'formal';
+      else if (a.usesContractions) tone = 'conversational';
+      else tone = 'neutral';
+
+      // --- Derive formality on a nuanced 0-1 scale ---
+      // Base: contractions = casual, no contractions = formal
+      let formality = a.usesContractions ? 0.3 : 0.7;
+      // Adjust for vocabulary complexity
+      if ((a.vocabularyComplexity ?? 0) > 0.25) formality = Math.min(1, formality + 0.15);
+      else if ((a.vocabularyComplexity ?? 0) < 0.1) formality = Math.max(0, formality - 0.1);
+      // Adjust for formal/casual markers
+      if (formalMarkerCount > 3) formality = Math.min(1, formality + 0.1);
+      if (casualMarkerCount > 3) formality = Math.max(0, formality - 0.1);
+      formality = Math.round(formality * 100) / 100;
+
+      // --- Derive pacing from sentence length (0=slow/long, 1=fast/short) ---
+      const avgLen = a.avgSentenceLength;
+      const pacing = avgLen > 25 ? 0.15 : avgLen > 20 ? 0.3 : avgLen > 15 ? 0.5 : avgLen > 10 ? 0.7 : 0.85;
+
+      // --- Derive descriptiveness from vocabulary complexity + adjective density ---
+      const vocabFactor = Math.min(1, (a.vocabularyComplexity ?? 0) * 3);
+      const adjFactor = Math.min(1, (a.adjectiveDensity ?? 0) * 8);
+      const descriptiveness = Math.round(Math.min(1, Math.max(0.1, (vocabFactor * 0.6 + adjFactor * 0.4))) * 100) / 100;
+
+      // --- Derive directness from voice, questions, sentence length ---
+      let directness = 0.5;
+      if (a.personalVoice === 'second-person') directness = 0.75;
+      else if (a.personalVoice === 'first-person') directness = 0.65;
+      if ((a.questionRatio ?? 0) > 0.1) directness = Math.min(1, directness + 0.1);
+      if (avgLen < 12) directness = Math.min(1, directness + 0.1);
+      directness = Math.round(directness * 100) / 100;
+
+      // --- Build comprehensive customLexicon from signature words ---
+      const lexicon = [
+        ...(a.highFrequencyWords || []).slice(0, 5),
+        ...(a.topAdverbs || []).slice(0, 3),
+        ...(a.preferredTransitions || []).slice(0, 2)
+      ];
+      // Deduplicate
+      const uniqueLexicon = [...new Set(lexicon)].slice(0, 10);
+
+      // --- Calculate deep style metrics ---
+      const lexicalDensity = calculateLexicalDensity(combinedText);
+      const sentenceLengthVariety = calculateSentenceLengthVariety(combinedText);
+      const paragraphLengthVariety = calculateParagraphLengthVariety(combinedText);
+
       const newProfile: StyleProfile = {
         id: crypto.randomUUID(),
         createdAt: now,
         updatedAt: now,
         name: profileName.trim(),
-        // Determine tone from analysis
-        tone: 'balanced',
-        
-        // Calculate formality from analysis
-        formality: finalAnalysis!.usesContractions 
-          ? 0.3
-          : 0.7,
-        
-        // Calculate pacing from sentence length
-        pacing: finalAnalysis!.avgSentenceLength > 20 ? 0.3 :
-          finalAnalysis!.avgSentenceLength < 12 ? 0.7 : 0.5,
-        
-        // Descriptiveness
-        descriptiveness: 0.5,
-        
-        // Directness from personal voice and questions
-        directness: finalAnalysis!.personalVoice === 'second-person' ? 0.7 :
-             finalAnalysis!.personalVoice === 'first-person' ? 0.6 : 0.5,
-        
+        tone,
+        formality,
+        pacing,
+        descriptiveness,
+        directness,
         sampleExcerpt: combinedText,
         sampleExcerpts: validEssays,
-        customLexicon: [
-          ...(finalAnalysis!.topAdverbs || []).slice(0, 3),
-          ...(finalAnalysis!.preferredTransitions || []).slice(0, 2)
-        ].slice(0, 8),
+        customLexicon: uniqueLexicon,
         notes: '',
-        styleAnalysis: finalAnalysis!
+        styleAnalysis: a,
+        lexicalDensity,
+        sentenceLengthVariety,
+        paragraphLengthVariety,
       };
 
       // Ensure unique ID
@@ -319,7 +358,7 @@ function OnboardingInner() {
                   <h3 className="text-lg font-semibold text-white">Style Detected!</h3>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                   <div>
                     <p className="text-slate-400 text-xs mb-1">Formality</p>
                     <p className="text-white font-medium">
@@ -334,13 +373,38 @@ function OnboardingInner() {
                     <p className="text-slate-400 text-xs mb-1">Voice</p>
                     <p className="text-white font-medium">{analysis.personalVoice}</p>
                   </div>
+                  {(analysis.vocabularyComplexity ?? 0) > 0 && (
+                    <div>
+                      <p className="text-slate-400 text-xs mb-1">Vocabulary</p>
+                      <p className="text-white font-medium">
+                        {(analysis.vocabularyComplexity ?? 0) > 0.25 ? 'Advanced' : (analysis.vocabularyComplexity ?? 0) < 0.1 ? 'Simple' : 'Moderate'}
+                      </p>
+                    </div>
+                  )}
+                  {(analysis.questionRatio ?? 0) > 0.05 && (
+                    <div>
+                      <p className="text-slate-400 text-xs mb-1">Questions</p>
+                      <p className="text-white font-medium">{Math.round((analysis.questionRatio ?? 0) * 100)}% of sentences</p>
+                    </div>
+                  )}
+                  {(analysis.commaPerSentence ?? 0) > 0 && (
+                    <div>
+                      <p className="text-slate-400 text-xs mb-1">Comma Usage</p>
+                      <p className="text-white font-medium">{(analysis.commaPerSentence ?? 0).toFixed(1)} per sentence</p>
+                    </div>
+                  )}
                 </div>
 
-                {(analysis.topAdverbs?.length ?? 0) > 0 && (
+                {/* Signature words: high-frequency words + adverbs + transitions */}
+                {((analysis.highFrequencyWords?.length ?? 0) > 0 || (analysis.topAdverbs?.length ?? 0) > 0 || analysis.preferredTransitions.length > 0) && (
                   <div>
-                    <p className="text-slate-400 text-xs mb-2">Common Words in Your Style</p>
+                    <p className="text-slate-400 text-xs mb-2">Your Signature Words</p>
                     <div className="flex flex-wrap gap-2">
-                      {[...(analysis.topAdverbs || []).slice(0, 3), ...analysis.preferredTransitions.slice(0, 2)].map((word, i) => (
+                      {[
+                        ...(analysis.highFrequencyWords || []).slice(0, 5),
+                        ...(analysis.topAdverbs || []).slice(0, 3),
+                        ...analysis.preferredTransitions.slice(0, 2)
+                      ].filter((w, i, arr) => arr.indexOf(w) === i).map((word, i) => (
                         <span key={i} className="px-2 py-1 bg-brand-500/20 text-brand-300 rounded text-xs">
                           {word}
                         </span>
@@ -350,7 +414,7 @@ function OnboardingInner() {
                 )}
               </div>
 
-              {/* Simple Style Explanation */}
+              {/* Detailed Style Explanation */}
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 space-y-3">
                 <h4 className="text-sm font-semibold text-blue-300">📊 What This Means</h4>
                 <div className="text-xs text-blue-200 space-y-2">
@@ -364,12 +428,32 @@ function OnboardingInner() {
                   <p>
                     <span className="font-medium">Sentence structure:</span> {
                       analysis.avgSentenceLength > 20 
-                        ? "You use longer, more complex sentences." 
+                        ? `You use longer, more complex sentences (~${Math.round(analysis.avgSentenceLength)} words each).` 
                         : analysis.avgSentenceLength < 12
-                        ? "You use short, punchy sentences."
-                        : "You balance short and longer sentences."
+                        ? `You use short, punchy sentences (~${Math.round(analysis.avgSentenceLength)} words each).`
+                        : `You balance short and longer sentences (~${Math.round(analysis.avgSentenceLength)} words avg).`
                     }
                   </p>
+                  {(analysis.vocabularyComplexity ?? 0) > 0 && (
+                    <p>
+                      <span className="font-medium">Vocabulary:</span> {
+                        (analysis.vocabularyComplexity ?? 0) > 0.25
+                          ? "You use sophisticated, complex vocabulary."
+                          : (analysis.vocabularyComplexity ?? 0) < 0.1
+                          ? "You prefer clear, simple language."
+                          : "You use a balanced mix of common and advanced words."
+                      }
+                    </p>
+                  )}
+                  {analysis.personalVoice !== 'third-person' && (
+                    <p>
+                      <span className="font-medium">Voice:</span> {
+                        analysis.personalVoice === 'first-person'
+                          ? "You write with a personal touch using \"I\" and \"we\"."
+                          : "You address the reader directly using \"you\"."
+                      }
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={() => setShowComparison(true)}
@@ -472,23 +556,38 @@ function OnboardingInner() {
                 <h4 className="text-sm font-semibold text-blue-300 mb-2">✨ What Changed?</h4>
                 <ul className="text-xs text-blue-200 space-y-1.5">
                   {analysis.usesContractions && (
-                    <li>• Added contractions ("{analysis.usesContractions ? "it's, you're, can't" : "no contractions"}") to match your casual tone</li>
+                    <li>• Added contractions ("it's, you're, can't") to match your casual tone</li>
+                  )}
+                  {!analysis.usesContractions && (
+                    <li>• Kept formal language without contractions (matching your style)</li>
                   )}
                   {analysis.personalVoice === 'second-person' && (
                     <li>• Used "you" to match your direct, conversational approach</li>
                   )}
+                  {analysis.personalVoice === 'first-person' && (
+                    <li>• Used personal voice ("I", "we") to match your writing perspective</li>
+                  )}
                   <li>• {
                     analysis.avgSentenceLength > 20 
-                      ? "Made sentences longer and more detailed (like yours)" 
+                      ? `Made sentences longer and more complex (~${Math.round(analysis.avgSentenceLength)} words, like yours)` 
                       : analysis.avgSentenceLength < 12
-                      ? "Shortened sentences to be punchy and direct (like yours)"
-                      : "Balanced sentence lengths (like yours)"
+                      ? `Shortened sentences to be punchy and direct (~${Math.round(analysis.avgSentenceLength)} words, like yours)`
+                      : `Balanced sentence lengths (~${Math.round(analysis.avgSentenceLength)} words avg, like yours)`
                   }</li>
-                  {!analysis.usesContractions && (
-                    <li>• Kept formal language without contractions (matching your style)</li>
+                  {(analysis.vocabularyComplexity ?? 0) > 0.25 && (
+                    <li>• Matched your sophisticated vocabulary level</li>
+                  )}
+                  {(analysis.vocabularyComplexity ?? 0) < 0.1 && (analysis.vocabularyComplexity ?? 0) > 0 && (
+                    <li>• Used simple, clear language (like yours)</li>
+                  )}
+                  {analysis.highFrequencyWords && analysis.highFrequencyWords.length > 0 && (
+                    <li>• Incorporated your signature words: {analysis.highFrequencyWords.slice(0, 3).join(', ')}</li>
                   )}
                   {analysis.topAdverbs && analysis.topAdverbs.length > 0 && (
-                    <li>• Used words you commonly use: {analysis.topAdverbs.slice(0, 2).join(', ')}</li>
+                    <li>• Used adverbs you commonly use: {analysis.topAdverbs.slice(0, 2).join(', ')}</li>
+                  )}
+                  {analysis.preferredTransitions.length > 0 && (
+                    <li>• Added your preferred transition words: {analysis.preferredTransitions.slice(0, 2).join(', ')}</li>
                   )}
                 </ul>
               </div>

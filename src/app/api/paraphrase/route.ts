@@ -536,10 +536,10 @@ export async function POST(req: NextRequest) {
         verificationResult = verifyOutput(text, output, profile);
       }
       
-      // If quality is still too low (score < 60), try once more with stricter prompt
-      if (verificationResult.score < 60) {
-        console.log('Quality too low, retrying with stricter prompt...');
-        const retryOutput = await paraphraseWithAI(text, profile, stylePreset, styleInstructions);
+      // If quality is still too low (score < 60), try once more with a TARGETED correction prompt
+      if (verificationResult.score < 60 && profile?.sampleExcerpt) {
+        console.log('Quality too low (' + verificationResult.score + '), retrying with targeted correction...');
+        const retryOutput = await retryWithCorrection(text, output, profile, verificationResult, stylePreset, styleInstructions);
         const retryVerification = verifyOutput(text, retryOutput, profile);
         
         // Use retry if it's better
@@ -620,6 +620,86 @@ async function paraphraseWithAI(
   }
 }
 
+// Retry with a targeted correction prompt that tells the AI specifically what went wrong
+async function retryWithCorrection(
+  originalText: string,
+  previousOutput: string,
+  profile: any,
+  verification: VerificationResult,
+  stylePreset?: string,
+  styleInstructions?: string | null
+): Promise<string> {
+  const sampleText = profile.sampleExcerpts?.length 
+    ? profile.sampleExcerpts.join('\n\n').slice(0, 2000)
+    : (profile.sampleExcerpt || '').slice(0, 2000);
+  
+  const analysis = analyzeStyle(sampleText);
+  
+  // Build specific correction instructions based on what failed
+  const corrections: string[] = [];
+  
+  if (!verification.styleBreakdown.contractions.match) {
+    if (analysis.usesContractions) {
+      corrections.push('You MUST use contractions (don\'t, it\'s, can\'t, won\'t, I\'m, they\'re). The previous attempt used expanded forms which is WRONG.');
+    } else {
+      corrections.push('You MUST NOT use contractions. Write "do not" instead of "don\'t", "it is" instead of "it\'s". The previous attempt used contractions which is WRONG.');
+    }
+  }
+  
+  if (!verification.styleBreakdown.sentenceLength.match) {
+    corrections.push(`Your sentences are the WRONG length. Target ${Math.round(analysis.avgWordsPerSentence)} words per sentence. The previous attempt had sentences that were too ${verification.styleBreakdown.sentenceLength.diff > 0 ? 'long' : 'short'}.`);
+  }
+  
+  if (!verification.styleBreakdown.vocabulary.match) {
+    corrections.push(`Your vocabulary complexity is WRONG. This person uses ${analysis.vocabularyLevel} vocabulary. Match their word complexity level.`);
+  }
+  
+  for (const issue of verification.issues) {
+    if (issue.type === 'content_loss' && issue.severity !== 'low') {
+      corrections.push(`CRITICAL: You lost important content. ${issue.description}. Preserve ALL original facts and information.`);
+    }
+    if (issue.type === 'meaning_changed') {
+      corrections.push(`CRITICAL: ${issue.description}. Never change numbers, dates, or names.`);
+    }
+  }
+
+  const correctionPrompt = `You are correcting a FAILED style rewrite. The previous attempt did not match the writer's style and sounded too much like AI.
+
+HERE IS HOW THIS PERSON ACTUALLY WRITES:
+---
+${sampleText.slice(0, 1500)}
+---
+
+WHAT WENT WRONG (FIX THESE):
+${corrections.map((c, i) => `${i + 1}. ${c}`).join('\n')}
+${corrections.length + 1}. The output sounds like AI wrote it. Make it sound human — vary sentence openings, avoid formulaic transition chains, and write naturally.
+
+PREVIOUS BAD ATTEMPT (for reference of what NOT to do):
+---
+${previousOutput.slice(0, 1000)}
+---
+
+Now rewrite the ORIGINAL TEXT below to sound EXACTLY like the person above. Fix every issue listed.
+Do NOT use AI-sounding phrases like "It is important to note", "plays a crucial role", "In today's world", "serves as a", etc.
+Do NOT use perfectly parallel sentence structures. Real people vary their writing.
+${analysis.usesContractions ? 'CONTRACTIONS: ALWAYS USE (don\'t, it\'s, can\'t, won\'t)' : 'CONTRACTIONS: NEVER USE (do not, it is, cannot, will not)'}
+SENTENCE LENGTH: Target ${Math.round(analysis.avgWordsPerSentence)} words per sentence
+VOCABULARY: ${analysis.vocabularyLevel}
+PRESERVE: All facts, data, numbers, names, and layout structure
+
+OUTPUT: Only the rewritten text. No explanations.`;
+
+  try {
+    return await callGroqAPI(originalText, correctionPrompt);
+  } catch {
+    try {
+      return await callGeminiAPI(originalText, correctionPrompt);
+    } catch {
+      return previousOutput; // Fall back to previous output
+    }
+  }
+}
+
 function buildPrompt(profile: any, stylePreset?: string, styleInstructions?: string | null): string {
   // Preset style (formal, casual, etc.)
   if (stylePreset && stylePreset !== 'original' && styleInstructions) {
@@ -647,202 +727,277 @@ Output only the rewritten text.`;
   const allSamples = profile.sampleExcerpts?.length 
     ? profile.sampleExcerpts.join('\n\n')
     : profile.sampleExcerpt;
-  const userSample = allSamples.slice(0, 3000);
+  const userSample = allSamples.slice(0, 4000);
   const analysis = analyzeStyle(userSample);
   
   // Extract unique words/phrases the user likes to use
   const userWords = extractUserVocabulary(userSample);
   
   // Extract example sentences from user's writing (for demonstration)
-  const exampleSentences = extractExampleSentences(userSample, 4);
-
-  // Build a precise, example-driven prompt
-  let prompt = `You are an expert ghostwriter. Your task is to rewrite text EXACTLY as a specific person would write it.
-
-═══════════════════════════════════════════
-WRITING STYLE DNA (COPY THIS PRECISELY)
-═══════════════════════════════════════════`;
-
-  // Show REAL examples from their writing
-  if (exampleSentences.length > 0) {
-    prompt += `
-
-📝 EXAMPLES FROM THEIR ACTUAL WRITING:
-${exampleSentences.map((s, i) => `${i + 1}. "${s}"`).join('\n')}
-
-Study these examples. Notice their word choices, rhythm, and structure. Your output should read like these.`;
-  }
-
-  // CONTRACTIONS - Most important style marker
-  prompt += `
-
-═══════════════════════════════════════════
-MANDATORY STYLE RULES (FOLLOW EXACTLY)
-═══════════════════════════════════════════`;
-
-  if (analysis.usesContractions) {
-    prompt += `
-
-✓ CONTRACTIONS: ALWAYS USE
-   - Write "it's" NOT "it is"
-   - Write "don't" NOT "do not"  
-   - Write "can't" NOT "cannot"
-   - Write "won't" NOT "will not"
-   - Write "I'm" NOT "I am"
-   - Write "they're" NOT "they are"
-   - Write "you're" NOT "you are"
-   This person ALWAYS uses contractions. This is non-negotiable.`;
-  } else {
-    prompt += `
-
-✗ CONTRACTIONS: NEVER USE
-   - Write "it is" NOT "it's"
-   - Write "do not" NOT "don't"
-   - Write "cannot" NOT "can't"
-   - Write "will not" NOT "won't"
-   - Write "I am" NOT "I'm"
-   - Write "they are" NOT "they're"
-   - Write "you are" NOT "you're"
-   This person NEVER uses contractions. This is non-negotiable.`;
-  }
+  const exampleSentences = extractExampleSentences(userSample, 6);
+  
+  // Extract paragraph structure patterns
+  const paragraphs = userSample.split(/\n\s*\n/).filter((p: string) => p.trim().length > 0);
+  const avgSentencesPerParagraph = paragraphs.length > 0
+    ? Math.round(paragraphs.reduce((sum: number, p: string) => sum + p.split(/[.!?]+/).filter((s: string) => s.trim().length > 5).length, 0) / paragraphs.length)
+    : 4;
+  
+  // Detect punctuation patterns
+  const sentences = userSample.split(/[.!?]+/).filter((s: string) => s.trim().length > 5);
+  const commaCount = (userSample.match(/,/g) || []).length;
+  const commaPerSentence = sentences.length > 0 ? (commaCount / sentences.length).toFixed(1) : '1';
+  const usesSemicolons = (userSample.match(/;/g) || []).length > 0;
+  const usesDashes = (userSample.match(/—|–|-{2}/g) || []).length > 0;
+  const usesColons = (userSample.match(/:/g) || []).length > 1;
+  
+  // Detect passive voice usage
+  const passiveMatches = userSample.match(/\b(?:is|are|was|were|been|be|being)\s+(?:\w+ed|written|shown|seen|known|given|taken|made|done|found|said|told|thought|felt|become)\b/gi) || [];
+  const passiveRatio = sentences.length > 0 ? passiveMatches.length / sentences.length : 0;
+  
+  // Detect sentence length variety
+  const sentenceLengths = sentences.map((s: string) => s.trim().split(/\s+/).length);
+  const shortSentences = sentenceLengths.filter((l: number) => l <= 8).length;
+  const longSentences = sentenceLengths.filter((l: number) => l >= 20).length;
+  const hasMixedLengths = shortSentences > 0 && longSentences > 0;
+  
+  // Extract 3-word phrases
+  const threeWordPhrases = extractMultiWordPhrases(userSample, 3);
 
   // SENTENCE LENGTH - Critical for matching their voice
   const avgWords = Math.round(analysis.avgWordsPerSentence);
   const minWords = Math.max(5, avgWords - 5);
   const maxWords = avgWords + 5;
-  
-  if (avgWords > 22) {
-    prompt += `
 
-📏 SENTENCE LENGTH: LONG (Target: ${avgWords} words per sentence)
-   - Write flowing, complex sentences (${minWords}-${maxWords} words each)
-   - Use commas to connect related ideas
-   - Their sentences develop ideas fully
-   ⚠️ HARD LIMIT: Each sentence should be ${minWords}-${maxWords} words`;
+  // Detect human quirks from the sample
+  const startsWithConjunction = sentences.filter((s: string) => /^\s*(And|But|So|Or|Yet)\b/i.test(s)).length;
+  const conjunctionStartRate = sentences.length > 0 ? startsWithConjunction / sentences.length : 0;
+  const usesParenthetical = (userSample.match(/\(.*?\)/g) || []).length > 0;
+  const sentenceLengthsForBuckets = sentences.map((s: string) => s.trim().split(/\s+/).length);
+  const veryShort = sentenceLengthsForBuckets.filter((l: number) => l <= 5).length;
+  const hasFragments = veryShort > 0;
+
+  // Build a natural, non-formulaic prompt
+  let prompt = `You are cloning a person's writing voice. You will receive a sample they wrote, then text to rephrase. Your output must be indistinguishable from the sample — not polished, not improved, not "better." If they write messily, you write messily. If they ramble, you ramble. If they're blunt, you're blunt. Match them exactly.
+
+READ THIS SAMPLE CAREFULLY — absorb the rhythm, the sentence lengths, the word choices, the way ideas connect (or don't):
+
+"""
+${userSample.slice(0, 2500)}
+"""
+
+Here is what defines this person's voice:
+
+`;
+
+  // Contractions
+  if (analysis.usesContractions) {
+    prompt += `- They use contractions naturally: "don't", "it's", "can't", "won't", "I'm", "they're". Always contract.\n`;
+  } else {
+    prompt += `- They write formally without contractions: "do not", "it is", "cannot", "will not". Never contract.\n`;
+  }
+
+  // Sentence length
+  prompt += `- Their sentences average about ${avgWords} words. `;
+  if (hasMixedLengths) {
+    prompt += `They vary sentence length — some short and punchy, some long and flowing.\n`;
   } else if (avgWords < 12) {
-    prompt += `
-
-📏 SENTENCE LENGTH: SHORT (Target: ${avgWords} words per sentence)
-   ⚠️ CRITICAL: Keep EVERY sentence under ${maxWords} words!
-   - One clear idea per sentence
-   - Use periods frequently to break up thoughts
-   - If a sentence gets long, SPLIT IT into two
-   - Their writing is direct and punchy
-   ⚠️ HARD LIMIT: NO sentence over ${maxWords} words!`;
+    prompt += `Short and direct. Keep sentences under ${maxWords} words.\n`;
+  } else if (avgWords > 22) {
+    prompt += `They write long, developed sentences. Don't break them into short fragments.\n`;
   } else {
-    prompt += `
-
-📏 SENTENCE LENGTH: MEDIUM (Target: ${avgWords} words per sentence)
-   - Aim for ${minWords}-${maxWords} words per sentence
-   - Mix of sentence lengths, but stay close to ${avgWords} average
-   ⚠️ AVOID sentences longer than ${maxWords + 5} words`;
+    prompt += `Medium length, nothing extreme.\n`;
   }
 
-  // VOCABULARY - Match their word complexity
+  // Voice
+  if (analysis.usesFirstPerson) {
+    prompt += `- They write in first person ("I", "my", "we").\n`;
+  }
+
+  // Formality
+  if (analysis.formalityLevel === 'casual') {
+    prompt += `- Their tone is casual and conversational.\n`;
+  } else if (analysis.formalityLevel === 'formal') {
+    prompt += `- Their tone is formal and academic.\n`;
+  }
+
+  // Vocabulary
   if (analysis.vocabularyLevel === 'advanced') {
-    prompt += `
-
-🎓 VOCABULARY: SOPHISTICATED
-   - Use complex, precise words
-   - Don't oversimplify - they're intellectual`;
-    if (analysis.complexWords.length > 0) {
-      prompt += `
-   - Words they use: ${analysis.complexWords.slice(0, 6).join(', ')}`;
-    }
+    prompt += `- They use sophisticated vocabulary naturally.`;
+    if (analysis.complexWords.length > 0) prompt += ` Words like: ${analysis.complexWords.slice(0, 6).join(', ')}.`;
+    prompt += `\n`;
   } else if (analysis.vocabularyLevel === 'simple') {
-    prompt += `
-
-📝 VOCABULARY: SIMPLE & CLEAR
-   - Use everyday, common words
-   - Avoid jargon or complex terms`;
-    if (analysis.simpleWords.length > 0) {
-      prompt += `
-   - Words they prefer: ${analysis.simpleWords.slice(0, 6).join(', ')}`;
-    }
-  } else {
-    prompt += `
-
-📚 VOCABULARY: BALANCED
-   - Mix of common and moderately complex words`;
+    prompt += `- They use plain, everyday words. Nothing fancy.`;
+    if (analysis.simpleWords.length > 0) prompt += ` Words like: ${analysis.simpleWords.slice(0, 6).join(', ')}.`;
+    prompt += `\n`;
   }
 
-  // TRANSITIONS they use
+  // Transitions
   if (analysis.transitions.length > 0) {
-    prompt += `
-
-🔗 TRANSITIONS THEY USE: ${analysis.transitions.join(', ')}
-   - Incorporate these to connect ideas`;
+    prompt += `- They connect ideas with: ${analysis.transitions.join(', ')}.\n`;
   }
 
-  // Their signature words
+  // Signature words
   if (userWords.length > 0) {
-    prompt += `
-
-⭐ THEIR SIGNATURE WORDS (use where natural):
-   ${userWords.slice(0, 10).join(', ')}`;
+    prompt += `- Words they use often: ${userWords.slice(0, 10).join(', ')}.\n`;
   }
 
-  // Common phrases they use
-  if (analysis.commonPhrases.length > 0) {
-    prompt += `
-
-💬 PHRASES THEY USE:
-   "${analysis.commonPhrases.slice(0, 4).join('", "')}"`;
+  // Common phrases
+  const allPhrases = [...analysis.commonPhrases.slice(0, 4), ...threeWordPhrases.slice(0, 3)];
+  if (allPhrases.length > 0) {
+    prompt += `- Phrases they repeat: "${allPhrases.join('", "')}".\n`;
   }
 
-  // Questions/exclamations
-  if (analysis.questionFrequency > 0.15) {
-    prompt += `
-
-❓ They often use rhetorical questions`;
+  // Sentence starters
+  if (analysis.sentenceStarters.length > 0) {
+    prompt += `- They often start sentences with: "${analysis.sentenceStarters.slice(0, 5).join('", "')}".\n`;
   }
-  if (analysis.exclamationFrequency > 0.1) {
-    prompt += `
 
-❗ They use exclamation marks for emphasis`;
+  // Human quirks
+  if (conjunctionStartRate > 0.05) {
+    prompt += `- They sometimes start sentences with "And", "But", or "So".\n`;
+  }
+  if (hasFragments) {
+    prompt += `- They occasionally use sentence fragments for effect.\n`;
+  }
+  if (usesParenthetical) {
+    prompt += `- They use parenthetical asides (like this) sometimes.\n`;
+  }
+
+  // Punctuation
+  if (usesSemicolons) prompt += `- They use semicolons.\n`;
+  if (usesDashes) prompt += `- They use dashes for emphasis or asides.\n`;
+  if (parseFloat(commaPerSentence) > 2) prompt += `- They use commas frequently (~${commaPerSentence} per sentence).\n`;
+
+  // Passive voice
+  if (passiveRatio > 0.2) {
+    prompt += `- They use passive voice fairly often.\n`;
+  } else if (passiveRatio < 0.05) {
+    prompt += `- They strongly prefer active voice.\n`;
+  }
+
+  // Questions / exclamations
+  if (analysis.questionFrequency > 0.15) prompt += `- They ask rhetorical questions.\n`;
+  if (analysis.exclamationFrequency > 0.1) prompt += `- They use exclamation marks sometimes.\n`;
+
+  // Paragraph structure
+  if (paragraphs.length > 1) {
+    prompt += `- Their paragraphs run about ${avgSentencesPerParagraph} sentences each.\n`;
+  }
+
+  // Example sentences
+  if (exampleSentences.length > 0) {
+    prompt += `\nHere are some of their actual sentences for reference:\n`;
+    for (const s of exampleSentences) {
+      prompt += `- "${s}"\n`;
+    }
   }
 
   prompt += `
-
-═══════════════════════════════════════════
-YOUR TASK
-═══════════════════════════════════════════
-
-Rewrite the INPUT TEXT so it sounds EXACTLY like this person wrote it.
-
-ABSOLUTE REQUIREMENTS:
-1. ${analysis.usesContractions ? 'USE contractions (don\'t, it\'s, can\'t, won\'t)' : 'NEVER use contractions (write "do not", "it is", "cannot")'}
-2. SENTENCE LENGTH: Target ${avgWords} words per sentence (range: ${minWords}-${maxWords}). ${avgWords < 15 ? 'BREAK LONG SENTENCES into shorter ones!' : ''}
-3. Keep 100% of the original facts and meaning
-4. Sound natural - like they actually wrote it
-5. PRESERVE LAYOUT: Keep all line breaks, paragraphs, bullet points, and numbered lists in the EXACT same positions
-
-OUTPUT: Only the rewritten text. No explanations, no notes.`;
+CRITICAL RULES:
+1. Write EXACTLY like the person above. Copy their rhythm, not their content.
+2. ${analysis.usesContractions ? 'ALWAYS use contractions.' : 'NEVER use contractions.'}
+3. Keep all facts, numbers, names, and meaning from the original text.
+4. Keep the same paragraph structure and layout (line breaks, bullet points, numbered lists). If the original has "1." "2." "3." numbered items, keep them as numbered items in the same format.
+5. DO NOT sound like an AI. This is the most important rule. Specifically:
+   - BANNED phrases (never write these): "It is important to note", "It is worth mentioning", "In today's world", "In conclusion", "plays a crucial role", "serves as a", "aims to", "In the realm of", "shed light on", "in terms of", "a myriad of", "embark on", "navigating the", "holistic approach", "Moreover", "Furthermore", "Additionally", "Consequently", "It is evident that", "This highlights", "This underscores", "This demonstrates", "a testament to", "a triumvirate of", "a harmonious blend"
+   - BANNED writing style: Do NOT write purple prose. Do NOT use ornate/flowery metaphors like "canvas waiting to be transformed", "magnificent symphony", "maestro of growth", "tapestry woven", "beacon of hope", "dance of", "symphony of", "mosaic of", "crucible of", "realm of", "cascade of". Write PLAINLY. If the original says "the body grows" do NOT change it to "the body orchestrates a magnificent symphony of growth". Keep it simple and direct.
+   - BANNED structures: Do NOT start 2+ sentences in a row with "This [verb]s". Do NOT use "Not only... but also". Do NOT write 3+ sentences of similar length in a row.
+   - REQUIRED: Vary sentence length naturally. Mix shorter sentences (6-10 words) with longer ones (15-25 words). But every sentence must be complete and make sense on its own.
+   - REQUIRED: Use the SAME vocabulary complexity as the sample writer. If they use simple words, use simple words. Don't upgrade "food" to "nourishment" or "sleep" to "slumber" or "water" to "hydration" unless the sample writer does this.
+   - REQUIRED: Don't connect every sentence smoothly. Real humans sometimes jump between ideas.
+   - REQUIRED: When the original text has numbered lists (1, 2, 3), keep them as clean numbered lists. Don't merge list items into flowing prose.
+   - ALLOWED: Start sentences with "And", "But", "So", "Or". Use sentence fragments. Use informal connectors. Have slightly uneven paragraph lengths.
+6. Output ONLY the rewritten text. No commentary, no explanations, no notes.`;
 
   return prompt;
 }
 
-// Extract good example sentences from user's writing
+// Extract multi-word phrases (3+ words) that appear multiple times
+function extractMultiWordPhrases(sample: string, wordCount: number): string[] {
+  const words = sample.toLowerCase().replace(/[.,!?;:()"""'']/g, '').split(/\s+/).filter(w => w.length > 0);
+  const phraseMap = new Map<string, number>();
+  
+  for (let i = 0; i <= words.length - wordCount; i++) {
+    const phrase = words.slice(i, i + wordCount).join(' ');
+    if (phrase.length > 8) {
+      phraseMap.set(phrase, (phraseMap.get(phrase) || 0) + 1);
+    }
+  }
+  
+  return Array.from(phraseMap.entries())
+    .filter(([_, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([phrase]) => phrase);
+}
+
+// Extract good example sentences from user's writing - picks diverse, representative examples
 function extractExampleSentences(sample: string, count: number): string[] {
   const sentences = sample.split(/[.!?]+/)
     .map(s => s.trim())
     .filter(s => {
       const words = s.split(/\s+/).length;
-      return words >= 8 && words <= 30 && s.length > 20;
+      return words >= 6 && words <= 35 && s.length > 15;
     });
   
-  // Get diverse examples
-  const selected: string[] = [];
-  const step = Math.max(1, Math.floor(sentences.length / count));
+  if (sentences.length === 0) return [];
+  if (sentences.length <= count) return sentences;
   
-  for (let i = 0; i < sentences.length && selected.length < count; i += step) {
-    const sentence = sentences[i];
+  // Score sentences by how "characteristic" they are
+  // Prefer sentences with contractions (if user uses them), transitions, varied lengths
+  const allWords = sample.toLowerCase().match(/\b[a-z]{3,}\b/g) || [];
+  const wordFreq = new Map<string, number>();
+  allWords.forEach(w => wordFreq.set(w, (wordFreq.get(w) || 0) + 1));
+  
+  const scored = sentences.map(s => {
+    let score = 0;
+    const words = s.split(/\s+/);
+    
+    // Prefer sentences with user's frequent words
+    const sWords = s.toLowerCase().match(/\b[a-z]{3,}\b/g) || [];
+    for (const w of sWords) {
+      if ((wordFreq.get(w) || 0) >= 2) score += 1;
+    }
+    
+    // Prefer sentences with contractions (shows style)
+    if (/\b\w+n't\b|\b\w+'re\b|\b\w+'s\b|\b\w+'ve\b|\bI'm\b/i.test(s)) score += 3;
+    
+    // Prefer sentences with transitions
+    if (/\b(However|Moreover|Furthermore|Additionally|Therefore|Thus|Nevertheless|Meanwhile)\b/i.test(s)) score += 2;
+    
+    // Moderate length preferred (not too short, not too long)
+    if (words.length >= 10 && words.length <= 25) score += 2;
+    
+    return { sentence: s, score, length: words.length };
+  });
+  
+  // Sort by score
+  scored.sort((a, b) => b.score - a.score);
+  
+  // Select diverse lengths from top scorers
+  const selected: string[] = [];
+  const usedLengthBuckets = new Set<string>();
+  
+  for (const item of scored) {
+    if (selected.length >= count) break;
+    
+    // Bucket lengths: short (<10), medium (10-18), long (>18)
+    const bucket = item.length < 10 ? 'short' : item.length <= 18 ? 'medium' : 'long';
+    
     // Don't include sentences that are too similar to already selected ones
-    const isDuplicate = selected.some(s => 
-      s.toLowerCase().slice(0, 20) === sentence.toLowerCase().slice(0, 20)
-    );
+    const isDuplicate = selected.some(s => {
+      const overlap = s.toLowerCase().split(/\s+/).filter(w => 
+        item.sentence.toLowerCase().includes(w) && w.length > 3
+      ).length;
+      return overlap > 5;
+    });
+    
     if (!isDuplicate) {
-      selected.push(sentence);
+      // Prefer diversity in sentence lengths
+      if (!usedLengthBuckets.has(bucket) || selected.length < count - 1) {
+        selected.push(item.sentence);
+        usedLengthBuckets.add(bucket);
+      }
     }
   }
   
@@ -891,7 +1046,7 @@ async function callGroqAPI(text: string, systemPrompt: string): Promise<string> 
   
   const completion = await client.chat.completions.create({
     model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-    temperature: 0.5, // Lower temperature for more consistent style matching
+    temperature: 0.55, // Higher for more human-like unpredictability
     max_tokens: Math.min(4000, Math.max(500, text.length * 2)),
     messages: [
       { role: 'system', content: systemPrompt },
@@ -915,7 +1070,7 @@ async function callGeminiAPI(text: string, systemPrompt: string): Promise<string
         parts: [{ text: `${systemPrompt}\n\nINPUT TEXT TO REWRITE:\n\n${text}` }]
       }],
       generationConfig: { 
-        temperature: 0.5, // Lower temperature for more consistent style matching
+        temperature: 0.55, // Higher for more human-like unpredictability
         maxOutputTokens: Math.min(4000, Math.max(500, text.length * 2)) 
       }
     })
@@ -936,18 +1091,22 @@ interface DetailedStyleAnalysis {
   usesContractions: boolean;
   avgWordsPerSentence: number;
   transitions: string[];
-  // New detailed analysis
   sentenceStarters: string[];
   commonPhrases: string[];
   formalityLevel: 'casual' | 'neutral' | 'formal';
   usesFirstPerson: boolean;
   questionFrequency: number;
   exclamationFrequency: number;
-  // Vocabulary complexity
   vocabularyLevel: 'simple' | 'moderate' | 'advanced';
   avgWordLength: number;
   complexWords: string[];
   simpleWords: string[];
+  // Enhanced analysis fields
+  passiveVoiceRatio: number;
+  commaPerSentence: number;
+  usesSemicolons: boolean;
+  usesDashes: boolean;
+  sentenceLengthStd: number;
 }
 
 // Common simple words that most people use
@@ -1068,6 +1227,18 @@ function analyzeStyle(sample: string): DetailedStyleAnalysis {
     vocabularyLevel = 'simple';
   }
 
+  // Enhanced analysis fields
+  const commaCount2 = (sample.match(/,/g) || []).length;
+  const commaPerSentence2 = sentences.length > 0 ? commaCount2 / sentences.length : 1;
+  const semicolonCount2 = (sample.match(/;/g) || []).length;
+  const dashCount2 = (sample.match(/—|–|-{2}/g) || []).length;
+  const passiveMatches2 = sample.match(/\b(?:is|are|was|were|been|be|being)\s+(?:\w+ed|written|shown|seen|known|given|taken|made|done|found|said|told|thought|felt|become)\b/gi) || [];
+  const passiveVoiceRatio = sentences.length > 0 ? passiveMatches2.length / sentences.length : 0;
+  const sentenceLengthsArr = sentences.map((s: string) => s.trim().split(/\s+/).length);
+  const sentenceLengthStd = sentenceLengthsArr.length > 1
+    ? Math.sqrt(sentenceLengthsArr.reduce((sum: number, len: number) => sum + Math.pow(len - avgWordsPerSentence, 2), 0) / sentenceLengthsArr.length)
+    : 0;
+
   return { 
     usesContractions, 
     avgWordsPerSentence, 
@@ -1081,7 +1252,12 @@ function analyzeStyle(sample: string): DetailedStyleAnalysis {
     vocabularyLevel,
     avgWordLength,
     complexWords: uniqueComplexWords,
-    simpleWords: topSimpleWords
+    simpleWords: topSimpleWords,
+    passiveVoiceRatio,
+    commaPerSentence: commaPerSentence2,
+    usesSemicolons: semicolonCount2 > 0,
+    usesDashes: dashCount2 > 0,
+    sentenceLengthStd,
   };
 }
 
@@ -1095,6 +1271,9 @@ function applyUserStyle(text: string, profile: any): string {
   const analysis = analyzeStyle(sampleText);
   let result = text;
 
+  // 0. STRIP AI-TELLTALE PHRASES — must happen first
+  result = stripAIPatterns(result);
+
   // 1. CONTRACTIONS - Most important style marker
   // Apply this STRICTLY - the AI sometimes ignores the instruction
   if (analysis.usesContractions) {
@@ -1103,27 +1282,662 @@ function applyUserStyle(text: string, profile: any): string {
     result = contractionsToExpanded(result);
   }
 
-  // 2. SENTENCE LENGTH - Break up long sentences if user prefers short ones
+  // 2. SENTENCE LENGTH - Only break up extremely long sentences (40+ words)
+  // We no longer aggressively shorten — the LLM should handle length matching via prompt
   const userAvgLength = analysis.avgWordsPerSentence;
   if (userAvgLength < 15) {
     result = adjustSentenceLength(result, userAvgLength);
   }
 
-  // 3. Clean up the text
+  // 3. VOCABULARY MATCHING - Replace overly complex/simple words to match user's level
+  result = matchVocabularyLevel(result, analysis);
+
+  // 4. TRANSITION MATCHING - Ensure transitions match user's style
+  result = matchTransitionStyle(result, analysis);
+
+  // 5. HUMANIZE — break up AI-like parallel structures and add natural variation
+  result = humanizeOutput(result, sampleText, analysis);
+
+  // 6. QUALITY GATE — catch and repair any sentence fragments created by post-processing
+  result = repairFragments(result);
+
+  // 7. Clean up the text
   result = cleanText(result);
 
   return result;
 }
 
+// =============================================================================
+// ORNATE LANGUAGE STRIPPING — Replace purple prose with plain language
+// =============================================================================
+
+function stripOrnateLanguage(text: string): string {
+  let result = text;
+
+  // Replace ornate metaphorical phrases with plain equivalents
+  const ornateReplacements: [RegExp, string][] = [
+    // "canvas/tapestry/mosaic waiting to be..." → remove the metaphor
+    [/\ba (?:canvas|tapestry|mosaic|blank slate) (?:waiting |ready |poised )?to be (?:transformed|painted|woven|crafted|shaped)\b/gi, ''],
+    // "orchestrates/conducts a magnificent/grand symphony/performance" → "manages/controls"
+    [/\borchestrat(?:e|es|ed|ing) (?:a |the )?(?:magnificent |grand |beautiful |intricate |complex )?(?:symphony|performance|dance|ballet)\b/gi, 'manages'],
+    [/\bconducts? (?:a |the |this )?(?:magnificent |grand )?(?:symphony|performance|orchestra)\b/gi, 'controls'],
+    // "maestro/architect/beacon of X" → just "X controller" or remove
+    [/\b(?:a |the )?(?:maestro|architect|beacon|cornerstone|pillar|bedrock|linchpin|catalyst|harbinger) of\b/gi, 'the main part of'],
+    // "a magnificent/grand/majestic symphony/performance/dance" → just remove the ornate part
+    [/\ba (?:magnificent|grand|majestic|breathtaking|awe-inspiring|extraordinary|remarkable) (?:symphony|performance|dance|tapestry|masterpiece|spectacle|display)\b/gi, 'a process'],
+    // "masterpiece of X" → just "X"
+    [/\b(?:a |the )?masterpiece of\b/gi, ''],
+    // "realm of X" → "area of X" or just "X"
+    [/\b(?:the |a )?realm of\b/gi, ''],
+    // "triumvirate of" → "combination of"
+    [/\b(?:a |the )?triumvirate of\b/gi, 'a combination of'],
+    // "a harmonious blend of" → "a mix of"
+    [/\b(?:a |the )?harmonious (?:blend|mix|combination|fusion) of\b/gi, 'a mix of'],
+    // "tapestry woven from" → "process from"
+    [/\b(?:a |the )?(?:dynamic,? )?(?:ever-changing )?tapestry,? (?:woven|crafted|spun) from\b/gi, 'a process that goes from'],
+    // "unleash(es) a torrent/wave/flood of" → "causes many"
+    [/\bunleash(?:es|ed|ing)? (?:a )?(?:torrent|wave|flood|cascade|barrage|deluge) of\b/gi, 'causes many'],
+    // "maelstrom/whirlwind of transformation" → "time of big changes"
+    [/\b(?:a |the )?(?:maelstrom|whirlwind|tempest|storm|crucible) of (?:transformation|change|changes)\b/gi, 'a time of big changes'],
+    // "blossom(s) into" → "grow(s) into"
+    [/\bblossom(?:s|ed|ing)? into\b/gi, 'grow into'],
+    // "enchanted/fantastical/magical era/period" → "time/period"
+    [/\b(?:enchanted|fantastical|magical|wondrous) (?:era|period|time|age|phase|chapter)\b/gi, 'period'],
+    // "fleeting yet fantastical" → remove
+    [/\bfleeting (?:yet|but) (?:fantastical|magical|momentous|wondrous)\b/gi, 'short but important'],
+    // "stretch(es) towards the sky" → "grow(s)"
+    [/\bstretch(?:es|ed|ing)? towards? the (?:sky|heavens|stars)\b/gi, 'grow'],
+    // "absorb(s) knowledge like a sponge" → "learn(s) quickly"
+    [/\babsorb(?:s|ed|ing)? (?:knowledge|information|wisdom) like a sponge\b/gi, 'learn quickly'],
+    // "upward ascent" → "growth"
+    [/\b(?:the body'?s |its )?upward ascent\b/gi, 'growth'],
+    // "comes to a gentle halt" → "stops"
+    [/\bcomes? to (?:a )?(?:gentle |gradual |natural )?(?:halt|stop|end|conclusion)\b/gi, 'stops'],
+    // "giving way to a new era of" → "and then"
+    [/\bgiving way to (?:a )?(?:new )?(?:era|chapter|phase|period) of\b/gi, 'and then there is'],
+    // "ignites the engine of" → "drives"
+    [/\bignit(?:e|es|ed|ing) the (?:engine|fire|flame|spark) of\b/gi, 'drives'],
+    // "the foundation upon which X is built" → "what X needs"
+    [/\bthe foundation (?:upon|on) which .+? is built\b/gi, 'the base for growth'],
+    // "woven from the threads of X to Y" → "from X to Y"
+    [/\bwoven from the threads of\b/gi, 'going from'],
+    // "a grand, ceaseless dance" → remove
+    [/\b(?:a |the )?(?:grand|magnificent|beautiful|eternal|never-ending),? (?:ceaseless |endless |eternal )?(?:dance|waltz|ballet|symphony)\b/gi, 'an ongoing process'],
+    // "continually builds, adapts and transforms" → "keeps changing"
+    [/\bcontinually (?:builds|grows|evolves),? (?:adapts|changes|shifts) and (?:transforms|develops|evolves)\b/gi, 'keeps growing and changing'],
+    // "crystal clear" → "clean"
+    [/\bcrystal clear\b/gi, 'clean'],
+    // "robust, vibrant health" → "good health"
+    [/\b(?:robust|vibrant|radiant),? (?:vibrant |radiant |robust )?health\b/gi, 'good health'],
+    // "ample, restorative sleep" → "enough sleep"
+    [/\b(?:ample|sufficient),? (?:restorative |rejuvenating |refreshing )?sleep\b/gi, 'enough sleep'],
+    // "wholesome, nutritious food" → "healthy food"
+    [/\b(?:wholesome|nourishing),? (?:nutritious |balanced )?(?:food|nourishment|sustenance)\b/gi, 'healthy food'],
+    // "regular, invigorating exercise" → "regular exercise"
+    [/\b(?:regular|consistent),? (?:invigorating |energizing |vigorous )?exercise\b/gi, 'regular exercise'],
+    // "genetic blueprints" → "genes"
+    [/\bgenetic blueprints?\b/gi, 'genes'],
+    // "the fortification of" → "stronger"
+    [/\bthe fortification of\b/gi, 'stronger'],
+    // "the emergence of X in unexpected places" → "X growing in new places"
+    [/\bthe emergence of (.+?) in unexpected places\b/gi, '$1 growing in new places'],
+    // "the blossoming of" → "the development of"
+    [/\bthe blossoming of\b/gi, 'the development of'],
+    // "a shifting of the body's silhouette" → "body shape changes"
+    [/\b(?:a )?shifting of the body'?s? silhouette\b/gi, 'body shape changes'],
+    // "a deepening of the voice" → "voice getting deeper"
+    [/\b(?:a )?deepening of the voice\b/gi, 'voice getting deeper'],
+    // "a sudden, dramatic increase" → "a big increase"
+    [/\b(?:a )?sudden,? (?:dramatic|remarkable|astonishing|extraordinary) increase\b/gi, 'a big increase'],
+    // "nourishment" → "food" (when used as simple synonym)
+    [/\bnourishment\b/gi, 'food'],
+    // "slumber" → "sleep"
+    [/\bslumber\b/gi, 'sleep'],
+    // "hydration" → "water" (when used as simple synonym)
+    [/\b(?:the essential elements of )?(?:food, )?hydration(?:, oxygen)?\b/gi, 'water'],
+    // "with remarkable rapidity" → "fast"
+    [/\bwith (?:remarkable|astonishing|extraordinary|incredible) (?:rapidity|speed|swiftness)\b/gi, 'fast'],
+    // "steady, unwavering progress" → "steady progress"
+    [/\bsteady,? (?:unwavering|relentless|consistent|determined) progress\b/gi, 'steady progress'],
+    // "tiny titans" → remove totally silly metaphors
+    [/\btiny titans\b/gi, 'bigger'],
+    // "the catalysts of" → "what causes"
+    [/\bthe catalysts? of\b/gi, 'what causes'],
+    // "the conductors of" → "what controls"
+    [/\bthe conductors? of\b/gi, 'what controls'],
+  ];
+
+  for (const [pattern, replacement] of ornateReplacements) {
+    result = result.replace(pattern, replacement);
+  }
+
+  // Remove doubled-up adjectives AI loves: "magnificent, breathtaking", "dynamic, ever-changing"
+  result = result.replace(/\b(magnificent|breathtaking|astonishing|extraordinary|remarkable|incredible|awe-inspiring|majestic|wondrous|fantastical|enchanting),?\s+(magnificent|breathtaking|astonishing|extraordinary|remarkable|incredible|awe-inspiring|majestic|wondrous|fantastical|enchanting)\b/gi, (_, _a, b) => b);
+
+  return result;
+}
+
+// =============================================================================
+// AI-PATTERN STRIPPING — Remove phrases that AI detectors flag
+// =============================================================================
+
+function stripAIPatterns(text: string): string {
+  let result = text;
+
+  // 1. Remove common AI filler phrases (case-insensitive, preserve surrounding text)
+  const aiPhrases = [
+    /\bIt is (?:important|worth|essential|crucial|noteworthy|interesting) to (?:note|mention|highlight|recognize|acknowledge|understand|remember|emphasize) that\s*/gi,
+    /\bIt (?:should|must) be (?:noted|mentioned|emphasized|highlighted|recognized|acknowledged) that\s*/gi,
+    /\bThis (?:is a testament to|serves as a? (?:reminder|testament|beacon|example))\s*/gi,
+    /\bIn today'?s (?:world|society|age|era|landscape|day and age)\s*,?\s*/gi,
+    /\bIn the realm of\s+/gi,
+    /\bIn (?:terms of|light of|the context of)\s+/gi,
+    /\bplays a (?:crucial|vital|pivotal|key|significant|important|critical|central) role\s*/gi,
+    /\ba myriad of\s+/gi,
+    /\bembark(?:s|ed|ing)? on (?:a |the )?(?:journey|quest|path|adventure|endeavor)\s*/gi,
+    /\bnavigat(?:e|es|ed|ing) (?:the|this) (?:complex|intricate|challenging)\s*/gi,
+    /\btap(?:s|ped|ping)? into (?:the|a)\s*/gi,
+    /\b(?:a |the )?holistic (?:approach|perspective|view|understanding)\s*/gi,
+    /\bshed(?:s|ding)? light on\s*/gi,
+    /\bdelve(?:s|d)? (?:into|deeper)\s*/gi,
+    /\bunderscore(?:s|d)? the (?:importance|significance|need|necessity)\s*/gi,
+    /\bpave(?:s|d)? the way for\s*/gi,
+    /\b(?:at|by) the end of the day\s*,?\s*/gi,
+    /\bthe (?:bottom|top) line is\s*,?\s*/gi,
+    /\bfirst and foremost\s*,?\s*/gi,
+    /\blast but not least\s*,?\s*/gi,
+    /\ball in all\s*,?\s*/gi,
+    /\bin a nutshell\s*,?\s*/gi,
+    /\bwithout a doubt\s*,?\s*/gi,
+    /\bit goes without saying (?:that)?\s*/gi,
+    // Additional AI patterns
+    /\bIt is evident that\s*/gi,
+    /\bIt is clear that\s*/gi,
+    /\bIt is undeniable that\s*/gi,
+    // Remove "Not only... but also" framing but KEEP the content
+    // "Not only does X, but also Y" → "X and also Y"  
+    /\bNot only (?:does |do |is |are |has |have |did |was |were )?/gi,
+    /,?\s*\bbut also\b/gi,
+    /\bIn (?:order|an effort|an attempt) to\s+/gi,
+    /\bas (?:we|one) (?:can see|navigate|explore|delve|examine)\s*,?\s*/gi,
+    /\bwhen it comes to\s+/gi,
+    /\bin this (?:regard|context|article|essay|paper)\s*,?\s*/gi,
+    /\b(?:the |a )?(?:wide|broad|vast|diverse) (?:range|array|spectrum) of\s+/gi,
+    /\bon the other hand\s*,?\s*/gi,
+    /\bhaving said that\s*,?\s*/gi,
+    /\bthat being said\s*,?\s*/gi,
+    /with that (?:being |)said\s*,?\s*/gi,
+  ];
+
+  for (const pattern of aiPhrases) {
+    result = result.replace(pattern, '');
+  }
+
+  // 2. Remove AI-typical adverb hedging at start of sentences
+  result = result.replace(/^(Certainly|Undoubtedly|Undeniably|Arguably|Notably|Interestingly|Importantly|Remarkably|Essentially|Fundamentally|Inevitably|Ultimately|Ironically|Surprisingly),?\s*/gim, '');
+
+  // 3. Remove overly emphatic AI intensifiers in common combos  
+  result = result.replace(/\b(truly|deeply|incredibly|remarkably|exceptionally|profoundly|significantly|overwhelmingly|undeniably|inherently) (important|significant|crucial|essential|vital|remarkable|transformative|impactful|valuable|meaningful)\b/gi, (_, _intensifier, adj) => adj);
+
+  // 4. Strip ornate/flowery AI metaphors — replace with plain language
+  result = stripOrnateLanguage(result);
+
+  // 4. Replace "This highlights/demonstrates/underscores" chains
+  // (Only if there are 2+ such sentences — a single one is fine)
+  const thisVerbCount = (result.match(/\bThis (?:highlights|demonstrates|underscores|illustrates|showcases|emphasizes|reveals)\b/gi) || []).length;
+  if (thisVerbCount >= 2) {
+    let replaced = 0;
+    result = result.replace(/\bThis (highlights|demonstrates|underscores|illustrates|showcases|emphasizes|reveals)\b/gi, (match, verb) => {
+      replaced++;
+      if (replaced === 1) return match; // keep the first one
+      // Replace subsequent ones
+      const simpleReplacements: Record<string, string> = {
+        'highlights': 'It shows',
+        'demonstrates': 'We see',
+        'underscores': 'The point is',
+        'illustrates': 'You can see',
+        'showcases': 'Here',
+        'emphasizes': 'The key is',
+        'reveals': 'What stands out is',
+      };
+      return simpleReplacements[verb.toLowerCase()] || 'It shows';
+    });
+  }
+
+  // 5. Clean up any double spaces or leading spaces from removals
+  result = result.replace(/  +/g, ' ');
+  result = result.replace(/^ +/gm, '');
+  // Fix sentences that now start with lowercase after removal
+  result = result.replace(/(?<=[.!?]\s+)([a-z])/g, (_, c) => c.toUpperCase());
+  // Fix sentences starting after newline with lowercase
+  result = result.replace(/(?<=\n\s*)([a-z])/g, (_, c) => c.toUpperCase());
+  // Fix empty sentences from over-removal
+  result = result.replace(/\.\s*\./g, '.');
+  result = result.replace(/^\s*\.\s*/gm, '');
+
+  return result;
+}
+
+// =============================================================================
+// HUMANIZATION — Break AI-like patterns and inject natural variation
+// =============================================================================
+
+function humanizeOutput(text: string, userSample: string, analysis: DetailedStyleAnalysis): string {
+  let result = text;
+
+  // 1. BREAK PARALLEL STRUCTURES
+  // AI loves "X. Furthermore, Y. Moreover, Z. Additionally, W." — fix that
+  result = breakParallelTransitions(result);
+
+  // 2. VARY SENTENCE OPENINGS
+  // If 3+ consecutive sentences start the same way, rewrite the middle one
+  result = varySentenceOpenings(result);
+
+  // 3. INJECT USER'S SENTENCE STARTERS if they're underrepresented
+  result = injectUserStarters(result, analysis);
+
+  // 4. MATCH COMMA DENSITY to user's style
+  result = matchCommaDensity(result, analysis);
+
+  // 5. ADD BURSTINESS — vary sentence lengths to match human patterns
+  result = addBurstiness(result, analysis);
+
+  // 6. REPLACE "This [verb]s" AI pattern — a dead giveaway
+  result = breakThisVerbPattern(result);
+
+  // 7. ADD HUMAN RHYTHM — occasional conjunctions at start, merge/split sentences
+  result = addHumanRhythm(result, userSample, analysis);
+
+  return result;
+}
+
+// Break chains of transition words that AI loves to produce
+function breakParallelTransitions(text: string): string {
+  const lines = text.split('\n');
+  const result: string[] = [];
+
+  for (const line of lines) {
+    let processed = line;
+    // Find sentences in this line
+    const sentenceParts = processed.split(/(?<=[.!?])\s+/);
+    
+    if (sentenceParts.length < 3) {
+      result.push(processed);
+      continue;
+    }
+
+    // Check for chains: if 3+ consecutive sentences start with a transition
+    const transitionPattern = /^(However|Moreover|Furthermore|Additionally|Consequently|Nevertheless|Thus|Hence|Meanwhile|Therefore|In addition|On the other hand|As a result|Similarly|Likewise),?\s/i;
+    
+    let chainCount = 0;
+    for (let i = 0; i < sentenceParts.length; i++) {
+      if (transitionPattern.test(sentenceParts[i])) {
+        chainCount++;
+        // If we've hit 2+ transitions in a row, remove the transition from the 2nd+ one
+        if (chainCount >= 2) {
+          sentenceParts[i] = sentenceParts[i].replace(transitionPattern, '');
+          // Capitalize the first letter
+          if (sentenceParts[i].length > 0) {
+            sentenceParts[i] = sentenceParts[i].charAt(0).toUpperCase() + sentenceParts[i].slice(1);
+          }
+        }
+      } else {
+        chainCount = 0;
+      }
+    }
+
+    result.push(sentenceParts.join(' '));
+  }
+
+  return result.join('\n');
+}
+
+// Prevent 3+ consecutive sentences starting with the same word/pattern
+function varySentenceOpenings(text: string): string {
+  const lines = text.split('\n');
+  const result: string[] = [];
+
+  for (const line of lines) {
+    const sentences = line.split(/(?<=[.!?])\s+/);
+    if (sentences.length < 3) {
+      result.push(line);
+      continue;
+    }
+
+    // Check each triplet of consecutive sentences
+    for (let i = 1; i < sentences.length - 1; i++) {
+      const prevStart = sentences[i - 1].trim().split(/\s+/)[0]?.toLowerCase();
+      const currStart = sentences[i].trim().split(/\s+/)[0]?.toLowerCase();
+      const nextStart = sentences[i + 1]?.trim().split(/\s+/)[0]?.toLowerCase();
+
+      // If all three start the same, modify the middle one
+      if (prevStart && currStart && prevStart === currStart && (nextStart === currStart || !nextStart)) {
+        const s = sentences[i].trim();
+        // Try to rephrase the opening by removing "The" or "This" and restructuring
+        if (/^The\s/i.test(s)) {
+          sentences[i] = s.replace(/^The\s+/i, 'That ');
+        } else if (/^This\s/i.test(s)) {
+          sentences[i] = s.replace(/^This\s+/i, 'Such a ');
+        } else if (/^It\s/i.test(s)) {
+          // Rewrite "It is/was" to a different opening
+          sentences[i] = s.replace(/^It\s+(is|was)\s+/i, 'What we see is ');
+        }
+      }
+    }
+
+    result.push(sentences.join(' '));
+  }
+
+  return result.join('\n');
+}
+
+// Inject user's actual sentence starters if they're missing from the output
+function injectUserStarters(text: string, analysis: DetailedStyleAnalysis): string {
+  if (!analysis.sentenceStarters || analysis.sentenceStarters.length === 0) return text;
+  
+  // Check if any of the user's sentence starters appear in the output
+  const outputLower = text.toLowerCase();
+  const missingStarters = analysis.sentenceStarters.filter(s => 
+    !outputLower.includes(s.toLowerCase())
+  );
+  
+  // If most starters are already present, don't change anything
+  if (missingStarters.length <= 1) return text;
+  
+  // Otherwise, try to replace some generic sentence openings with the user's starters
+  let result = text;
+  const genericStarters = [
+    /^(The |This |It is |There is |There are )/im,
+  ];
+  
+  let replacements = 0;
+  const maxReplacements = Math.min(2, missingStarters.length);
+  
+  for (const generic of genericStarters) {
+    if (replacements >= maxReplacements) break;
+    const match = result.match(generic);
+    if (match && match.index !== undefined && match.index > 0) {
+      const starter = missingStarters[replacements];
+      const capitalized = starter.charAt(0).toUpperCase() + starter.slice(1);
+      // Only replace if it's mid-text (not first sentence)
+      const before = result.slice(0, match.index);
+      if (before.includes('.') || before.includes('!') || before.includes('?')) {
+        result = result.slice(0, match.index) + capitalized + ' ' + result.slice(match.index + match[0].length);
+        replacements++;
+      }
+    }
+  }
+  
+  return result;
+}
+
+// Match comma density to user's writing style
+function matchCommaDensity(text: string, analysis: DetailedStyleAnalysis): string {
+  if (!analysis.commaPerSentence) return text;
+  
+  const userCommaRate = analysis.commaPerSentence;
+  const sentences = text.split(/(?<=[.!?])\s+/);
+  const outputCommas = (text.match(/,/g) || []).length;
+  const outputCommaRate = sentences.length > 0 ? outputCommas / sentences.length : 0;
+  
+  // If output has significantly more commas than user (AI produces comma-heavy text)
+  if (outputCommaRate > userCommaRate * 1.8 && userCommaRate < 2) {
+    // Remove some commas before conjunctions (AI tends to always add "X, and Y")
+    let result = text;
+    let removed = 0;
+    const target = Math.round((outputCommaRate - userCommaRate) * sentences.length * 0.5);
+    
+    // Remove commas before "and" / "or" (these are optional and AI over-uses them)
+    result = result.replace(/,\s+(and|or)\s+/gi, (match, conj) => {
+      if (removed < target) {
+        removed++;
+        return ` ${conj} `;
+      }
+      return match;
+    });
+    
+    return result;
+  }
+  
+  return text;
+}
+
+// Add burstiness — AI text has suspiciously even sentence lengths, humans don't
+// CONSERVATIVE: only split 1 sentence per paragraph, only if truly uniform, and both halves must be complete
+function addBurstiness(text: string, analysis: DetailedStyleAnalysis): string {
+  const lines = text.split('\n');
+  const result: string[] = [];
+
+  for (const line of lines) {
+    if (!line.trim()) { result.push(line); continue; }
+
+    const sentences = line.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+    if (sentences.length < 5) { result.push(line); continue; }
+
+    // Check if sentence lengths are too uniform (AI signature)
+    const lengths = sentences.map(s => s.trim().split(/\s+/).length);
+    const avg = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+    const variance = lengths.reduce((sum, l) => sum + Math.pow(l - avg, 2), 0) / lengths.length;
+    const stdDev = Math.sqrt(variance);
+    const coeffOfVariation = avg > 0 ? stdDev / avg : 0;
+
+    // Only intervene if sentences are extremely uniform (CV < 0.25)
+    if (coeffOfVariation >= 0.25) { result.push(line); continue; }
+
+    // Split at most ONE sentence per paragraph to avoid choppy output
+    const modified = [...sentences];
+    let didSplit = false;
+    for (let i = 1; i < modified.length - 1; i++) {
+      if (didSplit) break;
+      const words = modified[i].trim().split(/\s+/);
+      // Only split sentences that are 20+ words AND have a comma+conjunction mid-sentence
+      if (words.length >= 20) {
+        const conjCommaMatch = modified[i].match(/,\s*(and|but|so|yet)\s/i);
+        if (conjCommaMatch && conjCommaMatch.index) {
+          const splitAt = conjCommaMatch.index;
+          const first = modified[i].slice(0, splitAt).trim();
+          let second = modified[i].slice(splitAt + 1).trim();
+          // Both halves must be at least 8 words to avoid fragments
+          if (first.split(/\s+/).length >= 8 && second.split(/\s+/).length >= 8) {
+            second = second.replace(/^\s*(and|but|so|yet)\s+/i, '');
+            second = second.charAt(0).toUpperCase() + second.slice(1);
+            if (!first.match(/[.!?]$/)) modified[i] = first + '.';
+            if (!second.match(/[.!?]$/)) second += '.';
+            modified.splice(i + 1, 0, second);
+            didSplit = true;
+          }
+        }
+      }
+    }
+
+    result.push(modified.join(' '));
+  }
+
+  return result.join('\n');
+}
+
+// Break the "This [verb]s" pattern that AI loves
+function breakThisVerbPattern(text: string): string {
+  let result = text;
+  let count = 0;
+
+  // Match "This [verb]s" at sentence boundaries
+  const thisVerbPattern = /(?<=[.!?]\s+|^)(This (?:demonstrates|highlights|underscores|illustrates|showcases|emphasizes|reveals|suggests|indicates|reflects|represents|signifies|shows|proves|confirms|ensures|creates|provides|enables|allows|offers|establishes)\b)/gi;
+
+  result = result.replace(thisVerbPattern, (match) => {
+    count++;
+    if (count % 2 === 0) return match;
+
+    const alternatives = [
+      match.replace(/^This /i, 'That '),
+      match.replace(/^This /i, 'It '),
+      match.replace(/^This (\w+s)\b/i, (_, verb) => {
+        const swaps: Record<string, string> = {
+          'demonstrates': 'You can see',
+          'highlights': 'The point is',
+          'underscores': 'What matters is',
+          'illustrates': 'Look at how',
+          'showcases': 'Here we see',
+          'emphasizes': 'The key thing is',
+          'reveals': 'What comes out is',
+          'suggests': 'The idea is',
+          'indicates': 'The sign is',
+          'reflects': 'You see',
+        };
+        return swaps[verb.toLowerCase()] || match;
+      }),
+    ];
+    return alternatives[count % alternatives.length];
+  });
+
+  return result;
+}
+
+// Add human rhythm — merge some short sentences, occasionally start with conjunctions
+function addHumanRhythm(text: string, userSample: string, analysis: DetailedStyleAnalysis): string {
+  let result = text;
+
+  // 1. If user starts sentences with conjunctions, add some to output
+  const userSentences = userSample.split(/[.!?]+/).filter(s => s.trim().length > 5);
+  const conjStarts = userSentences.filter(s => /^\s*(And|But|So|Or|Yet)\b/i.test(s)).length;
+  const conjRate = userSentences.length > 0 ? conjStarts / userSentences.length : 0;
+
+  if (conjRate > 0.05) {
+    const outputSentences = result.split(/(?<=[.!?])\s+/);
+    if (outputSentences.length >= 5) {
+      let added = 0;
+      const targetAdds = Math.max(1, Math.floor(outputSentences.length * conjRate));
+
+      for (let i = 2; i < outputSentences.length - 1; i += 3) {
+        if (added >= targetAdds) break;
+        const s = outputSentences[i].trim();
+        if (!/^(And|But|So|Or|Yet|However|Moreover|Furthermore|Additionally)\b/i.test(s)) {
+          const conj = added % 2 === 0 ? 'And ' : 'But ';
+          outputSentences[i] = conj + s.charAt(0).toLowerCase() + s.slice(1);
+          added++;
+        }
+      }
+      result = outputSentences.join(' ');
+    }
+  }
+
+  // 2. Merge pairs of very short consecutive sentences (< 7 words each)
+  // using a comma or dash — humans naturally do this
+  const sentences2 = result.split(/(?<=[.!?])\s+/);
+  if (sentences2.length >= 4) {
+    const merged: string[] = [];
+    let i = 0;
+    let mergeCount = 0;
+    const maxMerges = Math.floor(sentences2.length / 5); // merge at most ~20%
+    while (i < sentences2.length) {
+      const curr = sentences2[i].trim();
+      const next = i + 1 < sentences2.length ? sentences2[i + 1].trim() : null;
+
+      if (next && mergeCount < maxMerges &&
+          curr.split(/\s+/).length <= 7 && next.split(/\s+/).length <= 7) {
+        const join = mergeCount % 2 === 0 ? ' — ' : ', ';
+        const first = curr.replace(/[.!?]$/, '');
+        const nextStripped = next.replace(/[.!?]$/, '');
+        const second = nextStripped.charAt(0).toLowerCase() + nextStripped.slice(1);
+        merged.push(first + join + second + '.');
+        mergeCount++;
+        i += 2;
+      } else {
+        merged.push(curr);
+        i++;
+      }
+    }
+    result = merged.join(' ');
+  }
+
+  return result;
+}
+
+// Match vocabulary complexity to user's level
+function matchVocabularyLevel(text: string, analysis: DetailedStyleAnalysis): string {
+  let result = text;
+  
+  if (analysis.vocabularyLevel === 'simple') {
+    // Replace complex words with simpler alternatives
+    const simplifications: Record<string, string> = {
+      'utilize': 'use', 'implement': 'do', 'facilitate': 'help', 'demonstrate': 'show',
+      'subsequently': 'then', 'consequently': 'so', 'furthermore': 'also', 'nevertheless': 'still',
+      'approximately': 'about', 'numerous': 'many', 'sufficient': 'enough', 'commence': 'start',
+      'terminate': 'end', 'endeavor': 'try', 'acquire': 'get', 'comprehend': 'understand',
+      'substantial': 'large', 'diminish': 'reduce', 'indicate': 'show', 'regarding': 'about',
+      'additional': 'more', 'preliminary': 'early', 'subsequent': 'later', 'prior': 'before',
+      'adequate': 'enough', 'fundamental': 'basic', 'significant': 'important',
+    };
+    for (const [complex, simple] of Object.entries(simplifications)) {
+      result = result.replace(new RegExp(`\\b${complex}\\b`, 'gi'), (match) => {
+        return match[0] === match[0].toUpperCase() ? simple.charAt(0).toUpperCase() + simple.slice(1) : simple;
+      });
+    }
+  } else if (analysis.vocabularyLevel === 'advanced') {
+    // Replace overly simple words with more sophisticated alternatives (only some)
+    const sophistications: Record<string, string> = {
+      'help': 'facilitate', 'show': 'demonstrate', 'use': 'utilize', 'get': 'obtain',
+      'start': 'initiate', 'end': 'conclude', 'try': 'endeavor',
+    };
+    // Only apply sparingly - target max 3 replacements to avoid over-correcting
+    let replacements = 0;
+    for (const [simple, advanced] of Object.entries(sophistications)) {
+      if (replacements >= 3) break;
+      const regex = new RegExp(`\\b${simple}\\b`, 'gi');
+      const match = result.match(regex);
+      if (match && match.length > 0) {
+        // Only replace the first occurrence
+        result = result.replace(regex, (m) => {
+          if (replacements >= 3) return m;
+          replacements++;
+          return m[0] === m[0].toUpperCase() ? advanced.charAt(0).toUpperCase() + advanced.slice(1) : advanced;
+        });
+      }
+    }
+  }
+  
+  return result;
+}
+
+// Match transition word style to user's patterns
+function matchTransitionStyle(text: string, analysis: DetailedStyleAnalysis): string {
+  if (analysis.transitions.length === 0) return text;
+  
+  let result = text;
+  
+  // Replace generic transitions with user's preferred ones
+  const genericTransitions = ['However', 'Moreover', 'Additionally', 'Furthermore', 'Meanwhile', 'Instead', 'Thus', 'Therefore', 'Also', 'Besides', 'In fact', 'Actually', 'Basically', 'Honestly', 'Consequently', 'Nevertheless', 'Hence'];
+  
+  const userTransitions = analysis.transitions;
+  if (userTransitions.length === 0) return result;
+  
+  // Find transitions in the output that the user doesn't use
+  for (const generic of genericTransitions) {
+    if (userTransitions.some(t => t.toLowerCase() === generic.toLowerCase())) continue;
+    
+    // Replace with a random user-preferred transition
+    const replacement = userTransitions[Math.floor(Math.random() * userTransitions.length)];
+    const regex = new RegExp(`\\b${generic}\\b`, 'gi');
+    result = result.replace(regex, (match) => {
+      return match[0] === match[0].toUpperCase() 
+        ? replacement.charAt(0).toUpperCase() + replacement.slice(1)
+        : replacement.toLowerCase();
+    });
+  }
+  
+  return result;
+}
+
 // Break up sentences that are too long compared to user's style
 function adjustSentenceLength(text: string, targetAvg: number): string {
-  const maxWords = Math.round(targetAvg + 8); // Allow some flexibility
+  // Much more conservative: only split sentences that are VERY long (35+ words)
+  // This prevents choppy, incomplete-feeling output
+  const maxWords = Math.max(35, Math.round(targetAvg + 20));
   const lines = text.split('\n');
   
   return lines.map(line => {
     if (!line.trim()) return line;
     
-    // Split into sentences
     const sentences = line.split(/(?<=[.!?])\s+/);
     const adjustedSentences: string[] = [];
     
@@ -1131,7 +1945,6 @@ function adjustSentenceLength(text: string, targetAvg: number): string {
       const words = sentence.trim().split(/\s+/);
       
       if (words.length > maxWords) {
-        // Try to split the sentence at natural break points
         const split = splitLongSentence(sentence, maxWords);
         adjustedSentences.push(...split);
       } else {
@@ -1143,17 +1956,17 @@ function adjustSentenceLength(text: string, targetAvg: number): string {
   }).join('\n');
 }
 
-// Split a long sentence at natural break points
+// Split a long sentence at natural break points — ONLY at comma+conjunction or semicolons
+// Never split at which/who/that (creates incomplete relative clauses)
 function splitLongSentence(sentence: string, maxWords: number): string[] {
   const words = sentence.trim().split(/\s+/);
   if (words.length <= maxWords) return [sentence];
   
-  // Look for natural split points: conjunctions, commas + conjunctions
+  // Only split at safe points: comma+conjunction or semicolons
+  // Do NOT split at which/who/that — those create fragments
   const splitPatterns = [
-    /,\s*(and|but|so|yet|or|however|therefore|moreover|furthermore|additionally|meanwhile|consequently)\s/i,
+    /,\s*(and|but|so|yet|or|however|therefore)\s/i,
     /;\s/,
-    /,\s*(which|who|that)\s/i,
-    /\s(and|but|so|yet)\s/i,
   ];
   
   // Try each pattern
@@ -1168,18 +1981,17 @@ function splitLongSentence(sentence: string, maxWords: number): string[] {
       const firstWords = firstPart.split(/\s+/).length;
       const secondWords = secondPart.split(/\s+/).length;
       
-      if (firstWords >= 5 && secondWords >= 5) {
+      // Both halves must be substantial (8+ words) to avoid incomplete fragments
+      if (firstWords >= 8 && secondWords >= 8) {
         // Clean up the first part - add period if it doesn't have one
         let first = firstPart;
         if (!first.match(/[.!?]$/)) {
           first = first.replace(/[,;]$/, '') + '.';
         }
         
-        // Capitalize the second part
+        // Capitalize the second part — keep the conjunction so it reads naturally
         let second = secondPart.replace(/^[,;]\s*/, '');
         if (second.length > 0) {
-          // Remove leading conjunction if present at start (it's now a new sentence)
-          second = second.replace(/^(and|but|so|yet|or)\s+/i, '');
           second = second.charAt(0).toUpperCase() + second.slice(1);
           // Add period if needed
           if (!second.match(/[.!?]$/)) {
@@ -1231,20 +2043,25 @@ function splitLongSentence(sentence: string, maxWords: number): string[] {
     let first = sentence.substring(0, bestComma).trim();
     let second = sentence.substring(bestComma).trim();
     
-    if (!first.match(/[.!?]$/)) {
-      first = first.replace(/,$/, '') + '.';
-    }
-    if (second.length > 0) {
-      second = second.charAt(0).toUpperCase() + second.slice(1);
-      if (!second.match(/[.!?]$/)) {
-        second = second + '.';
+    // Only split if both halves are substantial (8+ words)
+    const firstLen = first.split(/\s+/).length;
+    const secondLen = second.split(/\s+/).length;
+    if (firstLen >= 8 && secondLen >= 8) {
+      if (!first.match(/[.!?]$/)) {
+        first = first.replace(/,$/, '') + '.';
       }
+      if (second.length > 0) {
+        second = second.charAt(0).toUpperCase() + second.slice(1);
+        if (!second.match(/[.!?]$/)) {
+          second = second + '.';
+        }
+      }
+      
+      return [first, second].filter(s => s.trim());
     }
-    
-    return [first, second].filter(s => s.trim());
   }
   
-  // Last resort: return as-is
+  // Last resort: return as-is rather than creating fragments
   return [sentence];
 }
 
@@ -1408,6 +2225,59 @@ function calculateStyleMatch(output: string, profile: any): { overallMatch: numb
 }
 
 // =============================================================================
+// QUALITY GATE — Repair fragment sentences created by post-processing
+// =============================================================================
+
+function repairFragments(text: string): string {
+  const lines = text.split('\n');
+  const result: string[] = [];
+
+  for (const line of lines) {
+    if (!line.trim()) { result.push(line); continue; }
+
+    const sentences = line.split(/(?<=[.!?])\s+/);
+    if (sentences.length < 2) { result.push(line); continue; }
+
+    const repaired: string[] = [];
+    for (let i = 0; i < sentences.length; i++) {
+      const s = sentences[i].trim();
+      if (!s) continue;
+
+      const wordCount = s.split(/\s+/).length;
+
+      // A sentence with fewer than 4 words is likely a fragment from over-splitting
+      // Exception: it's fine if it's a question, exclamation, or starts with a conjunction
+      const isIntentionallyShort = /^(And|But|So|Or|Yet|No|Yes|Sure|Right|Well|Okay|Oh|True)\b/i.test(s)
+        || /[?!]$/.test(s)
+        || /^\d/.test(s); // numbered items
+
+      if (wordCount < 4 && !isIntentionallyShort && repaired.length > 0) {
+        // Merge this fragment back into the previous sentence
+        const prev = repaired[repaired.length - 1];
+        const prevWithoutPeriod = prev.replace(/[.!?]$/, '');
+        const fragContent = s.replace(/[.!?]$/, '');
+        const fragLower = fragContent.charAt(0).toLowerCase() + fragContent.slice(1);
+        repaired[repaired.length - 1] = prevWithoutPeriod + ', ' + fragLower + '.';
+      } else if (wordCount < 4 && !isIntentionallyShort && repaired.length === 0 && i + 1 < sentences.length) {
+        // First sentence is a fragment — merge it forward
+        const next = sentences[i + 1].trim();
+        const fragContent = s.replace(/[.!?]$/, '');
+        const nextLower = next.charAt(0).toLowerCase() + next.slice(1);
+        sentences[i + 1] = fragContent + ', ' + nextLower;
+        // Skip this fragment, it's been merged into the next
+        continue;
+      } else {
+        repaired.push(s);
+      }
+    }
+
+    result.push(repaired.join(' '));
+  }
+
+  return result.join('\n');
+}
+
+// =============================================================================
 // TEXT CLEANING
 // =============================================================================
 
@@ -1423,32 +2293,53 @@ function cleanText(text: string): string {
   // Remove trailing explanations
   result = result.replace(/\n\n(?:Note:|I (?:have |)(?:maintained|kept|preserved)[^\n]*)/gi, '');
   
+  // Fix broken numbered list formatting: "1, the Baby Stage." → "1. Baby Stage"
+  result = result.replace(/(\d+)\s*,\s*(?:the\s+)?(.)/g, (_, num, firstChar) => `${num}. ${firstChar.toUpperCase()}`);
+  
   // Process line by line to preserve layout structure
   const lines = result.split('\n');
   const cleanedLines = lines.map(line => {
     let cleaned = line;
+    if (!cleaned.trim()) return cleaned;
+
     // Fix punctuation within each line
     cleaned = cleaned.replace(/\s+([.!?,;:])/g, '$1');
     cleaned = cleaned.replace(/,\s*\./g, '.');
     cleaned = cleaned.replace(/\.\s*,/g, '.');
     cleaned = cleaned.replace(/,,+/g, ',');
-    cleaned = cleaned.replace(/\.\.+/g, '.');
+    cleaned = cleaned.replace(/\.{2,}/g, '.');
     cleaned = cleaned.replace(/([.!?])([A-Za-z])/g, '$1 $2');
-    // Collapse multiple spaces within line (but not newlines)
+    // Remove orphan periods at start of line
+    cleaned = cleaned.replace(/^\.\s*/g, '');
+    // Remove space before period/comma at end
+    cleaned = cleaned.replace(/\s+\.$/g, '.');
+    // Collapse multiple spaces within line
     cleaned = cleaned.replace(/  +/g, ' ');
+
+    // --- CAPITALIZATION ---
+    // Capitalize the very first letter of the line
+    cleaned = cleaned.replace(/^([a-z])/, (_, c) => c.toUpperCase());
+    // Capitalize letter after sentence-ending punctuation + space
+    cleaned = cleaned.replace(/([.!?])\s+([a-z])/g, (_, p, c) => `${p} ${c.toUpperCase()}`);
+    // Fix "I" always capitalized when standalone word
+    cleaned = cleaned.replace(/\bi\b(?=[^.''\u2019])/g, 'I');
+
     return cleaned.trim();
   });
   
   // Rejoin with preserved line breaks
   // Normalize multiple blank lines to max 2 (one empty line between paragraphs)
   result = cleanedLines.join('\n').replace(/\n{3,}/g, '\n\n');
-  
-  // Only add period if the last non-empty line doesn't end with punctuation
-  const lastLine = cleanedLines.filter(l => l.trim()).pop() || '';
-  if (lastLine && !/[.!?]$/.test(lastLine.trim())) {
-    // Find and fix the last line
-    result = result.replace(/(\S)(\s*)$/, '$1.$2');
-  }
+
+  // Ensure every non-empty line that looks like a paragraph ends with punctuation
+  result = result.replace(/^(.+[a-zA-Z,;])$/gm, (line) => {
+    const trimmed = line.trim();
+    // Skip bullet/list items and very short lines (headings etc.)
+    if (/^[-•*]/.test(trimmed) || /^\d+[.)]:?/.test(trimmed)) return line;
+    if (trimmed.split(/\s+/).length < 3) return line;
+    if (!/[.!?]$/.test(trimmed)) return line + '.';
+    return line;
+  });
   
   return result.trim();
 }

@@ -33,7 +33,13 @@ function ensureProfileHasAnalysis(profile: StyleProfile): StyleProfile {
   const combinedSample = combineProfileSamples(profile);
   if (!combinedSample) return profile;
   const needsSampleSync = profile.sampleExcerpt !== combinedSample;
-  const needsAnalysis = !profile.styleAnalysis || needsSampleSync;
+  // Re-analyze if missing, out of sync, or incomplete (missing new computed fields)
+  const isIncomplete = profile.styleAnalysis && (
+    profile.styleAnalysis.avgWordLength === undefined ||
+    profile.styleAnalysis.vocabularyComplexity === undefined ||
+    profile.styleAnalysis.topAdverbs === undefined
+  );
+  const needsAnalysis = !profile.styleAnalysis || needsSampleSync || isIncomplete;
   if (!needsSampleSync && !needsAnalysis) return profile;
   const styleAnalysis = analyzeSampleStyle(combinedSample);
   return {
