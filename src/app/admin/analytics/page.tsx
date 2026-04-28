@@ -20,7 +20,8 @@ interface AnalyticsEntry {
   input_length: number;
   output_length: number;
   consent_given: boolean;
-  satisfaction?: 'like' | 'dislike' | null;
+  rating?: number | null; // Changed from satisfaction
+  satisfaction?: number | null; // Legacy fallback for older schemas
   created_at: string;
 }
 
@@ -33,9 +34,8 @@ interface AggregatedStats {
   averageDescriptiveness: number;
   averageDirectness: number;
   consentRate: number;
-  satisfactionRate: number;
-  likeCount: number;
-  dislikeCount: number;
+  averageRating: number; // Changed from satisfactionRate
+  ratingCount: number; // Changed from likeCount, dislikeCount
 }
 
 export default function AnalyticsPage() {
@@ -170,11 +170,14 @@ export default function AnalyticsPage() {
     const averageDirectness = data.reduce((sum, item) => sum + item.directness, 0) / totalSubmissions;
     const consentRate = (data.filter(item => item.consent_given).length / totalSubmissions) * 100;
     
-    // Calculate satisfaction metrics
-    const likeCount = data.filter(item => item.satisfaction === 'like').length;
-    const dislikeCount = data.filter(item => item.satisfaction === 'dislike').length;
-    const withFeedback = likeCount + dislikeCount;
-    const satisfactionRate = withFeedback > 0 ? (likeCount / withFeedback) * 100 : 0;
+    const ratings = data
+      .map(item => Number(item.rating ?? item.satisfaction))
+      .filter((value): value is number => Number.isFinite(value));
+
+    const ratingCount = ratings.length;
+    const averageRating = ratingCount > 0
+      ? ratings.reduce((sum, value) => sum + value, 0) / ratingCount
+      : 0;
 
     setStats({
       totalSubmissions,
@@ -185,9 +188,8 @@ export default function AnalyticsPage() {
       averageDescriptiveness: Math.round(averageDescriptiveness * 100) / 100,
       averageDirectness: Math.round(averageDirectness * 100) / 100,
       consentRate: Math.round(consentRate * 10) / 10,
-      satisfactionRate: Math.round(satisfactionRate * 10) / 10,
-      likeCount,
-      dislikeCount
+      averageRating: Math.round(averageRating * 10) / 10,
+      ratingCount
     });
   }
 
@@ -314,9 +316,9 @@ export default function AnalyticsPage() {
             <div className="text-3xl font-bold text-emerald-400">{stats.averageScore}%</div>
           </div>
           <div className="glass-panel p-6">
-            <div className="text-sm text-slate-400 mb-1">Satisfaction</div>
-            <div className="text-3xl font-bold text-blue-400">{stats.satisfactionRate}%</div>
-            <div className="text-xs text-slate-500">👍 {stats.likeCount} 👎 {stats.dislikeCount}</div>
+            <div className="text-sm text-slate-400 mb-1">Average Rating</div>
+            <div className="text-3xl font-bold text-blue-400">{stats.averageRating}/5</div>
+            <div className="text-xs text-slate-500">{stats.ratingCount} ratings</div>
           </div>
           <div className="glass-panel p-6">
             <div className="text-sm text-slate-400 mb-1">Consent Rate</div>
@@ -485,13 +487,9 @@ export default function AnalyticsPage() {
                           ✓ Consent
                         </div>
                       )}
-                      {entry.satisfaction && (
-                        <div className={`px-2 py-0.5 rounded text-xs font-medium border ${
-                          entry.satisfaction === 'like'
-                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                            : 'bg-red-500/20 text-red-400 border-red-500/30'
-                        }`}>
-                          {entry.satisfaction === 'like' ? '👍 Helpful' : '👎 Not helpful'}
+                      {Number.isFinite(Number(entry.rating ?? entry.satisfaction)) && (
+                        <div className="px-2 py-0.5 rounded text-xs font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          ⭐ {Number(entry.rating ?? entry.satisfaction)}/5
                         </div>
                       )}
                     </div>
