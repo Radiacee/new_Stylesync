@@ -20,6 +20,9 @@ export default function StyleOnboardingPage() {
 function OnboardingInner() {
   const router = useRouter();
   
+  // Mode toggle: 'essays' or 'questions'
+  const [mode, setMode] = useState<'essays' | 'questions'>('questions');
+  
   // Multi-essay state
   const [profileName, setProfileName] = useState('');
   const [essays, setEssays] = useState<string[]>(['']); // Start with one empty essay
@@ -28,22 +31,52 @@ function OnboardingInner() {
   const [authChecked, setAuthChecked] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
 
+  // Questionnaire state
+  const [questionnaireAnswers, setQuestionnaireAnswers] = useState({
+    formality: 5, // 1-10 scale
+    sentenceLength: 5, // 1-10 scale (short to long)
+    vocabulary: 5, // 1-10 scale (simple to complex)
+    tone: 'balanced' as 'formal' | 'casual' | 'balanced'
+  });
+  const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
+
   // Check auth on mount
   useEffect(() => {
     (async () => {
-      if (supabase) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+      try {
+        if (supabase) {
+          const { data: { user }, error } = await supabase.auth.getUser();
+          if (error) {
+            console.error('Auth error:', error);
+            router.push('/auth/sign-in');
+            return;
+          }
+          if (!user) {
+            router.push('/auth/sign-in');
+            return;
+          }
+        } else {
           router.push('/auth/sign-in');
           return;
         }
-      } else {
+        setAuthChecked(true);
+      } catch (error) {
+        console.error('Auth check failed:', error);
         router.push('/auth/sign-in');
-        return;
       }
-      setAuthChecked(true);
     })();
   }, [router]);
+
+  // Reset states when mode changes
+  useEffect(() => {
+    if (mode === 'essays') {
+      setQuestionnaireCompleted(false);
+    } else {
+      setAnalysis(null);
+    }
+  }, [mode]);
+
+  const validEssays = getValidEssays();
 
   // Add a new essay slot
   function addEssay() {
@@ -83,6 +116,111 @@ function OnboardingInner() {
     setAnalysis(result);
   }
 
+  // Generate profile from questionnaire
+  function generateProfileFromQuestionnaire(): StyleProfile {
+    const answers = questionnaireAnswers;
+    
+    // Map formality (1-10) to 0-1 scale
+    const formality = Math.round((answers.formality / 10) * 100) / 100;
+    
+    // Map sentence length (1-10) to pacing (inverse: short = fast/high pacing)
+    const pacing = Math.round(((11 - answers.sentenceLength) / 10) * 100) / 100;
+    
+    // Map vocabulary (1-10) to descriptiveness (higher vocab = more descriptive)
+    const descriptiveness = Math.round((answers.vocabulary / 10) * 100) / 100;
+    
+    // Directness based on tone (simplified without voice)
+    let directness = 0.5;
+    if (answers.tone === 'casual') directness = Math.min(1, directness + 0.1);
+    
+    // Tone mapping
+    const tone = answers.tone;
+    
+    // Generate sample excerpt based on answers
+    const sampleExcerpt = generateSampleTextFromAnswers(answers);
+    
+    // Custom lexicon based on answers
+    const customLexicon = generateLexiconFromAnswers(answers);
+    
+    // Calculate deep metrics from generated text
+    const lexicalDensity = calculateLexicalDensity(sampleExcerpt);
+    const sentenceLengthVariety = calculateSentenceLengthVariety(sampleExcerpt);
+    const paragraphLengthVariety = calculateParagraphLengthVariety(sampleExcerpt);
+    
+    const now = Date.now();
+    return {
+      id: crypto.randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+      name: profileName.trim(),
+      tone,
+      formality,
+      pacing,
+      descriptiveness,
+      directness,
+      sampleExcerpt,
+      sampleExcerpts: [sampleExcerpt],
+      customLexicon,
+      notes: 'Generated from questionnaire answers',
+      styleAnalysis: undefined, // No full analysis for questionnaire
+      lexicalDensity,
+      sentenceLengthVariety,
+      paragraphLengthVariety,
+    };
+  }
+
+  // Helper: Generate sample text based on questionnaire answers
+  function generateSampleTextFromAnswers(answers: typeof questionnaireAnswers): string {
+    const { formality, sentenceLength, vocabulary, tone } = answers;
+    
+    const isFormal = formality > 6;
+    const isLongSentences = sentenceLength > 6;
+    const isComplexVocab = vocabulary > 6;
+    const isCasual = tone === 'casual';
+    
+    let text = '';
+    
+    // Use third-person as default (most common for general writing)
+    text = isFormal 
+      ? "Technological advancements have significantly impacted various fields of study. It is necessary for professionals to remain current with emerging trends and innovations."
+      : "Technology has changed a lot of different areas. People need to keep up with new trends and ideas.";
+    
+    // Adjust for sentence length
+    if (isLongSentences) {
+      text += " This phenomenon extends beyond mere convenience, encompassing broader implications for efficiency, productivity, and long-term strategic planning within organizations.";
+    } else {
+      text += " This affects more than just convenience.";
+    }
+    
+    // Adjust for vocabulary complexity
+    if (isComplexVocab) {
+      text += " Furthermore, the paradigm shift necessitates a comprehensive reevaluation of established methodologies and theoretical frameworks.";
+    } else {
+      text += " So, we need to rethink how we do things.";
+    }
+    
+    return text;
+  }
+
+  // Helper: Generate lexicon based on answers
+  function generateLexiconFromAnswers(answers: typeof questionnaireAnswers): string[] {
+    const lexicon: string[] = [];
+    
+    if (answers.tone === 'formal') {
+      lexicon.push('therefore', 'consequently', 'furthermore', 'regarding');
+    } else if (answers.tone === 'casual') {
+      lexicon.push('gonna', 'wanna', 'kinda', 'stuff');
+    }
+    
+    if (answers.vocabulary > 6) {
+      lexicon.push('significant', 'comprehensive', 'essential', 'innovative');
+    } else {
+      lexicon.push('important', 'big', 'key', 'main');
+    }
+    
+    return lexicon.slice(0, 10);
+  }
+
   // Save the profile
   async function handleSave() {
     if (!profileName.trim()) {
@@ -90,22 +228,22 @@ function OnboardingInner() {
       return;
     }
     
-    const validEssays = getValidEssays();
-    if (validEssays.length === 0) {
-      alert('Please paste at least one writing sample before saving.');
-      return;
-    }
-
-    // Ensure we have analysis (analyze automatically if missing)
-    let finalAnalysis = analysis;
-    if (!finalAnalysis) {
-      finalAnalysis = analyzeSampleStyle(validEssays.join('\n\n'));
-      setAnalysis(finalAnalysis);
-    }
-
-    setBusy(true);
+    let finalProfile: StyleProfile;
     
-    try {
+    if (mode === 'essays') {
+      const validEssays = getValidEssays();
+      if (validEssays.length === 0) {
+        alert('Please paste at least one writing sample before saving.');
+        return;
+      }
+
+      // Ensure we have analysis (analyze automatically if missing)
+      let finalAnalysis = analysis;
+      if (!finalAnalysis) {
+        finalAnalysis = analyzeSampleStyle(validEssays.join('\n\n'));
+        setAnalysis(finalAnalysis);
+      }
+
       // Create profile from COMPLETE analysis
       const now = Date.now();
       const combinedText = validEssays.join('\n\n');
@@ -162,7 +300,7 @@ function OnboardingInner() {
       const sentenceLengthVariety = calculateSentenceLengthVariety(combinedText);
       const paragraphLengthVariety = calculateParagraphLengthVariety(combinedText);
 
-      const newProfile: StyleProfile = {
+      finalProfile = {
         id: crypto.randomUUID(),
         createdAt: now,
         updatedAt: now,
@@ -181,26 +319,37 @@ function OnboardingInner() {
         sentenceLengthVariety,
         paragraphLengthVariety,
       };
+    } else {
+      // Questionnaire mode
+      if (!questionnaireCompleted) {
+        alert('Please complete the questionnaire first.');
+        return;
+      }
+      finalProfile = generateProfileFromQuestionnaire();
+    }
 
+    setBusy(true);
+    
+    try {
       // Ensure unique ID
       const existingProfiles = listProfiles();
-      let finalId = newProfile.id;
+      let finalId = finalProfile.id;
       while (existingProfiles.some(p => p.id === finalId)) {
         finalId = crypto.randomUUID();
       }
-      const finalProfile = { ...newProfile, id: finalId };
+      const finalProfileWithId = { ...finalProfile, id: finalId };
 
       // Save locally
-      saveProfile(finalProfile);
-      upsertProfileLocal(finalProfile);
-      setActiveProfileId(finalProfile.id);
+      saveProfile(finalProfileWithId);
+      upsertProfileLocal(finalProfileWithId);
+      setActiveProfileId(finalProfileWithId.id);
 
       // Save remotely if authenticated
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           try {
-            await saveProfileRemote({ ...finalProfile, userId: user.id });
+            await saveProfileRemote({ ...finalProfileWithId, userId: user.id });
           } catch (e) {
             console.error('Remote save failed:', e);
             // Continue anyway - local save succeeded
@@ -219,10 +368,9 @@ function OnboardingInner() {
     }
   }
 
-  const validEssays = getValidEssays();
   const totalWords = validEssays.reduce((sum, e) => sum + e.trim().split(/\s+/).filter(Boolean).length, 0);
   const canAnalyze = validEssays.length > 0;
-  const canSave = profileName.trim() && analysis;
+  const canSave = profileName.trim() && ((mode === 'essays' && analysis) || (mode === 'questions' && questionnaireCompleted));
 
   // Show loading spinner until auth is checked
   if (!authChecked) {
@@ -255,6 +403,47 @@ function OnboardingInner() {
           </div>
         </div>
 
+        {/* Mode Toggle */}
+        <div className="glass-panel p-6 mb-6">
+          <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={() => setMode('essays')}
+                className={`px-6 py-3 rounded-lg font-medium transition ${
+                  mode === 'essays'
+                    ? 'bg-brand-500 text-slate-900'
+                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`}
+              >
+                📝 Upload Essays
+              </button>
+            <button
+              onClick={() => setMode('questions')}
+              className={`px-6 py-3 rounded-lg font-medium transition ${
+                mode === 'questions'
+                  ? 'bg-brand-500 text-slate-900'
+                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              }`}
+            >
+              ❓ Answer Questions
+            </button>
+          </div>
+          {validEssays.length === 0 && mode === 'questions' && (
+            <div className="mt-3 text-center text-xs text-slate-400">
+              No essay sample added yet. <button
+                type="button"
+                onClick={() => setMode('essays')}
+                className="underline text-brand-300 hover:text-brand-200"
+              >Open essay mode</button> to paste a writing sample anytime.
+            </div>
+          )}
+          <p className="text-center text-sm text-slate-400 mt-3">
+            {mode === 'essays' 
+              ? 'Paste your writing samples for precise style analysis'
+              : 'Answer 4 quick questions to generate your style profile'
+            }
+          </p>
+        </div>
+
         {/* Main Form */}
         <div className="glass-panel p-6 space-y-6">
           {/* Profile Name */}
@@ -269,86 +458,209 @@ function OnboardingInner() {
             />
           </div>
 
-          {/* Multi-Essay Interface */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-white">Your Writing Samples</label>
-              <span className={`text-xs ${totalWords < 50 ? 'text-amber-400' : 'text-emerald-400'}`}>
-                {validEssays.length} essay{validEssays.length !== 1 ? 's' : ''} · {totalWords} words total
-              </span>
-            </div>
+          {mode === 'essays' ? (
+            <>
+              {/* Multi-Essay Interface */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-white">Your Writing Samples</label>
+                  <span className={`text-xs ${totalWords < 50 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                    {validEssays.length} essay{validEssays.length !== 1 ? 's' : ''} · {totalWords} words total
+                  </span>
+                </div>
 
-            {/* Essay Cards */}
-            <div className="space-y-3">
-              {essays.map((essay, index) => {
-                const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
-                return (
-                  <div key={index} className="bg-slate-800/40 rounded-xl border border-white/10 overflow-hidden">
-                    {/* Essay Header */}
-                    <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800/60 border-b border-white/10">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-xs font-bold text-brand-300">
-                          {index + 1}
+                {/* Essay Cards */}
+                <div className="space-y-3">
+                  {essays.map((essay, index) => {
+                    const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
+                    return (
+                      <div key={index} className="bg-slate-800/40 rounded-xl border border-white/10 overflow-hidden">
+                        {/* Essay Header */}
+                        <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800/60 border-b border-white/10">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-xs font-bold text-brand-300">
+                              {index + 1}
+                            </div>
+                            <span className="text-sm font-medium text-white">Essay {index + 1}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-xs ${wordCount > 0 ? 'text-slate-400' : 'text-slate-500'}`}>
+                              {wordCount} words
+                            </span>
+                            {essays.length > 1 && (
+                              <button
+                                onClick={() => removeEssay(index)}
+                                className="p-1 rounded hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition"
+                                title="Remove this essay"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-sm font-medium text-white">Essay {index + 1}</span>
+                        
+                        {/* Essay Textarea */}
+                        <textarea
+                          value={essay}
+                          onChange={e => updateEssay(index, e.target.value)}
+                          rows={6}
+                          className="w-full bg-transparent px-4 py-3 text-sm leading-relaxed focus:outline-none resize-none text-slate-200 placeholder-slate-500"
+                          placeholder="Paste your essay or writing sample here..."
+                        />
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`text-xs ${wordCount > 0 ? 'text-slate-400' : 'text-slate-500'}`}>
-                          {wordCount} words
-                        </span>
-                        {essays.length > 1 && (
-                          <button
-                            onClick={() => removeEssay(index)}
-                            className="p-1 rounded hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition"
-                            title="Remove this essay"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Essay Textarea */}
-                    <textarea
-                      value={essay}
-                      onChange={e => updateEssay(index, e.target.value)}
-                      rows={6}
-                      className="w-full bg-transparent px-4 py-3 text-sm leading-relaxed focus:outline-none resize-none text-slate-200 placeholder-slate-500"
-                      placeholder="Paste your essay or writing sample here..."
+                    );
+                  })}
+                </div>
+
+                {/* Add New Essay Button */}
+                <button
+                  onClick={addEssay}
+                  className="w-full py-3 rounded-xl border-2 border-dashed border-slate-700 hover:border-brand-500/50 hover:bg-brand-500/5 text-slate-400 hover:text-brand-300 transition flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Another Essay
+                </button>
+
+                {/* Tips and Analyze Button */}
+                <div className="flex items-center justify-between pt-2">
+                  <p className="text-xs text-slate-400">💡 Tip: Add 2-3 essays for the best style matching</p>
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={!canAnalyze}
+                    className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Analyze Style
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Questionnaire Interface */}
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-white mb-2">Quick Style Questionnaire</h3>
+                  <p className="text-sm text-slate-400">Answer these 4 questions to generate your writing style profile</p>
+                </div>
+
+                {/* Question 1: Formality */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-white">
+                    1. How formal is your writing style?
+                  </label>
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={questionnaireAnswers.formality}
+                      onChange={e => setQuestionnaireAnswers(prev => ({ ...prev, formality: parseInt(e.target.value) }))}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
                     />
+                    <div className="flex justify-between text-xs text-slate-400">
+                      <span>Very Casual (1)</span>
+                      <span className="font-medium text-white">Level {questionnaireAnswers.formality}</span>
+                      <span>Very Formal (10)</span>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
 
-            {/* Add New Essay Button */}
-            <button
-              onClick={addEssay}
-              className="w-full py-3 rounded-xl border-2 border-dashed border-slate-700 hover:border-brand-500/50 hover:bg-brand-500/5 text-slate-400 hover:text-brand-300 transition flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add Another Essay
-            </button>
+                {/* Question 2: Sentence Length */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-white">
+                    2. How long are your typical sentences?
+                  </label>
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={questionnaireAnswers.sentenceLength}
+                      onChange={e => setQuestionnaireAnswers(prev => ({ ...prev, sentenceLength: parseInt(e.target.value) }))}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <div className="flex justify-between text-xs text-slate-400">
+                      <span>Very Short (1)</span>
+                      <span className="font-medium text-white">Level {questionnaireAnswers.sentenceLength}</span>
+                      <span>Very Long (10)</span>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Tips and Analyze Button */}
-            <div className="flex items-center justify-between pt-2">
-              <p className="text-xs text-slate-400">💡 Tip: Add 2-3 essays for the best style matching</p>
-              <button
-                onClick={handleAnalyze}
-                disabled={!canAnalyze}
-                className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Analyze Style
-              </button>
-            </div>
-          </div>
+                {/* Question 3: Vocabulary */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-white">
+                    3. How complex is your vocabulary?
+                  </label>
+                  <div className="space-y-2">
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={questionnaireAnswers.vocabulary}
+                      onChange={e => setQuestionnaireAnswers(prev => ({ ...prev, vocabulary: parseInt(e.target.value) }))}
+                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <div className="flex justify-between text-xs text-slate-400">
+                      <span>Simple Words (1)</span>
+                      <span className="font-medium text-white">Level {questionnaireAnswers.vocabulary}</span>
+                      <span>Advanced Words (10)</span>
+                    </div>
+                  </div>
+                </div>
 
-          {/* Analysis Results */}
-          {analysis && (
+                {/* Question 4: Tone */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-white">
+                    4. What's your overall writing tone?
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { value: 'formal', label: 'Formal', desc: 'Professional, academic' },
+                      { value: 'balanced', label: 'Balanced', desc: 'Mix of formal and casual' },
+                      { value: 'casual', label: 'Casual', desc: 'Conversational, relaxed' }
+                    ].map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => setQuestionnaireAnswers(prev => ({ ...prev, tone: option.value as any }))}
+                        className={`p-3 rounded-lg border transition ${
+                          questionnaireAnswers.tone === option.value
+                            ? 'border-brand-500 bg-brand-500/10 text-brand-300'
+                            : 'border-slate-600 bg-slate-800/40 text-slate-300 hover:border-slate-500'
+                        }`}
+                      >
+                        <div className="font-medium text-sm">{option.label}</div>
+                        <div className="text-xs text-slate-400 mt-1">{option.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Complete Questionnaire Button */}
+                <div className="pt-4">
+                  <button
+                    onClick={() => setQuestionnaireCompleted(true)}
+                    disabled={questionnaireCompleted}
+                    className="w-full px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {questionnaireCompleted ? '✓ Questionnaire Completed' : 'Complete Questionnaire'}
+                  </button>
+                  {questionnaireCompleted && (
+                    <p className="text-xs text-center text-emerald-400 mt-2">
+                      Your style profile has been generated! You can now save it.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Analysis Results - Only show for essays mode */}
+          {mode === 'essays' && analysis && (
             <div className="space-y-4">
               <div className="bg-slate-800/30 rounded-lg p-6 space-y-4 border border-emerald-500/30">
                 <div className="flex items-center gap-2 mb-3">
@@ -477,8 +789,9 @@ function OnboardingInner() {
           {!canSave && (
             <p className="text-xs text-center text-amber-400">
               {!profileName.trim() ? '↑ Enter a profile name' :
-               validEssays.length === 0 ? '↑ Add at least one writing sample' :
-               !analysis ? '↑ Analyze your samples first' : ''}
+               mode === 'essays' && validEssays.length === 0 ? '↑ Add at least one writing sample' :
+               mode === 'essays' && !analysis ? '↑ Analyze your samples first' :
+               mode === 'questions' && !questionnaireCompleted ? '↑ Complete the questionnaire first' : ''}
             </p>
           )}
         </div>

@@ -671,6 +671,7 @@ export default function WritingGuidePage() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [activeContext, setActiveContext] = useState<string | null>(null);
   const [showMyEssay, setShowMyEssay] = useState(true);
+  const [activeView, setActiveView] = useState<'analysis' | 'lessons'>('analysis');
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
   // Load user and profiles
@@ -728,6 +729,7 @@ export default function WritingGuidePage() {
   const essayIssues = useMemo(() => analyzeEssayForLessons(profileEssay), [profileEssay]);
   const essayMetrics = useMemo(() => calculateEssayMetrics(profileEssay), [profileEssay]);
   const styleSummary = useMemo(() => analyzeWritingStyle(profileEssay), [profileEssay]);
+  const hasRealEssay = Boolean(profile && profileEssay && !profile.notes?.includes('Generated from questionnaire answers'));
 
   // Separate strengths from issues
   const strengths = essayIssues.filter(i => i.type === 'strength');
@@ -795,323 +797,367 @@ export default function WritingGuidePage() {
         </p>
       </div>
 
-      {/* My Essay Analysis Section */}
-      {loading ? (
-        <div className="glass-panel p-6 text-center">
-          <RefreshCw className="w-6 h-6 animate-spin text-brand-400 mx-auto mb-2" />
-          <p className="text-slate-400">Loading your profile...</p>
-        </div>
-      ) : profile && profileEssay ? (
-        <div className="glass-panel p-0 overflow-hidden border-2 border-brand-500/30">
-          {/* Header */}
-          <div className="bg-brand-500/10 p-4 sm:p-5 border-b border-brand-500/20">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-brand-500/20">
-                  <User className="w-5 h-5 text-brand-400" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-white">Your Writing Analysis</h2>
-                  <p className="text-sm text-slate-400">Personalized feedback based on your profile essay</p>
-                </div>
-              </div>
-              
-              {/* Profile Selector */}
-              {profiles.length > 1 && (
-                <div className="relative">
-                  <select
-                    value={selectedProfileId || ''}
-                    onChange={(e) => handleProfileChange(e.target.value)}
-                    className="appearance-none pl-4 pr-10 py-2.5 rounded-xl bg-slate-800/80 border border-white/20 text-sm text-white cursor-pointer hover:border-brand-500/50 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all"
-                  >
-                    {profiles.map(p => (
-                      <option key={p.id} value={p.id} className="bg-slate-800 text-white">
-                        {p.name || `Profile ${p.id.slice(0, 6)}`}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Metrics Bar */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-white/10 bg-slate-900/50">
-            <div className="p-3 text-center">
-              <p className="text-lg font-bold text-white">{essayMetrics.wordCount}</p>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wide">Words</p>
-            </div>
-            <div className="p-3 text-center">
-              <p className="text-lg font-bold text-white">{essayMetrics.sentenceCount}</p>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wide">Sentences</p>
-            </div>
-            <div className="p-3 text-center">
-              <p className="text-lg font-bold text-white">{essayMetrics.avgSentenceLength}</p>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wide">Avg Length</p>
-            </div>
-            <div className="p-3 text-center hidden sm:block">
-              <p className="text-lg font-bold text-white">{essayMetrics.paragraphCount}</p>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wide">Paragraphs</p>
-            </div>
-            <div className="p-3 text-center hidden sm:block">
-              <p className="text-lg font-bold text-white">{essayMetrics.uniqueWords}</p>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wide">Unique</p>
-            </div>
-            <div className="p-3 text-center hidden sm:block">
-              <p className={`text-lg font-bold ${
-                essayMetrics.readability === 'Easy' ? 'text-emerald-400' :
-                essayMetrics.readability === 'Complex' ? 'text-amber-400' : 'text-blue-400'
-              }`}>{essayMetrics.readability}</p>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wide">Readability</p>
-            </div>
-          </div>
-
-          {/* Toggle Essay View */}
+      {/* Analysis / Lessons Tabs */}
+      <div className="glass-panel p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setShowMyEssay(!showMyEssay)}
-            className="w-full flex items-center justify-between p-4 border-b border-white/10 hover:bg-slate-800/50 transition-all group"
+            onClick={() => setActiveView('analysis')}
+            className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
+              activeView === 'analysis'
+                ? 'bg-brand-500 text-slate-900'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
           >
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg transition-colors ${
-                showMyEssay 
-                  ? 'bg-brand-500/20 text-brand-400' 
-                  : 'bg-slate-700/50 text-slate-400 group-hover:bg-slate-700'
-              }`}>
-                <Eye className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <span className="text-sm font-medium text-white block">
-                  {showMyEssay ? 'Hide' : 'Show'} Your Essay
-                </span>
-                <span className="text-xs text-slate-500">
-                  {profile.name || 'Current Profile'}
-                </span>
-              </div>
-            </div>
-            <div className={`p-1.5 rounded-lg transition-all ${
-              showMyEssay 
-                ? 'bg-brand-500/20 rotate-180' 
-                : 'bg-slate-700/50 group-hover:bg-slate-700'
-            }`}>
-              <ChevronDown className={`w-4 h-4 transition-colors ${
-                showMyEssay ? 'text-brand-400' : 'text-slate-400'
-              }`} />
-            </div>
+            📄 Essay Analysis
           </button>
+          <button
+            onClick={() => setActiveView('lessons')}
+            className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
+              activeView === 'lessons'
+                ? 'bg-brand-500 text-slate-900'
+                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            📖 Writing Lessons
+          </button>
+        </div>
+        <p className="text-xs text-slate-400">Switch between your essay feedback and core writing lessons.</p>
+      </div>
 
-          {/* Essay Content */}
-          {showMyEssay && (
-            <div className="p-4 bg-slate-900/30 border-b border-white/10 max-h-60 overflow-y-auto">
-              <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">
-                {profileEssay}
-              </p>
+      {activeView === 'analysis' && (
+        <>
+          {/* Essay Analysis Section */}
+          {loading ? (
+            <div className="glass-panel p-6 text-center">
+              <RefreshCw className="w-6 h-6 animate-spin text-brand-400 mx-auto mb-2" />
+              <p className="text-slate-400">Loading your profile...</p>
             </div>
-          )}
-
-          {/* Your Writing Style Summary */}
-          <div className="p-4 sm:p-5 border-b border-white/10 bg-slate-900/30">
-            <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-              <PenTool className="w-4 h-4 text-brand-400" />
-              Your Writing Style
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <p className={`text-sm font-semibold ${
-                  styleSummary.tone === 'casual' ? 'text-emerald-400' :
-                  styleSummary.tone === 'formal' ? 'text-blue-400' : 'text-slate-300'
-                }`}>
-                  {styleSummary.tone.charAt(0).toUpperCase() + styleSummary.tone.slice(1)}
-                </p>
-                <p className="text-[10px] text-slate-500 uppercase">Tone</p>
-              </div>
-              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <p className={`text-sm font-semibold ${styleSummary.usesContractions ? 'text-emerald-400' : 'text-blue-400'}`}>
-                  {styleSummary.usesContractions ? "Uses" : "Avoids"}
-                </p>
-                <p className="text-[10px] text-slate-500 uppercase">Contractions</p>
-              </div>
-              <div className="bg-slate-800/50 rounded-lg p-3 text-center">
-                <p className={`text-sm font-semibold ${
-                  styleSummary.vocabularyLevel === 'advanced' ? 'text-purple-400' :
-                  styleSummary.vocabularyLevel === 'simple' ? 'text-emerald-400' : 'text-slate-300'
-                }`}>
-                  {styleSummary.vocabularyLevel.charAt(0).toUpperCase() + styleSummary.vocabularyLevel.slice(1)}
-                </p>
-                <p className="text-[10px] text-slate-500 uppercase">Vocabulary</p>
-              </div>
-            </div>
-            
-            {/* Detected Strengths */}
-            {styleSummary.strengths.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {styleSummary.strengths.map((strength, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
-                    <CheckCircle className="w-3 h-3" />
-                    {strength}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Strengths Section */}
-          {strengths.length > 0 && (
-            <div className="p-4 sm:p-5 border-b border-white/10">
-              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
-                What You're Doing Well ({strengths.length})
-              </h3>
-              <div className="space-y-2">
-                {strengths.map(issue => (
-                  <div key={issue.id} className={`rounded-lg border p-3 ${getIssueBg(issue.type)}`}>
-                    <div className="flex items-start gap-3">
-                      {getIssueIcon(issue.type)}
-                      <div className="flex-1">
-                        <h4 className="text-sm font-medium text-white">{issue.title}</h4>
-                        <p className="text-xs text-slate-400 mt-0.5">{issue.description}</p>
-                        {issue.examples && issue.examples.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {issue.examples.map((ex, i) => (
-                              <span key={i} className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                                {ex}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+          ) : profile && profileEssay ? (
+            <div className="glass-panel p-0 overflow-hidden border-2 border-brand-500/30">
+              {/* Header */}
+              <div className="bg-brand-500/10 p-4 sm:p-5 border-b border-brand-500/20">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-brand-500/20">
+                      <User className="w-5 h-5 text-brand-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-white">Your Writing Analysis</h2>
+                      <p className="text-sm text-slate-400">Personalized feedback based on your profile essay</p>
                     </div>
                   </div>
-                ))}
+                  
+                  {/* Profile Selector */}
+                  {profiles.length > 1 && (
+                    <div className="relative">
+                      <select
+                        value={selectedProfileId || ''}
+                        onChange={(e) => handleProfileChange(e.target.value)}
+                        className="appearance-none pl-4 pr-10 py-2.5 rounded-xl bg-slate-800/80 border border-white/20 text-sm text-white cursor-pointer hover:border-brand-500/50 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all"
+                      >
+                        {profiles.map(p => (
+                          <option key={p.id} value={p.id} className="bg-slate-800 text-white">
+                            {p.name || `Profile ${p.id.slice(0, 6)}`}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
 
-          {/* Issues & Suggestions */}
-          <div className="p-4 sm:p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Zap className="w-4 h-4 text-yellow-400" />
-                Areas to Improve ({issuesOnly.length})
-              </h3>
-            </div>
+              {profile && profile.notes?.includes('Generated from questionnaire answers') && (
+                <div className="mx-auto max-w-3xl p-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-100">
+                  <p className="text-sm font-semibold">Tip for better feedback</p>
+                  <p className="text-xs text-amber-200 mt-1">
+                    This profile was generated only from your questionnaire answers. Add a real essay sample in onboarding to see deeper, more accurate guidance.
+                  </p>
+                </div>
+              )}
 
-            {issuesOnly.length === 0 ? (
-              <div className="text-center py-6">
-                <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
-                <p className="text-sm text-slate-300">Excellent! No issues detected in your writing.</p>
-                <p className="text-xs text-slate-500">Your essay follows strong writing practices.</p>
+              {/* Metrics Bar */}
+              <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-white/10 bg-slate-900/50">
+                <div className="p-3 text-center">
+                  <p className="text-lg font-bold text-white">{essayMetrics.wordCount}</p>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Words</p>
+                </div>
+                <div className="p-3 text-center">
+                  <p className="text-lg font-bold text-white">{essayMetrics.sentenceCount}</p>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Sentences</p>
+                </div>
+                <div className="p-3 text-center">
+                  <p className="text-lg font-bold text-white">{essayMetrics.avgSentenceLength}</p>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Avg Length</p>
+                </div>
+                <div className="p-3 text-center hidden sm:block">
+                  <p className="text-lg font-bold text-white">{essayMetrics.paragraphCount}</p>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Paragraphs</p>
+                </div>
+                <div className="p-3 text-center hidden sm:block">
+                  <p className="text-lg font-bold text-white">{essayMetrics.uniqueWords}</p>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Unique</p>
+                </div>
+                <div className="p-3 text-center hidden sm:block">
+                  <p className={`text-lg font-bold ${
+                    essayMetrics.readability === 'Easy' ? 'text-emerald-400' :
+                    essayMetrics.readability === 'Complex' ? 'text-amber-400' : 'text-blue-400'
+                  }`}>{essayMetrics.readability}</p>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Readability</p>
+                </div>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {issuesOnly.map(issue => (
-                  <div key={issue.id} className={`rounded-lg border p-4 ${getIssueBg(issue.type)}`}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        {getIssueIcon(issue.type)}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
+
+              {/* Toggle Essay View */}
+              {hasRealEssay && (
+                <button
+                  onClick={() => setShowMyEssay(!showMyEssay)}
+                  className="w-full flex items-center justify-between p-4 border-b border-white/10 hover:bg-slate-800/50 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg transition-colors ${
+                      showMyEssay 
+                        ? 'bg-brand-500/20 text-brand-400' 
+                        : 'bg-slate-700/50 text-slate-400 group-hover:bg-slate-700'
+                    }`}>
+                      <Eye className="w-4 h-4" />
+                    </div>
+                    <div className="text-left">
+                      <span className="text-sm font-medium text-white block">
+                        {showMyEssay ? 'Hide' : 'Show'} Your Essay
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {profile.name || 'Current Profile'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className={`p-1.5 rounded-lg transition-all ${
+                    showMyEssay 
+                      ? 'bg-brand-500/20 rotate-180' 
+                      : 'bg-slate-700/50 group-hover:bg-slate-700'
+                  }`}>
+                    <ChevronDown className={`w-4 h-4 transition-colors ${
+                      showMyEssay ? 'text-brand-400' : 'text-slate-400'
+                    }`} />
+                  </div>
+                </button>
+              )}
+
+              {/* Essay Content */}
+              {hasRealEssay && showMyEssay && (
+                <div className="p-4 bg-slate-900/30 border-b border-white/10 max-h-60 overflow-y-auto">
+                  <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">
+                    {profileEssay}
+                  </p>
+                </div>
+              )}
+
+              {/* Your Writing Style Summary */}
+              <div className="p-4 sm:p-5 border-b border-white/10 bg-slate-900/30">
+                <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <PenTool className="w-4 h-4 text-brand-400" />
+                  Your Writing Style
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p className={`text-sm font-semibold ${
+                      styleSummary.tone === 'casual' ? 'text-emerald-400' :
+                      styleSummary.tone === 'formal' ? 'text-blue-400' : 'text-slate-300'
+                    }`}>
+                      {styleSummary.tone.charAt(0).toUpperCase() + styleSummary.tone.slice(1)}
+                    </p>
+                    <p className="text-[10px] text-slate-500 uppercase">Tone</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p className={`text-sm font-semibold ${styleSummary.usesContractions ? 'text-emerald-400' : 'text-blue-400'}`}>
+                      {styleSummary.usesContractions ? "Uses" : "Avoids"}
+                    </p>
+                    <p className="text-[10px] text-slate-500 uppercase">Contractions</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p className={`text-sm font-semibold ${
+                      styleSummary.vocabularyLevel === 'advanced' ? 'text-purple-400' :
+                      styleSummary.vocabularyLevel === 'simple' ? 'text-emerald-400' : 'text-slate-300'
+                    }`}>
+                      {styleSummary.vocabularyLevel.charAt(0).toUpperCase() + styleSummary.vocabularyLevel.slice(1)}
+                    </p>
+                    <p className="text-[10px] text-slate-500 uppercase">Vocabulary</p>
+                  </div>
+                </div>
+                
+                {/* Detected Strengths */}
+                {styleSummary.strengths.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {styleSummary.strengths.map((strength, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs">
+                        <CheckCircle className="w-3 h-3" />
+                        {strength}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Strengths Section */}
+              {strengths.length > 0 && (
+                <div className="p-4 sm:p-5 border-b border-white/10">
+                  <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                    What You're Doing Well ({strengths.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {strengths.map(issue => (
+                      <div key={issue.id} className={`rounded-lg border p-3 ${getIssueBg(issue.type)}`}>
+                        <div className="flex items-start gap-3">
+                          {getIssueIcon(issue.type)}
+                          <div className="flex-1">
                             <h4 className="text-sm font-medium text-white">{issue.title}</h4>
-                            <span className="text-[10px] px-2 py-0.5 rounded bg-slate-700 text-slate-300">{issue.category}</span>
+                            <p className="text-xs text-slate-400 mt-0.5">{issue.description}</p>
+                            {issue.examples && issue.examples.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {issue.examples.map((ex, i) => (
+                                  <span key={i} className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                                    {ex}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <p className="text-xs text-slate-400 mt-1">{issue.description}</p>
-                          {issue.examples && issue.examples.length > 0 && (
-                            <ul className="mt-2 space-y-1">
-                              {issue.examples.map((ex, i) => (
-                                <li key={i} className="text-xs text-slate-300 flex items-start gap-2">
-                                  <span className="text-slate-500">•</span>
-                                  <span>{ex}</span>
-                                </li>
-                              ))}
-                            </ul>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Issues & Suggestions */}
+              <div className="p-4 sm:p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-yellow-400" />
+                    Areas to Improve ({issuesOnly.length})
+                  </h3>
+                </div>
+
+                {issuesOnly.length === 0 ? (
+                  <div className="text-center py-6">
+                    <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-300">Excellent! No issues detected in your writing.</p>
+                    <p className="text-xs text-slate-500">Your essay follows strong writing practices.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {issuesOnly.map(issue => (
+                      <div key={issue.id} className={`rounded-lg border p-4 ${getIssueBg(issue.type)}`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            {getIssueIcon(issue.type)}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className="text-sm font-medium text-white">{issue.title}</h4>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-700 text-slate-300">{issue.category}</span>
+                              </div>
+                              <p className="text-xs text-slate-400 mt-1">{issue.description}</p>
+                              {issue.examples && issue.examples.length > 0 && (
+                                <ul className="mt-2 space-y-1">
+                                  {issue.examples.map((ex, i) => (
+                                    <li key={i} className="text-xs text-slate-300 flex items-start gap-2">
+                                      <span className="text-slate-500">•</span>
+                                      <span>{ex}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          </div>
+                          {issue.lessonLink && (
+                            <button
+                              onClick={() => scrollToLesson(issue.lessonLink!)}
+                              className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 text-xs font-medium transition"
+                            >
+                              Learn More
+                            </button>
                           )}
                         </div>
                       </div>
-                      {issue.lessonLink && (
-                        <button
-                          onClick={() => scrollToLesson(issue.lessonLink!)}
-                          className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 text-xs font-medium transition"
-                        >
-                          Learn More
-                        </button>
-                      )}
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="glass-panel p-6 border-2 border-dashed border-white/20">
-          <div className="text-center space-y-4">
-            <AlertCircle className="w-10 h-10 text-slate-500 mx-auto" />
-            <div>
-              <h3 className="text-lg font-semibold text-white">No Profile Found</h3>
-              <p className="text-sm text-slate-400 mt-1">Create a style profile to get personalized writing analysis.</p>
             </div>
-            <Link
-              href="/style/onboarding"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold transition text-sm"
-            >
-              Create Profile
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
+          ) : (
+            <div className="glass-panel p-6 border-2 border-dashed border-white/20">
+              <div className="text-center space-y-4">
+                <AlertCircle className="w-10 h-10 text-slate-500 mx-auto" />
+                <div>
+                  <h3 className="text-lg font-semibold text-white">No Profile Found</h3>
+                  <p className="text-sm text-slate-400 mt-1">Create a style profile with a real essay sample to get the most helpful, personalized writing guidance.</p>
+                </div>
+                <Link
+                  href="/style/onboarding"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold transition text-sm"
+                >
+                  Create Profile
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Writing Contexts */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-bold text-white">Writing for Different Contexts</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {WRITING_CONTEXTS.map(context => (
-            <button
-              key={context.id}
-              onClick={() => setActiveContext(activeContext === context.id ? null : context.id)}
-              className={`text-left p-4 rounded-xl border transition-all ${
-                activeContext === context.id
-                  ? 'bg-brand-500/10 border-brand-500/50'
-                  : 'bg-slate-800/50 border-white/10 hover:border-white/20'
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg ${
-                  activeContext === context.id ? 'bg-brand-500/20 text-brand-400' : 'bg-slate-700 text-slate-400'
-                }`}>
-                  {context.icon}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-white">{context.title}</h3>
-                    {activeContext === context.id 
-                      ? <ChevronUp className="w-4 h-4 text-slate-400" />
-                      : <ChevronDown className="w-4 h-4 text-slate-400" />
-                    }
+      {activeView === 'lessons' && (
+        <>
+          {/* Writing Contexts */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-white">Writing for Different Contexts</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {WRITING_CONTEXTS.map(context => (
+                <button
+                  key={context.id}
+                  onClick={() => setActiveContext(activeContext === context.id ? null : context.id)}
+                  className={`text-left p-4 rounded-xl border transition-all ${
+                    activeContext === context.id
+                      ? 'bg-brand-500/10 border-brand-500/50'
+                      : 'bg-slate-800/50 border-white/10 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`p-2 rounded-lg ${
+                      activeContext === context.id ? 'bg-brand-500/20 text-brand-400' : 'bg-slate-700 text-slate-400'
+                    }`}>
+                      {context.icon}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-white">{context.title}</h3>
+                        {activeContext === context.id 
+                          ? <ChevronUp className="w-4 h-4 text-slate-400" />
+                          : <ChevronDown className="w-4 h-4 text-slate-400" />
+                        }
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">{context.description}</p>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">{context.description}</p>
-                </div>
-              </div>
-              
-              {activeContext === context.id && (
-                <div className="mt-4 pt-4 border-t border-white/10">
-                  <ul className="space-y-2">
-                    {context.tips.map((tip, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-slate-400">
-                        <CheckCircle className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
-                        <span>{tip}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
+                  
+                  {activeContext === context.id && (
+                    <div className="mt-4 pt-4 border-t border-white/10">
+                      <ul className="space-y-2">
+                        {context.tips.map((tip, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-slate-400">
+                            <CheckCircle className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
+                            <span>{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      {/* Main Lessons */}
-      <div className="space-y-4">
+          {/* Main Lessons */}
+          <div className="space-y-4">
         <h2 className="text-xl font-bold text-white">Core Writing Lessons</h2>
         <div className="space-y-4">
           {LESSONS.map(lesson => (
@@ -1226,6 +1272,8 @@ export default function WritingGuidePage() {
           ))}
         </div>
       </div>
+      </>
+      )}
 
       {/* Bottom CTA */}
       <div className="glass-panel p-6 text-center space-y-4">
