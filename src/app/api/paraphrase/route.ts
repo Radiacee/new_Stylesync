@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { rateLimit, formatRateLimitHeaders } from '../../../lib/rateLimit.ts';
 import { z } from 'zod';
+import { applyDeepStyleMatch, calculateLexicalDensity as calcLexicalDensity } from '../../../lib/deepStyleMatch';
 
 const bodySchema = z.object({
   text: z.string().min(1).max(8000),
@@ -22,6 +23,12 @@ interface VerificationResult {
     sentenceLength: { match: boolean; score: number; diff: number };
     vocabulary: { match: boolean; score: number };
     transitions: { match: boolean; score: number };
+    lexicalDensity: { match: boolean; score: number };
+    sentenceVariety: { match: boolean; score: number };
+    passiveVoice: { match: boolean; score: number };
+    punctuation: { match: boolean; score: number };
+    pronounUsage: { match: boolean; score: number };
+    ngramSimilarity: { match: boolean; score: number };
   };
 }
 
@@ -81,56 +88,360 @@ function countTransitions(text: string): number {
   return matches.length;
 }
 
-// Check style match using SAME logic as StyleProofPanel
+// ============================================================================
+// N-GRAM SIMILARITY — Cosine similarity on n-gram distributions
+// ============================================================================
+
+function calculateNgramSimilarity(text1: string, text2: string, n: number = 2): number {
+  const getNgrams = (text: string, size: number): Map<string, number> => {
+    const words = text.toLowerCase().replace(/[.,!?;:()\"\"\"'']/g, '').split(/\s+/).filter(w => w.length > 0);
+    const ngrams = new Map<string, number>();
+    for (let i = 0; i <= words.length - size; i++) {
+      const ngram = words.slice(i, i + size).join(' ');
+      ngrams.set(ngram, (ngrams.get(ngram) || 0) + 1);
+    }
+    return ngrams;
+  };
+
+  const ngrams1 = getNgrams(text1, n);
+  const ngrams2 = getNgrams(text2, n);
+  if (ngrams1.size === 0 || ngrams2.size === 0) return 0;
+
+  let dotProduct = 0;
+  let magnitude1 = 0;
+  let magnitude2 = 0;
+  const allNgrams = new Set([...ngrams1.keys(), ...ngrams2.keys()]);
+  for (const ngram of allNgrams) {
+    const v1 = ngrams1.get(ngram) || 0;
+    const v2 = ngrams2.get(ngram) || 0;
+    dotProduct += v1 * v2;
+    magnitude1 += v1 * v1;
+    magnitude2 += v2 * v2;
+  }
+
+  const magnitude = Math.sqrt(magnitude1) * Math.sqrt(magnitude2);
+  return magnitude > 0 ? dotProduct / magnitude : 0;
+}
+
+// ============================================================================
+// LEXICAL DENSITY — Content words vs function words ratio
+// ============================================================================
+
+function calculateLexicalDensity(text: string): number {
+  const words = text.toLowerCase().match(/[a-z']{2,}/g) || [];
+  if (words.length === 0) return 0;
+  const functionWords = new Set([
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+    'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
+    'will', 'would', 'should', 'could', 'can', 'may', 'might', 'must', 'shall',
+    'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them',
+    'my', 'your', 'his', 'its', 'our', 'their', 'this', 'that', 'these', 'those',
+    'as', 'if', 'when', 'where', 'why', 'how', 'which', 'who', 'whom', 'what',
+    'am', 'from', 'up', 'out', 'so', 'than', 'then', 'there', 'about', 'over', 'under',
+    'not', 'no', 'nor', 'very', 'just', 'only', 'also', 'even'
+  ]);
+  const contentWords = words.filter(w => !functionWords.has(w)).length;
+  return Math.max(0, Math.min(1, contentWords / words.length));
+}
+
+// ============================================================================
+// SENTENCE LENGTH STD DEV — Measures "burstiness" of sentence lengths
+// ============================================================================
+
+function calculateSentenceLengthStd(text: string): number {
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 5);
+  if (sentences.length < 2) return 0;
+  const lengths = sentences.map(s => s.trim().split(/\s+/).length);
+  const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+  const variance = lengths.reduce((sum, l) => sum + Math.pow(l - mean, 2), 0) / lengths.length;
+  return Math.sqrt(variance);
+}
+
+// ============================================================================
+// PASSIVE VOICE RATIO
+// ============================================================================
+
+function getPassiveVoiceRatio(text: string): number {
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 5);
+  if (sentences.length === 0) return 0;
+  const passiveMatches = text.match(/\b(?:is|are|was|were|been|be|being)\s+(?:\w+ed|written|shown|seen|known|given|taken|made|done|found|said|told|thought|felt|become)\b/gi) || [];
+  return passiveMatches.length / sentences.length;
+}
+
+// ============================================================================
+// PUNCTUATION COMPARISON
+// ============================================================================
+
+function comparePunctuation(sampleText: string, output: string): number {
+  const getSentenceCount = (t: string) => t.split(/[.!?]+/).filter(s => s.trim().length > 5).length || 1;
+
+  const userSentences = getSentenceCount(sampleText);
+  const outputSentences = getSentenceCount(output);
+
+  // Comma density
+  const userCommaRate = (sampleText.match(/,/g) || []).length / userSentences;
+  const outputCommaRate = (output.match(/,/g) || []).length / outputSentences;
+  const commaScore = Math.abs(userCommaRate - outputCommaRate) < 1 ? 100 : Math.abs(userCommaRate - outputCommaRate) < 2 ? 70 : 40;
+
+  // Semicolon usage match
+  const userSemicolons = (sampleText.match(/;/g) || []).length > 0;
+  const outputSemicolons = (output.match(/;/g) || []).length > 0;
+  const semiScore = userSemicolons === outputSemicolons ? 100 : 50;
+
+  // Dash usage match
+  const userDashes = (sampleText.match(/—|–|-{2}/g) || []).length > 0;
+  const outputDashes = (output.match(/—|–|-{2}/g) || []).length > 0;
+  const dashScore = userDashes === outputDashes ? 100 : 50;
+
+  return Math.round(commaScore * 0.5 + semiScore * 0.25 + dashScore * 0.25);
+}
+
+// ============================================================================
+// PRONOUN USAGE COMPARISON
+// ============================================================================
+
+function comparePronounUsage(sampleText: string, output: string): number {
+  const getWordCount = (t: string) => (t.match(/\b[a-z]+\b/gi) || []).length || 1;
+
+  // First person pronouns
+  const fp = /\b(I|me|my|mine|we|us|our|ours|myself|ourselves)\b/g;
+  const userFP = (sampleText.match(fp) || []).length / getWordCount(sampleText);
+  const outputFP = (output.match(fp) || []).length / getWordCount(output);
+
+  // Second person pronouns
+  const sp = /\b(you|your|yours|yourself|yourselves)\b/gi;
+  const userSP = (sampleText.match(sp) || []).length / getWordCount(sampleText);
+  const outputSP = (output.match(sp) || []).length / getWordCount(output);
+
+  // Compare ratios — both first and second person
+  const fpDiff = Math.abs(userFP - outputFP);
+  const spDiff = Math.abs(userSP - outputSP);
+
+  const fpScore = fpDiff < 0.02 ? 100 : fpDiff < 0.05 ? 75 : fpDiff < 0.1 ? 50 : 25;
+  const spScore = spDiff < 0.02 ? 100 : spDiff < 0.04 ? 75 : spDiff < 0.08 ? 50 : 25;
+
+  return Math.round(fpScore * 0.6 + spScore * 0.4);
+}
+
+// ============================================================================
+// SENTENCE RHYTHM DESCRIPTION — For enhanced prompting
+// ============================================================================
+
+function describeSentenceRhythm(userSample: string): string {
+  const sentences = userSample.split(/[.!?]+/).filter(s => s.trim().length > 5);
+  if (sentences.length < 3) return '';
+
+  const lengths = sentences.map(s => s.trim().split(/\s+/).length);
+  const categories = lengths.map(l => {
+    if (l <= 8) return 'short';
+    if (l <= 15) return 'medium';
+    if (l <= 22) return 'long';
+    return 'very-long';
+  });
+
+  const dist: Record<string, number> = {};
+  categories.forEach(c => { dist[c] = (dist[c] || 0) + 1; });
+  const total = categories.length;
+
+  const parts: string[] = [];
+  if (dist['short']) parts.push(`${Math.round((dist['short'] / total) * 100)}% short (≤8 words)`);
+  if (dist['medium']) parts.push(`${Math.round((dist['medium'] / total) * 100)}% medium (9-15 words)`);
+  if (dist['long']) parts.push(`${Math.round((dist['long'] / total) * 100)}% long (16-22 words)`);
+  if (dist['very-long']) parts.push(`${Math.round((dist['very-long'] / total) * 100)}% very long (23+ words)`);
+
+  let rhythmDesc = `Sentence length mix: ${parts.join(', ')}.`;
+
+  // Check for consecutive same-length sentences
+  let maxConsecutive = 1;
+  let current = 1;
+  for (let i = 1; i < categories.length; i++) {
+    if (categories[i] === categories[i - 1]) {
+      current++;
+      maxConsecutive = Math.max(maxConsecutive, current);
+    } else {
+      current = 1;
+    }
+  }
+
+  if (maxConsecutive <= 2) {
+    rhythmDesc += ' They vary length frequently — rarely write 2+ sentences of the same length in a row.';
+  }
+
+  return rhythmDesc;
+}
+
+// ============================================================================
+// FEW-SHOT STYLE EXAMPLES — Show the AI "before/after" in the user's style
+// ============================================================================
+
+function generateFewShotExamples(userSample: string, analysis: ReturnType<typeof analyzeStyle>): string {
+  const sentences = userSample.split(/[.!?]+/).map(s => s.trim()).filter(s => {
+    const wc = s.split(/\s+/).length;
+    return wc >= 6 && wc <= 30;
+  });
+  if (sentences.length < 2) return '';
+
+  // Pick 2-3 diverse, characteristic sentences
+  const examples = sentences.slice(0, 3);
+
+  let result = '\nSTYLE TRANSFORMATION EXAMPLES — This is how this person rewrites generic ideas:\n\n';
+
+  for (const sentence of examples) {
+    const generic = deStyleSentence(sentence, analysis);
+    if (generic !== sentence && generic.length > 10) {
+      result += `Generic: "${generic}"\n`;
+      result += `Their style: "${sentence}"\n\n`;
+    }
+  }
+
+  return result.trim() === 'STYLE TRANSFORMATION EXAMPLES — This is how this person rewrites generic ideas:' ? '' : result;
+}
+
+function deStyleSentence(sentence: string, analysis: ReturnType<typeof analyzeStyle>): string {
+  let generic = sentence;
+
+  // Invert contraction style to create contrast
+  if (analysis.usesContractions) {
+    generic = generic
+      .replace(/\bdon't\b/gi, 'do not').replace(/\bcan't\b/gi, 'cannot')
+      .replace(/\bwon't\b/gi, 'will not').replace(/\bisn't\b/gi, 'is not')
+      .replace(/\baren't\b/gi, 'are not').replace(/\bit's\b/gi, 'it is')
+      .replace(/\bthat's\b/gi, 'that is').replace(/\bI'm\b/g, 'I am')
+      .replace(/\bI've\b/g, 'I have').replace(/\bthey're\b/gi, 'they are')
+      .replace(/\bwe're\b/gi, 'we are').replace(/\byou're\b/gi, 'you are')
+      .replace(/\bdidn't\b/gi, 'did not').replace(/\bdoesn't\b/gi, 'does not');
+  } else {
+    generic = generic
+      .replace(/\bdo not\b/gi, "don't").replace(/\bcannot\b/gi, "can't")
+      .replace(/\bwill not\b/gi, "won't").replace(/\bis not\b/gi, "isn't")
+      .replace(/\bare not\b/gi, "aren't").replace(/\bit is\b/gi, "it's");
+  }
+
+  // Flatten casual/formal markers
+  if (analysis.vocabularyLevel === 'simple') {
+    generic = generic.replace(/\breally\b/gi, 'very').replace(/\bstuff\b/gi, 'things').replace(/\bkind of\b/gi, 'somewhat');
+  } else if (analysis.vocabularyLevel === 'advanced') {
+    generic = generic.replace(/\butilize\b/gi, 'use').replace(/\bfacilitate\b/gi, 'help').replace(/\bdemonstrate\b/gi, 'show');
+  }
+
+  return generic;
+}
+
+// ============================================================================
+// EXPANDED STYLE MATCHING — 10 dimensions instead of 4
+// ============================================================================
+
+// Check style match using SAME logic as StyleProofPanel + 6 new dimensions
 function checkStyleMatch(sampleText: string, output: string): {
   contractions: { match: boolean; score: number };
   sentenceLength: { match: boolean; score: number; diff: number };
   vocabulary: { match: boolean; score: number };
   transitions: { match: boolean; score: number };
+  lexicalDensity: { match: boolean; score: number };
+  sentenceVariety: { match: boolean; score: number };
+  passiveVoice: { match: boolean; score: number };
+  punctuation: { match: boolean; score: number };
+  pronounUsage: { match: boolean; score: number };
+  ngramSimilarity: { match: boolean; score: number };
   overallScore: number;
 } {
-  // 1. CONTRACTIONS (same as StyleProofPanel)
+  // 1. CONTRACTIONS
   const userContractions = countContractions(sampleText);
   const userExpanded = countExpanded(sampleText);
   const resultContractions = countContractions(output);
   const resultExpanded = countExpanded(output);
-  
   const userUsesContractions = userContractions > userExpanded;
   const resultUsesContractions = resultContractions > resultExpanded;
   const contractionsMatch = userUsesContractions === resultUsesContractions;
-  
-  // 2. SENTENCE LENGTH (same as StyleProofPanel)
+
+  // 2. SENTENCE LENGTH
   const userAvg = getAvgSentenceLength(sampleText);
   const resultAvg = getAvgSentenceLength(output);
   const lengthDiff = Math.abs(userAvg - resultAvg);
-  const sentenceLengthScore = lengthDiff < 5 ? 100 : lengthDiff < 8 ? 75 : lengthDiff < 12 ? 50 : 0;
-  
-  // 3. VOCABULARY (same as StyleProofPanel)
+  const sentenceLengthScore = lengthDiff < 3 ? 100 : lengthDiff < 5 ? 85 : lengthDiff < 8 ? 65 : lengthDiff < 12 ? 40 : 0;
+
+  // 3. VOCABULARY
   const userVocab = getVocabularyLevel(sampleText);
   const resultVocab = getVocabularyLevel(output);
   const vocabMatch = userVocab === resultVocab;
-  
-  // 4. TRANSITIONS (same as StyleProofPanel)
-  const userTransitions = countTransitions(sampleText);
-  const resultTransitions = countTransitions(output);
-  const userUsesTransitions = userTransitions >= 2;
-  const resultUsesTransitions = resultTransitions >= 2;
+
+  // 4. TRANSITIONS
+  const userTransCount = countTransitions(sampleText);
+  const resultTransCount = countTransitions(output);
+  const userUsesTransitions = userTransCount >= 2;
+  const resultUsesTransitions = resultTransCount >= 2;
   const transitionMatch = userUsesTransitions === resultUsesTransitions;
-  
-  // Calculate overall score (same weights as StyleProofPanel)
-  const scores = [
-    contractionsMatch ? 100 : 0,
-    sentenceLengthScore,
-    vocabMatch ? 100 : 50,
-    transitionMatch ? 75 : 50
-  ];
-  const overallScore = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
-  
+
+  // 5. LEXICAL DENSITY (NEW)
+  const userDensity = calculateLexicalDensity(sampleText);
+  const outputDensity = calculateLexicalDensity(output);
+  const densityDiff = Math.abs(userDensity - outputDensity);
+  const densityScore = densityDiff < 0.05 ? 100 : densityDiff < 0.1 ? 75 : densityDiff < 0.15 ? 50 : 25;
+
+  // 6. SENTENCE LENGTH VARIETY / BURSTINESS (NEW)
+  const userStd = calculateSentenceLengthStd(sampleText);
+  const outputStd = calculateSentenceLengthStd(output);
+  const stdDiff = Math.abs(userStd - outputStd);
+  const varietyScore = stdDiff < 3 ? 100 : stdDiff < 5 ? 75 : stdDiff < 8 ? 50 : 25;
+
+  // 7. PASSIVE VOICE RATIO (NEW)
+  const userPassive = getPassiveVoiceRatio(sampleText);
+  const outputPassive = getPassiveVoiceRatio(output);
+  const passiveDiff = Math.abs(userPassive - outputPassive);
+  const passiveScore = passiveDiff < 0.1 ? 100 : passiveDiff < 0.2 ? 75 : passiveDiff < 0.3 ? 50 : 25;
+
+  // 8. PUNCTUATION PATTERNS (NEW)
+  const punctScore = comparePunctuation(sampleText, output);
+
+  // 9. PERSONAL PRONOUN USAGE (NEW)
+  const pronounScore = comparePronounUsage(sampleText, output);
+
+  // 10. N-GRAM SIMILARITY (NEW)
+  const bigramSim = calculateNgramSimilarity(sampleText, output, 2);
+  const trigramSim = calculateNgramSimilarity(sampleText, output, 3);
+  const rawNgram = Math.round((bigramSim * 0.6 + trigramSim * 0.4) * 100);
+  // N-gram similarity between different texts is typically low, so grade generously
+  const ngramScore = rawNgram > 15 ? 100 : rawNgram > 10 ? 80 : rawNgram > 5 ? 60 : rawNgram > 2 ? 40 : 20;
+
+  // WEIGHTED OVERALL SCORE — 10 dimensions
+  const weights = {
+    contractions: 15,
+    sentenceLength: 12,
+    vocabulary: 12,
+    transitions: 8,
+    lexicalDensity: 10,
+    sentenceVariety: 10,
+    passiveVoice: 8,
+    punctuation: 10,
+    pronounUsage: 7,
+    ngramSimilarity: 8,
+  };
+  const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+
+  const overallScore = Math.round(
+    ((contractionsMatch ? 100 : 0) * weights.contractions +
+    sentenceLengthScore * weights.sentenceLength +
+    (vocabMatch ? 100 : 50) * weights.vocabulary +
+    (transitionMatch ? 75 : 50) * weights.transitions +
+    densityScore * weights.lexicalDensity +
+    varietyScore * weights.sentenceVariety +
+    passiveScore * weights.passiveVoice +
+    punctScore * weights.punctuation +
+    pronounScore * weights.pronounUsage +
+    ngramScore * weights.ngramSimilarity) / totalWeight
+  );
+
   return {
     contractions: { match: contractionsMatch, score: contractionsMatch ? 100 : 0 },
-    sentenceLength: { match: lengthDiff < 8, score: sentenceLengthScore, diff: lengthDiff },
+    sentenceLength: { match: lengthDiff < 5, score: sentenceLengthScore, diff: lengthDiff },
     vocabulary: { match: vocabMatch, score: vocabMatch ? 100 : 50 },
     transitions: { match: transitionMatch, score: transitionMatch ? 75 : 50 },
+    lexicalDensity: { match: densityDiff < 0.1, score: densityScore },
+    sentenceVariety: { match: stdDiff < 5, score: varietyScore },
+    passiveVoice: { match: passiveDiff < 0.15, score: passiveScore },
+    punctuation: { match: punctScore >= 70, score: punctScore },
+    pronounUsage: { match: pronounScore >= 70, score: pronounScore },
+    ngramSimilarity: { match: ngramScore >= 60, score: ngramScore },
     overallScore
   };
 }
@@ -347,11 +658,17 @@ function verifyOutput(original: string, output: string, profile: any): Verificat
   const sampleText = profile?.sampleExcerpts?.join(' ') || profile?.sampleExcerpt || '';
   
   // Default style breakdown
-  let styleBreakdown = {
+  let styleBreakdown: any = {
     contractions: { match: true, score: 100 },
     sentenceLength: { match: true, score: 100, diff: 0 },
     vocabulary: { match: true, score: 100 },
-    transitions: { match: true, score: 75 }
+    transitions: { match: true, score: 75 },
+    lexicalDensity: { match: true, score: 100 },
+    sentenceVariety: { match: true, score: 100 },
+    passiveVoice: { match: true, score: 100 },
+    punctuation: { match: true, score: 100 },
+    pronounUsage: { match: true, score: 100 },
+    ngramSimilarity: { match: true, score: 100 }
   };
   
   let styleScore = 100;
@@ -536,9 +853,9 @@ export async function POST(req: NextRequest) {
         verificationResult = verifyOutput(text, output, profile);
       }
       
-      // If quality is still too low (score < 60), try once more with a TARGETED correction prompt
-      if (verificationResult.score < 60 && profile?.sampleExcerpt) {
-        console.log('Quality too low (' + verificationResult.score + '), retrying with targeted correction...');
+      // If quality is still below threshold, try with TARGETED correction prompt (up to 2 retries)
+      if (verificationResult.score < 75 && profile?.sampleExcerpt) {
+        console.log('Quality below 75 (' + verificationResult.score + '), retrying with targeted correction (attempt 1)...');
         const retryOutput = await retryWithCorrection(text, output, profile, verificationResult, stylePreset, styleInstructions);
         const retryVerification = verifyOutput(text, retryOutput, profile);
         
@@ -546,6 +863,18 @@ export async function POST(req: NextRequest) {
         if (retryVerification.score > verificationResult.score) {
           output = retryOutput;
           verificationResult = retryVerification;
+        }
+        
+        // Second retry if still below threshold
+        if (verificationResult.score < 75) {
+          console.log('Still below 75 (' + verificationResult.score + '), retrying (attempt 2)...');
+          const retry2Output = await retryWithCorrection(text, output, profile, verificationResult, stylePreset, styleInstructions);
+          const retry2Verification = verifyOutput(text, retry2Output, profile);
+          
+          if (retry2Verification.score > verificationResult.score) {
+            output = retry2Output;
+            verificationResult = retry2Verification;
+          }
         }
       }
     } else {
@@ -560,9 +889,25 @@ export async function POST(req: NextRequest) {
           contractions: { match: true, score: 100 },
           sentenceLength: { match: true, score: 100, diff: 0 },
           vocabulary: { match: true, score: 100 },
-          transitions: { match: true, score: 75 }
+          transitions: { match: true, score: 75 },
+          lexicalDensity: { match: true, score: 100 },
+          sentenceVariety: { match: true, score: 100 },
+          passiveVoice: { match: true, score: 100 },
+          punctuation: { match: true, score: 100 },
+          pronounUsage: { match: true, score: 100 },
+          ngramSimilarity: { match: true, score: 100 }
         }
       };
+    }
+
+    // Apply deep style matching from deepStyleMatch.ts (uses the dormant module)
+    if (profile?.sampleExcerpt && profile.sampleExcerpt.length > 50) {
+      try {
+        output = applyDeepStyleMatch(output, profile);
+      } catch (e) {
+        // Non-critical — continue if deep match fails
+        console.log('DeepStyleMatch skipped:', (e as any)?.message);
+      }
     }
 
     // Apply user's style post-processing (strict contraction/expansion enforcement)
@@ -606,13 +951,14 @@ async function paraphraseWithAI(
   styleInstructions?: string | null
 ): Promise<string> {
   const prompt = buildPrompt(profile, stylePreset, styleInstructions);
+  const temp = profile?.sampleExcerpt ? 0.35 : 0.55; // Lower temp for exact style matching
   
   try {
-    return await callGroqAPI(text, prompt);
+    return await callGroqAPI(text, prompt, temp);
   } catch (e: any) {
     console.log('Groq failed, trying Gemini:', e?.message);
     try {
-      return await callGeminiAPI(text, prompt);
+      return await callGeminiAPI(text, prompt, temp);
     } catch (e2: any) {
       console.log('Gemini also failed:', e2?.message);
       return cleanText(text);
@@ -690,10 +1036,10 @@ PRESERVE: All facts, data, numbers, names, and layout structure
 OUTPUT: Only the rewritten text. No explanations.`;
 
   try {
-    return await callGroqAPI(originalText, correctionPrompt);
+    return await callGroqAPI(originalText, correctionPrompt, 0.35);
   } catch {
     try {
-      return await callGeminiAPI(originalText, correctionPrompt);
+      return await callGeminiAPI(originalText, correctionPrompt, 0.35);
     } catch {
       return previousOutput; // Fall back to previous output
     }
@@ -798,6 +1144,8 @@ Here is what defines this person's voice:
 
   // Sentence length
   prompt += `- Their sentences average about ${avgWords} words. `;
+  prompt += describeSentenceRhythm(userSample) + '\n';
+  
   if (hasMixedLengths) {
     prompt += `They vary sentence length — some short and punchy, some long and flowing.\n`;
   } else if (avgWords < 12) {
@@ -890,6 +1238,11 @@ Here is what defines this person's voice:
     for (const s of exampleSentences) {
       prompt += `- "${s}"\n`;
     }
+  }
+
+  const fewShot = generateFewShotExamples(userSample, analysis);
+  if (fewShot) {
+    prompt += `\n${fewShot}\n`;
   }
 
   prompt += `
@@ -1039,14 +1392,14 @@ function isCommonWord(word: string): boolean {
 // API CALLS
 // =============================================================================
 
-async function callGroqAPI(text: string, systemPrompt: string): Promise<string> {
+async function callGroqAPI(text: string, systemPrompt: string, temperature: number = 0.55): Promise<string> {
   const GroqMod = await import('groq-sdk');
   const Groq = (GroqMod as any).default ?? (GroqMod as any).Groq;
   const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
   
   const completion = await client.chat.completions.create({
     model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
-    temperature: 0.55, // Higher for more human-like unpredictability
+    temperature, // Lower for exact style copying
     max_tokens: Math.min(4000, Math.max(500, text.length * 2)),
     messages: [
       { role: 'system', content: systemPrompt },
@@ -1058,7 +1411,7 @@ async function callGroqAPI(text: string, systemPrompt: string): Promise<string> 
   return cleanText(result) || text;
 }
 
-async function callGeminiAPI(text: string, systemPrompt: string): Promise<string> {
+async function callGeminiAPI(text: string, systemPrompt: string, temperature: number = 0.55): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('No Gemini API key');
   
@@ -1070,7 +1423,7 @@ async function callGeminiAPI(text: string, systemPrompt: string): Promise<string
         parts: [{ text: `${systemPrompt}\n\nINPUT TEXT TO REWRITE:\n\n${text}` }]
       }],
       generationConfig: { 
-        temperature: 0.55, // Higher for more human-like unpredictability
+        temperature, // Lower for exact style copying
         maxOutputTokens: Math.min(4000, Math.max(500, text.length * 2)) 
       }
     })
@@ -1271,32 +1624,47 @@ function applyUserStyle(text: string, profile: any): string {
   const analysis = analyzeStyle(sampleText);
   let result = text;
 
+  // Check current match state to decide if we need to intervene
+  let currentMatch = checkStyleMatch(sampleText, result);
+
   // 0. STRIP AI-TELLTALE PHRASES — must happen first
   result = stripAIPatterns(result);
 
   // 1. CONTRACTIONS - Most important style marker
   // Apply this STRICTLY - the AI sometimes ignores the instruction
-  if (analysis.usesContractions) {
-    result = expandToContractions(result);
-  } else {
-    result = contractionsToExpanded(result);
+  if (!currentMatch.contractions.match) {
+    if (analysis.usesContractions) {
+      result = expandToContractions(result);
+    } else {
+      result = contractionsToExpanded(result);
+    }
+    // Re-check after mutation
+    currentMatch = checkStyleMatch(sampleText, result);
   }
 
-  // 2. SENTENCE LENGTH - Only break up extremely long sentences (40+ words)
-  // We no longer aggressively shorten — the LLM should handle length matching via prompt
+  // 2. SENTENCE LENGTH - Only break up extremely long sentences (40+ words) if it's off
   const userAvgLength = analysis.avgWordsPerSentence;
-  if (userAvgLength < 15) {
+  if (!currentMatch.sentenceLength.match && userAvgLength < 15) {
     result = adjustSentenceLength(result, userAvgLength);
+    currentMatch = checkStyleMatch(sampleText, result);
   }
 
-  // 3. VOCABULARY MATCHING - Replace overly complex/simple words to match user's level
-  result = matchVocabularyLevel(result, analysis);
+  // 3. VOCABULARY MATCHING - Only replace words if vocabulary level doesn't match
+  if (!currentMatch.vocabulary.match) {
+    result = matchVocabularyLevel(result, analysis);
+    currentMatch = checkStyleMatch(sampleText, result);
+  }
 
-  // 4. TRANSITION MATCHING - Ensure transitions match user's style
-  result = matchTransitionStyle(result, analysis);
+  // 4. TRANSITION MATCHING - Only if transitions are lacking
+  if (!currentMatch.transitions.match && analysis.transitions.length > 0) {
+    result = matchTransitionStyle(result, analysis);
+    currentMatch = checkStyleMatch(sampleText, result);
+  }
 
-  // 5. HUMANIZE — break up AI-like parallel structures and add natural variation
-  result = humanizeOutput(result, sampleText, analysis);
+  // 5. HUMANIZE — Only apply structural humanizations if the score isn't already stellar
+  if (currentMatch.overallScore < 90) {
+    result = humanizeOutput(result, sampleText, analysis);
+  }
 
   // 6. QUALITY GATE — catch and repair any sentence fragments created by post-processing
   result = repairFragments(result);

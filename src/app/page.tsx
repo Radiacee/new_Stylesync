@@ -62,6 +62,70 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <section className="mt-16 grid gap-12 lg:grid-cols-2 items-start">
+        <div className="rounded-[32px] border border-white/10 bg-slate-950/70 p-8 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.85)]">
+          <p className="text-sm uppercase tracking-[0.3em] text-brand-300">Why it helps</p>
+          <h2 className="mt-4 text-3xl font-semibold text-slate-100">Write faster with consistent style</h2>
+          <p className="mt-4 text-slate-400 max-w-prose">Stylesync uses your own examples to learn your tone and sentence style, so every rewrite stays true to your voice while improving clarity and flow.</p>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-5">
+              <p className="font-semibold text-slate-100">Less rewriting</p>
+              <p className="mt-2 text-sm text-slate-400">Reduce the time you spend fixing drafts and drafts again.</p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-5">
+              <p className="font-semibold text-slate-100">Consistent tone</p>
+              <p className="mt-2 text-sm text-slate-400">Keep one voice across emails, posts, reports, and documents.</p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-5">
+              <p className="font-semibold text-slate-100">Smart suggestions</p>
+              <p className="mt-2 text-sm text-slate-400">Get improvements that match your unique phrasing and formality.</p>
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-5">
+              <p className="font-semibold text-slate-100">More confidence</p>
+              <p className="mt-2 text-sm text-slate-400">Publish or send writing that feels polished and authentic.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[32px] border border-white/10 bg-slate-950/70 p-8 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.85)]">
+          <p className="text-sm uppercase tracking-[0.3em] text-brand-300">How to use it</p>
+          <h2 className="mt-4 text-3xl font-semibold text-slate-100">Start in three easy steps</h2>
+          <ul className="mt-6 space-y-4 text-slate-300 text-sm">
+            <li className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <p className="font-semibold text-slate-100">1. Create a style profile</p>
+              <p className="mt-1 text-slate-400">Submit a few examples of your best writing so the AI can learn your preferences.</p>
+            </li>
+            <li className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <p className="font-semibold text-slate-100">2. Analyze your text</p>
+              <p className="mt-1 text-slate-400">Use the analysis tools to see how your style is represented across tone, rhythm, and structure.</p>
+            </li>
+            <li className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+              <p className="font-semibold text-slate-100">3. Rewrite with confidence</p>
+              <p className="mt-1 text-slate-400">Paraphrase any draft and keep your meaning while the AI aligns it with your style.</p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section className="mt-16 grid gap-8 lg:grid-cols-3 items-start">
+        <div className="rounded-[32px] border border-white/10 bg-slate-950/70 p-8 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.85)]">
+          <p className="text-sm uppercase tracking-[0.3em] text-brand-300">For your work</p>
+          <h3 className="mt-4 text-2xl font-semibold text-slate-100">Draft faster</h3>
+          <p className="mt-3 text-slate-400 text-sm">Turn notes, ideas, or rough drafts into clean text without losing your voice.</p>
+        </div>
+        <div className="rounded-[32px] border border-white/10 bg-slate-950/70 p-8 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.85)]">
+          <p className="text-sm uppercase tracking-[0.3em] text-brand-300">For your brand</p>
+          <h3 className="mt-4 text-2xl font-semibold text-slate-100">Stay consistent</h3>
+          <p className="mt-3 text-slate-400 text-sm">Keep the same style across emails, posts, and reports so your message feels cohesive.</p>
+        </div>
+        <div className="rounded-[32px] border border-white/10 bg-slate-950/70 p-8 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.85)]">
+          <p className="text-sm uppercase tracking-[0.3em] text-brand-300">For your process</p>
+          <h3 className="mt-4 text-2xl font-semibold text-slate-100">Own your voice</h3>
+          <p className="mt-3 text-slate-400 text-sm">Use AI as a partner that enhances your writing without taking over your personality.</p>
+        </div>
+      </section>
     </div>
   );
 }
