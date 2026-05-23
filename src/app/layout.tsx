@@ -1,5 +1,7 @@
+// @ts-ignore: allow importing global CSS in the app layout
 import './globals.css';
 import type { ReactNode } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { ConditionalLayout } from '../components/ConditionalLayout';
 import ServiceWorkerRegistration from '../components/ServiceWorkerRegistration';
 import InstallPrompt from '../components/InstallPrompt';
@@ -63,6 +65,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ConditionalLayout>
           {children}
         </ConditionalLayout>
+        <Analytics />
       </body>
     </html>
   );
