@@ -1,10 +1,26 @@
+'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import UAT_FeedbackModal from '../components/UAT_FeedbackModal';
 
 const hasModel = !!process.env.GROQ_API_KEY;
 
 export default function LandingPage() {
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    // Show modal immediately on homepage
+    const dismissed = localStorage.getItem('uat_feedback_dismissed');
+    if (!dismissed) {
+      setShowFeedbackModal(true);
+    }
+  }, []);
+
   return (
-    <div className="py-8 lg:py-16">
+    <>
+      <div className="py-8 lg:py-16">
       <section className="grid gap-12 lg:grid-cols-2 items-center">
         <div className="space-y-8">
           <div className="space-y-6">
@@ -127,5 +143,15 @@ export default function LandingPage() {
         </div>
       </section>
     </div>
+
+    {/* UAT Feedback Modal */}
+    {isMounted && (
+      <UAT_FeedbackModal
+        formLink="https://forms.gle/5q3h5uUhPSDMqAKAA"
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+      />
+    )}
+    </>
   );
 }

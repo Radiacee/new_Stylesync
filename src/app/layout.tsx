@@ -5,6 +5,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { ConditionalLayout } from '../components/ConditionalLayout';
 import ServiceWorkerRegistration from '../components/ServiceWorkerRegistration';
 import InstallPrompt from '../components/InstallPrompt';
+import SurveyButton from '../components/SurveyButton';
 
 export const metadata = {
   title: 'StyleSync',
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ConditionalLayout>
           {children}
         </ConditionalLayout>
+        <SurveyButton surveyLink="https://forms.gle/5sZTqCYnBVCGTfUM9" />
         <Analytics />
       </body>
     </html>
