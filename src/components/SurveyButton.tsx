@@ -15,19 +15,17 @@ export default function SurveyButton({ surveyLink = 'https://forms.gle/5sZTqCYnB
   };
 
   return (
-      <div className="fixed bottom-6 right-6 z-40 flex items-end">
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
         <div
-          className="mr-3 hidden sm:block"
+          className={`transition-all duration-200 ${
+            isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+          }`}
           aria-hidden={!isHovered}
+          role="tooltip"
         >
-          <div
-            className={`max-w-xs p-3 rounded-lg text-xs text-white/90 bg-slate-900/80 backdrop-blur-md border border-white/10 shadow-lg transform transition-all duration-200 ${
-              isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
-            }`}
-            role="tooltip"
-          >
-            <div className="font-semibold text-sm text-white">Quick Survey — 5 min</div>
-            <div className="mt-1 text-[13px] text-white/70">Optional feedback to help improve StyleSync. Click to open the short form.</div>
+          <div className="w-56 p-4 rounded-lg text-xs text-white/90 bg-slate-900/90 backdrop-blur-md border border-white/10 shadow-xl">
+            <div className="font-semibold text-sm text-white">📊 User Acceptance Testing</div>
+            <div className="mt-2 text-[13px] text-white/70 leading-relaxed">Takes about 5 minutes. Your feedback helps us improve StyleSync.</div>
           </div>
         </div>
 

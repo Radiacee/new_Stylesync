@@ -22,35 +22,59 @@ body {
   display: none !important;
 }
 
-/* Admin-specific styles - Clean and Professional */
+/* Admin-specific styles - Clean and Professional with improved contrast */
 .admin-glass {
-  background: rgb(30, 41, 59);
-  border: 1px solid rgb(51, 65, 85);
+  background: rgb(15, 23, 42);
+  border: 1px solid rgb(71, 85, 105);
+  backdrop-filter: blur(4px);
 }
 
 .admin-glass-light {
-  background: rgb(51, 65, 85);
-  border: 1px solid rgb(71, 85, 105);
+  background: rgb(30, 41, 59);
+  border: 1px solid rgb(100, 116, 139);
+  backdrop-filter: blur(2px);
 }
 
-/* Admin button styles - Flat and Professional */
+/* Admin button styles - Better contrast */
 .admin-btn-primary {
-  background: rgb(51, 65, 85);
-  border: 1px solid rgb(71, 85, 105);
+  background: rgb(71, 85, 105);
+  border: 1px solid rgb(100, 116, 139);
+  color: rgb(241, 245, 249);
+  font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .admin-btn-primary:hover {
-  background: rgb(71, 85, 105);
-  border-color: rgb(100, 116, 139);
+  background: rgb(100, 116, 139);
+  border-color: rgb(148, 163, 184);
+  box-shadow: 0 0 12px rgba(24, 127, 255, 0.2);
 }
 
 .admin-btn-danger {
-  background: rgb(51, 65, 85);
-  border: 1px solid rgb(71, 85, 105);
+  background: rgb(71, 85, 105);
+  border: 1px solid rgb(100, 116, 139);
+  color: rgb(241, 245, 249);
 }
 
 .admin-btn-danger:hover {
-  background: rgb(185, 28, 28);
-  border-color: rgb(220, 38, 38);
+  background: rgb(127, 29, 29);
+  border-color: rgb(185, 28, 28);
+  color: rgb(254, 226, 226);
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.2);
+}
+
+/* Admin accent colors for status indicators */
+.admin-status-active {
+  color: rgb(34, 197, 94);
+  background: rgb(20, 83, 45);
+}
+
+.admin-status-inactive {
+  color: rgb(180, 83, 9);
+  background: rgb(78, 50, 20);
+}
+
+.admin-status-error {
+  color: rgb(239, 68, 68);
+  background: rgb(127, 29, 29);
 }

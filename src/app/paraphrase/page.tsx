@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import { Copy, Check, AlertTriangle, Star, X, Trash2 } from 'lucide-react';
 import { loadProfile, type StyleProfile, listProfiles, getActiveProfileId, setActiveProfileId, loadProfileRemote, upsertProfileLocal, loadProfilesRemote, syncLocalProfilesToRemote } from '../../lib/styleProfile.ts';
 import { paraphraseWithProfile, analyzeSampleStyle } from '../../lib/paraphrase.ts';
 import { FullScreenSpinner } from '../../components/FullScreenSpinner';
@@ -17,6 +18,7 @@ import StyleSelector, { type StylePreset, getStyleInstructions } from '../../com
 import WritingSuggestionsPanel from '../../components/WritingSuggestionsPanel';
 import QualitySuggestions from '../../components/QualitySuggestions';
 import ReportButton from '../../components/ReportButton';
+import ABTestingPanel from '../../components/ABTestingPanel';
 import { type StyleTransformation } from '../../lib/styleComparison';
 import { shouldCollectAnalytics, prepareAnalyticsData, submitAnalytics, getUserConsent } from '../../lib/analytics';
 import { moderateContent, type ModerationResult } from '../../lib/contentModeration';
@@ -81,6 +83,8 @@ export default function ParaphrasePage() {
   const [showSuggestions, setShowSuggestions] = useState(false); // Writing suggestions toggle
   const [styleMatch, setStyleMatch] = useState<{ overallMatch: number; issues: string[] } | null>(null); // Style match report
   const [rating, setRating] = useState<number | null>(null); // User rating feedback
+  const [additionalExcerpts, setAdditionalExcerpts] = useState<string[]>([]); // Multiple excerpts for style training
+  const [excerptInput, setExcerptInput] = useState(''); // Current excerpt being added
 
   const hasUserEssay = input.trim().length > 0;
   const hasStyleDiagnostics = Boolean(metrics) || actions.length > 0;
@@ -225,7 +229,23 @@ export default function ParaphrasePage() {
       return;
     }
     
-    const preparedProfile = profile ? ensureProfileHasAnalysis(profile) : null;
+    let preparedProfile = profile ? ensureProfileHasAnalysis(profile) : null;
+    
+    // Enhance profile with additional excerpts if provided
+    if (preparedProfile && additionalExcerpts.length > 0) {
+      const allExcerpts = [
+        ...(preparedProfile.sampleExcerpts || [preparedProfile.sampleExcerpt]),
+        ...additionalExcerpts
+      ].filter(Boolean);
+      const combinedExcerpt = allExcerpts.join('\n\n');
+      preparedProfile = {
+        ...preparedProfile,
+        sampleExcerpt: combinedExcerpt,
+        sampleExcerpts: allExcerpts,
+        styleAnalysis: analyzeSampleStyle(combinedExcerpt)
+      };
+    }
+    
     if (preparedProfile && preparedProfile !== profile) {
       setProfile(preparedProfile);
     }
@@ -557,7 +577,7 @@ export default function ParaphrasePage() {
                                 className="text-xs px-2 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 transition-colors"
                                 title="Delete this entry"
                               >
-                                ✕
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             )}
                           </div>
@@ -663,6 +683,53 @@ export default function ParaphrasePage() {
               className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed" 
             />
           </div>
+
+          {/* Multiple Excerpts for Better Style Recognition */}
+          <div className="space-y-3 rounded-lg border border-white/10 bg-slate-800/30 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-100">Additional Style Samples</h3>
+                <p className="text-xs text-slate-400 mt-1">Add more of your writing for better style recognition and model training (optional)</p>
+              </div>
+            </div>
+            
+            {additionalExcerpts.length > 0 && (
+              <div className="space-y-2">
+                {additionalExcerpts.map((excerpt, idx) => (
+                  <div key={idx} className="flex gap-2 items-start bg-slate-900/40 rounded p-2">
+                    <div className="flex-1 text-xs text-slate-300 line-clamp-2">{excerpt}</div>
+                    <button
+                      onClick={() => setAdditionalExcerpts(excerpts => excerpts.filter((_, i) => i !== idx))}
+                      className="flex-shrink-0 px-2 py-1 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <textarea
+              value={excerptInput}
+              onChange={e => setExcerptInput(e.target.value)}
+              placeholder="Paste another writing sample..."
+              rows={4}
+              className="w-full rounded-lg bg-slate-900/60 border border-white/10 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed text-slate-200"
+            />
+            
+            <button
+              onClick={() => {
+                if (excerptInput.trim()) {
+                  setAdditionalExcerpts(prev => [...prev, excerptInput.trim()]);
+                  setExcerptInput('');
+                }
+              }}
+              disabled={!excerptInput.trim()}
+              className="w-full px-3 py-2 rounded-lg text-xs font-medium bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 border border-brand-500/30 disabled:opacity-40 transition-colors"
+            >
+              + Add Excerpt ({additionalExcerpts.length} added)
+            </button>
+          </div>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
             <button 
               onClick={handleParaphrase} 
@@ -679,7 +746,9 @@ export default function ParaphrasePage() {
                 setUsedModel(false); 
                 setActions([]); 
                 setMetrics(null); 
-                setModerationResult(null); 
+                setModerationResult(null);
+                setAdditionalExcerpts([]);
+                setExcerptInput('');
               }} 
               className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-lg border border-white/10 hover:border-brand-400/60 text-slate-200 text-sm transition text-center"
             >
@@ -698,14 +767,24 @@ export default function ParaphrasePage() {
                 <div className="flex gap-2 w-full sm:w-auto">
                   <button 
                     onClick={handleCopyResult}
-                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 justify-center ${
                       copied 
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
                         : 'bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 border border-brand-500/30 hover:border-brand-400/50'
                     }`}
                     title="Copy result to clipboard"
                   >
-                    {copied ? '✓ Copied!' : '📋 Copy'}
+                    {copied ? (
+                      <>
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}
@@ -741,12 +820,12 @@ export default function ParaphrasePage() {
                           });
                         }
                       }}
-                      className={`text-lg transition-colors ${
+                      className={`transition-colors ${
                         rating && star <= rating ? 'text-yellow-400' : 'text-slate-500 hover:text-yellow-300'
                       }`}
                       title={`Rate ${star} star${star > 1 ? 's' : ''}`}
                     >
-                      ★
+                      <Star className={`w-4 h-4 ${rating && star <= rating ? 'fill-current' : ''}`} />
                     </button>
                   ))}
                 </div>
@@ -764,11 +843,23 @@ export default function ParaphrasePage() {
                 />
               </div>
             )}
+
+            {/* A/B/C Multiple Output Options */}
+            {output && profile && (
+              <div className="pt-2 border-t border-white/10">
+                <ABTestingPanel 
+                  paraphrasedText={output}
+                />
+              </div>
+            )}
             
             {/* Content Moderation Warning */}
             {moderationResult && !moderationResult.isClean && (
               <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <h4 className="text-sm font-semibold text-red-400 mb-2">⚠️ Content Warning</h4>
+                <h4 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  Content Warning
+                </h4>
                 <p className="text-xs text-red-300">
                   Inappropriate content detected: {moderationResult.flaggedWords.map(w => `"${w.word}" (${w.category})`).join(', ')}
                 </p>
@@ -881,9 +972,10 @@ export default function ParaphrasePage() {
                   <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">Style Transformation Analysis</h3>
                   <button 
                     onClick={() => setShowStyleAnalysis(false)}
-                    className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors flex-shrink-0"
+                    className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors flex-shrink-0 flex items-center gap-2"
                   >
-                    Close ✕
+                    <span>Close</span>
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
                 <StyleComparisonPanel 

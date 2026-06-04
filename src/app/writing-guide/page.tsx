@@ -868,11 +868,13 @@ export default function WritingGuidePage() {
               </div>
 
               {profile && profile.notes?.includes('Generated from questionnaire answers') && (
-                <div className="mx-auto max-w-3xl p-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 text-amber-100">
-                  <p className="text-sm font-semibold">Tip for better feedback</p>
-                  <p className="text-xs text-amber-200 mt-1">
-                    This profile was generated only from your questionnaire answers. Add a real essay sample in onboarding to see deeper, more accurate guidance.
-                  </p>
+                <div className="bg-slate-900/20 px-4 py-4 sm:px-5">
+                  <div className="w-full rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-100">
+                    <p className="text-sm font-semibold">Tip for better feedback</p>
+                    <p className="mt-1 text-xs text-amber-200">
+                      This profile was generated only from your questionnaire answers. Add a real essay sample in onboarding to see deeper, more accurate guidance.
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -1110,7 +1112,7 @@ export default function WritingGuidePage() {
           {/* Writing Contexts */}
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-white">Writing for Different Contexts</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid items-start gap-4 sm:grid-cols-2">
               {WRITING_CONTEXTS.map(context => (
                 <button
                   key={context.id}

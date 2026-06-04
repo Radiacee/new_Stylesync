@@ -1056,6 +1056,8 @@ ${styleInstructions}
 RULES:
 - Rewrite completely in your own words
 - Keep all information and facts
+- Use natural, precise wording. Do not swap words for awkward synonyms.
+- Never write phrases like "significantly necessary", "significantly intended", or "significantly required".
 - PRESERVE THE EXACT STRUCTURE: Keep all line breaks, paragraphs, and bullet points in the same positions
 - Output ONLY the rewritten text`;
   }
@@ -1065,6 +1067,7 @@ RULES:
     return `Rewrite this text in your own words. Keep all the information but express it differently.
 
 IMPORTANT: Preserve the exact layout - keep all line breaks, paragraphs, bullet points, and numbered lists in the same positions as the original.
+Use natural, precise wording. Do not force awkward synonyms or phrases like "significantly necessary", "significantly intended", or "significantly required".
 
 Output only the rewritten text.`;
   }
@@ -1257,6 +1260,7 @@ CRITICAL RULES:
    - BANNED structures: Do NOT start 2+ sentences in a row with "This [verb]s". Do NOT use "Not only... but also". Do NOT write 3+ sentences of similar length in a row.
    - REQUIRED: Vary sentence length naturally. Mix shorter sentences (6-10 words) with longer ones (15-25 words). But every sentence must be complete and make sense on its own.
    - REQUIRED: Use the SAME vocabulary complexity as the sample writer. If they use simple words, use simple words. Don't upgrade "food" to "nourishment" or "sleep" to "slumber" or "water" to "hydration" unless the sample writer does this.
+   - REQUIRED: Preserve accuracy over novelty. Do not force awkward synonym swaps. Never write phrases like "significantly necessary", "significantly intended", or "significantly required".
    - REQUIRED: Don't connect every sentence smoothly. Real humans sometimes jump between ideas.
    - REQUIRED: When the original text has numbered lists (1, 2, 3), keep them as clean numbered lists. Don't merge list items into flowing prose.
    - ALLOWED: Start sentences with "And", "But", "So", "Or". Use sentence fragments. Use informal connectors. Have slightly uneven paragraph lengths.
@@ -1846,6 +1850,8 @@ function stripAIPatterns(text: string): string {
 
   // 3. Remove overly emphatic AI intensifiers in common combos  
   result = result.replace(/\b(truly|deeply|incredibly|remarkably|exceptionally|profoundly|significantly|overwhelmingly|undeniably|inherently) (important|significant|crucial|essential|vital|remarkable|transformative|impactful|valuable|meaningful)\b/gi, (_, _intensifier, adj) => adj);
+  result = result.replace(/\b(significantly|substantially|considerably|remarkably|exceptionally) (necessary|required|needed|intended|designed|meant)\b/gi, (_, _intensifier, word) => word);
+  result = result.replace(/,\s+(this|that|it|these|those)\s+(affects|impacts|influences|changes|helps|allows|means|shows|creates|causes)\b/gi, (_, subject, verb) => `. ${subject.charAt(0).toUpperCase() + subject.slice(1)} ${verb}`);
 
   // 4. Strip ornate/flowery AI metaphors — replace with plain language
   result = stripOrnateLanguage(result);

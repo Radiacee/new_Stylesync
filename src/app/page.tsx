@@ -33,7 +33,7 @@ export default function LandingPage() {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/style/onboarding" className="px-8 py-4 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold shadow-subtle-glow transition text-center">Create Style Profile</Link>
+            <Link href="/style/onboarding" className="px-8 py-4 rounded-xl bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold shadow-subtle-glow transition text-center">Create Your Style</Link>
             <Link href="/paraphrase" className="px-8 py-4 rounded-xl border border-white/15 hover:border-brand-400/60 text-slate-200 hover:text-white transition text-center">Start Paraphrasing</Link>
           </div>
           
