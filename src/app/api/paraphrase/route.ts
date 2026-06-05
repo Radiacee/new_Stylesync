@@ -8,6 +8,7 @@ const bodySchema = z.object({
   useModel: z.boolean().optional(),
   profile: z.any().optional(),
   debug: z.boolean().optional(),
+  paraphraseMode: z.enum(['style', 'robotics']).optional(),
   stylePreset: z.enum(['original', 'formal', 'casual', 'academic', 'professional', 'creative']).optional(),
   styleInstructions: z.string().nullable().optional()
 });
@@ -816,6 +817,79 @@ function applyAutomaticFixes(output: string, fixes: AutoFix[], original: string,
 
 export const runtime = 'nodejs';
 
+function createNeutralVerification(): VerificationResult {
+  return {
+    score: 100,
+    issues: [],
+    fixes: [],
+    passed: true,
+    styleBreakdown: {
+      contractions: { match: true, score: 100 },
+      sentenceLength: { match: true, score: 100, diff: 0 },
+      vocabulary: { match: true, score: 100 },
+      transitions: { match: true, score: 75 },
+      lexicalDensity: { match: true, score: 100 },
+      sentenceVariety: { match: true, score: 100 },
+      passiveVoice: { match: true, score: 100 },
+      punctuation: { match: true, score: 100 },
+      pronounUsage: { match: true, score: 100 },
+      ngramSimilarity: { match: true, score: 100 }
+    }
+  };
+}
+
+function buildRoboticsFallback(text: string): string {
+  const trimmed = text.trim();
+  const hasCode = /(?:#include|void\s+setup|void\s+loop|digitalWrite|analogWrite|pinMode|def\s+\w+|import\s+\w+|class\s+\w+|=\s*[\w.]+\(|for\s*\(|while\s*\()/i.test(trimmed);
+
+  return [
+    'Paraphrased version',
+    '',
+    cleanText(trimmed),
+    '',
+    'Detailed robotics explanation',
+    '',
+    hasCode
+      ? '- This appears to include robotics or programming code. Check each library, pin, sensor, motor, and control statement against your actual robot setup.'
+      : '- This text appears to describe a robotics idea. Check the robot parts, input sensors, output actuators, and intended behavior.',
+    '- The system could not reach an AI model, so this fallback preserves the original meaning without adding unsupported technical details.',
+    '- For final work, verify hardware names, pin numbers, wiring, units, and safety limits before using the explanation.'
+  ].join('\n');
+}
+
+function buildRoboticsPrompt(): string {
+  return `You are a robotics paraphrasing and explanation assistant for a student project.
+
+Your job is to rewrite the user's robotics-related text in clearer original wording, then explain the technical details so a robotics learner can understand them.
+
+OUTPUT FORMAT:
+
+Paraphrased version
+[Rewrite the text in original wording. Keep the same meaning, facts, numbers, code identifiers, hardware names, pin numbers, units, and sequence.]
+
+Detailed robotics explanation
+[Explain every important detail in plain language.]
+
+If the input contains code:
+- Preserve code blocks exactly when quoting them for reference.
+- Explain each library/import, variable, pin assignment, setup function, loop function, condition, sensor read, motor/servo action, delay/timing value, and control-flow statement.
+- Explain what each part does in the robot, not just what it means in programming.
+- Mention possible hardware involved, such as Arduino, Raspberry Pi, ESP32, sensors, motors, servos, drivers, relays, or power supply, only when the input supports it.
+- Do not invent parts, wiring, pin numbers, calibration values, or results.
+
+If the input is not code:
+- Explain the robotics concept, the likely robot components involved, the inputs, the outputs, and the step-by-step process.
+- Keep the explanation useful for someone who likes robotics and may need to defend the project.
+
+Rules:
+- Focus on robotics, electronics, programming logic, automation, sensors, actuators, and control systems.
+- Keep the paraphrase academically acceptable and easy to understand.
+- Do not answer with only a summary. The explanation must teach the details.
+- Do not add citations or claims that are not in the input.
+- Do not include generic AI disclaimers.
+- Use clear headings and bullets when helpful.`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
@@ -828,7 +902,8 @@ export async function POST(req: NextRequest) {
     }
 
     const json = await req.json();
-    const { text, useModel, profile, stylePreset, styleInstructions } = bodySchema.parse(json);
+    const { text, useModel, profile, stylePreset, styleInstructions, paraphraseMode = 'style' } = bodySchema.parse(json);
+    const isRoboticsMode = paraphraseMode === 'robotics';
 
     const hasGroqKey = !!process.env.GROQ_API_KEY;
     const hasGeminiKey = !!process.env.GEMINI_API_KEY;
@@ -839,22 +914,28 @@ export async function POST(req: NextRequest) {
     let verificationResult: VerificationResult;
     
     if (canUseAI && (useModel ?? true)) {
-      // Use AI to paraphrase with user's style
-      output = await paraphraseWithAI(text, profile, stylePreset, styleInstructions);
+      // Use AI to paraphrase with the selected mode
+      output = await paraphraseWithAI(
+        text,
+        isRoboticsMode ? null : profile,
+        isRoboticsMode ? 'original' : stylePreset,
+        isRoboticsMode ? null : styleInstructions,
+        paraphraseMode
+      );
       usedAIModel = true;
       
       // Verify output quality and fix issues
-      verificationResult = verifyOutput(text, output, profile);
+      verificationResult = isRoboticsMode ? createNeutralVerification() : verifyOutput(text, output, profile);
       
       // Apply automatic fixes if issues detected
-      if (verificationResult.fixes.length > 0) {
+      if (!isRoboticsMode && verificationResult.fixes.length > 0) {
         output = applyAutomaticFixes(output, verificationResult.fixes, text, profile);
         // Re-verify after fixes
         verificationResult = verifyOutput(text, output, profile);
       }
       
       // If quality is still below threshold, try with TARGETED correction prompt (up to 2 retries)
-      if (verificationResult.score < 75 && profile?.sampleExcerpt) {
+      if (!isRoboticsMode && verificationResult.score < 75 && profile?.sampleExcerpt) {
         console.log('Quality below 75 (' + verificationResult.score + '), retrying with targeted correction (attempt 1)...');
         const retryOutput = await retryWithCorrection(text, output, profile, verificationResult, stylePreset, styleInstructions);
         const retryVerification = verifyOutput(text, retryOutput, profile);
@@ -879,29 +960,12 @@ export async function POST(req: NextRequest) {
       }
     } else {
       // Simple fallback - just return cleaned text
-      output = cleanText(text);
-      verificationResult = { 
-        score: 100, 
-        issues: [], 
-        fixes: [], 
-        passed: true,
-        styleBreakdown: {
-          contractions: { match: true, score: 100 },
-          sentenceLength: { match: true, score: 100, diff: 0 },
-          vocabulary: { match: true, score: 100 },
-          transitions: { match: true, score: 75 },
-          lexicalDensity: { match: true, score: 100 },
-          sentenceVariety: { match: true, score: 100 },
-          passiveVoice: { match: true, score: 100 },
-          punctuation: { match: true, score: 100 },
-          pronounUsage: { match: true, score: 100 },
-          ngramSimilarity: { match: true, score: 100 }
-        }
-      };
+      output = isRoboticsMode ? buildRoboticsFallback(text) : cleanText(text);
+      verificationResult = createNeutralVerification();
     }
 
     // Apply deep style matching from deepStyleMatch.ts (uses the dormant module)
-    if (profile?.sampleExcerpt && profile.sampleExcerpt.length > 50) {
+    if (!isRoboticsMode && profile?.sampleExcerpt && profile.sampleExcerpt.length > 50) {
       try {
         output = applyDeepStyleMatch(output, profile);
       } catch (e) {
@@ -911,14 +975,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Apply user's style post-processing (strict contraction/expansion enforcement)
-    if (profile?.sampleExcerpt || profile?.sampleExcerpts?.length) {
+    if (!isRoboticsMode && (profile?.sampleExcerpt || profile?.sampleExcerpts?.length)) {
       output = applyUserStyle(output, profile);
       // Final verification after style application
       verificationResult = verifyOutput(text, output, profile);
     }
 
     // Calculate style match
-    const styleMatch = calculateStyleMatch(output, profile);
+    const styleMatch = isRoboticsMode
+      ? { overallMatch: 100, details: ['Robotics explainer mode does not use a writing-style profile'] }
+      : calculateStyleMatch(output, profile);
 
     // Calculate detailed metrics for the style lock panel
     const outputMetrics = calculateOutputMetrics(output, profile);
@@ -929,7 +995,8 @@ export async function POST(req: NextRequest) {
       metrics: outputMetrics,
       actions: outputMetrics.actions,
       styleMatch,
-      verification: verificationResult
+      verification: verificationResult,
+      paraphraseMode
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...formatRateLimitHeaders(rl) }
@@ -948,20 +1015,26 @@ async function paraphraseWithAI(
   text: string, 
   profile: any, 
   stylePreset?: string, 
-  styleInstructions?: string | null
+  styleInstructions?: string | null,
+  paraphraseMode: 'style' | 'robotics' = 'style'
 ): Promise<string> {
-  const prompt = buildPrompt(profile, stylePreset, styleInstructions);
-  const temp = profile?.sampleExcerpt ? 0.35 : 0.55; // Lower temp for exact style matching
+  const prompt = paraphraseMode === 'robotics'
+    ? buildRoboticsPrompt()
+    : buildPrompt(profile, stylePreset, styleInstructions);
+  const temp = paraphraseMode === 'robotics'
+    ? 0.3
+    : profile?.sampleExcerpt ? 0.35 : 0.55; // Lower temp for exact style matching
+  const shouldCleanOutput = paraphraseMode !== 'robotics';
   
   try {
-    return await callGroqAPI(text, prompt, temp);
+    return await callGroqAPI(text, prompt, temp, shouldCleanOutput);
   } catch (e: any) {
     console.log('Groq failed, trying Gemini:', e?.message);
     try {
-      return await callGeminiAPI(text, prompt, temp);
+      return await callGeminiAPI(text, prompt, temp, shouldCleanOutput);
     } catch (e2: any) {
       console.log('Gemini also failed:', e2?.message);
-      return cleanText(text);
+      return paraphraseMode === 'robotics' ? buildRoboticsFallback(text) : cleanText(text);
     }
   }
 }
@@ -1396,7 +1469,7 @@ function isCommonWord(word: string): boolean {
 // API CALLS
 // =============================================================================
 
-async function callGroqAPI(text: string, systemPrompt: string, temperature: number = 0.55): Promise<string> {
+async function callGroqAPI(text: string, systemPrompt: string, temperature: number = 0.55, cleanOutput = true): Promise<string> {
   const GroqMod = await import('groq-sdk');
   const Groq = (GroqMod as any).default ?? (GroqMod as any).Groq;
   const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -1412,10 +1485,10 @@ async function callGroqAPI(text: string, systemPrompt: string, temperature: numb
   });
   
   const result = completion.choices?.[0]?.message?.content?.trim() || '';
-  return cleanText(result) || text;
+  return cleanOutput ? cleanText(result) || text : result || text;
 }
 
-async function callGeminiAPI(text: string, systemPrompt: string, temperature: number = 0.55): Promise<string> {
+async function callGeminiAPI(text: string, systemPrompt: string, temperature: number = 0.55, cleanOutput = true): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('No Gemini API key');
   
@@ -1437,7 +1510,7 @@ async function callGeminiAPI(text: string, systemPrompt: string, temperature: nu
   
   const data = await response.json();
   const result = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-  return cleanText(result) || text;
+  return cleanOutput ? cleanText(result) || text : result || text;
 }
 
 // =============================================================================

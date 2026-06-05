@@ -58,7 +58,7 @@ export default function SignInPage() {
         // Get the current origin for redirect URL
         const redirectUrl = `${window.location.origin}/auth/callback`;
         
-        const { error } = await supabase.auth.signUp({ 
+        const { data, error } = await supabase.auth.signUp({ 
           email, 
           password: pw,
           options: {
@@ -80,9 +80,24 @@ export default function SignInPage() {
           }
           throw error;
         }
+
+        // Supabase returns an empty identities array if the email is already registered 
+        // (when email enumeration protection is enabled)
+        if (data?.user && data.user.identities && data.user.identities.length === 0) {
+          setMsg('This email is already registered. Please sign in instead.');
+          setMsgType('error');
+          setLoading(false);
+          return;
+        }
         
-        setMsg('Success! Check your email to confirm your account.');
-        setMsgType('success');
+        if (data.session) {
+          setMsg('Account created successfully! Redirecting...');
+          setMsgType('success');
+          setTimeout(() => router.replace('/paraphrase'), 300);
+        } else {
+          setMsg('Success! Check your email to confirm your account.');
+          setMsgType('success');
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
         

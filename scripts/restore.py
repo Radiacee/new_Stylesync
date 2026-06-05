@@ -1,3 +1,9 @@
+import re
+
+# We will reconstruct page.tsx
+# First, the correct top part with our edits
+
+top_part = """\
 "use client";
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -26,7 +32,7 @@ import { moderateContent, type ModerationResult } from '../../lib/contentModerat
 function combineProfileSamples(profile: StyleProfile | null): string {
   if (!profile) return '';
   if (profile.sampleExcerpts?.length) {
-    return profile.sampleExcerpts.map(s => s.trim()).filter(Boolean).join('\n\n');
+    return profile.sampleExcerpts.map(s => s.trim()).filter(Boolean).join('\\n\\n');
   }
   return profile.sampleExcerpt?.trim() || '';
 }
@@ -79,6 +85,7 @@ export default function ParaphrasePage() {
   const suggestionsRef = useRef<HTMLDivElement>(null); // Ref for auto-scroll to suggestions
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null); // Track expanded history item
   const [selectedStyle, setSelectedStyle] = useState<StylePreset>('original'); // Style selection
+  const [paraphraseMode, setParaphraseMode] = useState<'style' | 'robotics'>('style'); // System mode toggle
   const [moderationResult, setModerationResult] = useState<ModerationResult | null>(null); // Content moderation
   const [showSuggestions, setShowSuggestions] = useState(false); // Writing suggestions toggle
   const [styleMatch, setStyleMatch] = useState<{ overallMatch: number; issues: string[] } | null>(null); // Style match report
@@ -237,7 +244,7 @@ export default function ParaphrasePage() {
         ...(preparedProfile.sampleExcerpts || [preparedProfile.sampleExcerpt]),
         ...additionalExcerpts
       ].filter(Boolean);
-      const combinedExcerpt = allExcerpts.join('\n\n');
+      const combinedExcerpt = allExcerpts.join('\\n\\n');
       preparedProfile = {
         ...preparedProfile,
         sampleExcerpt: combinedExcerpt,
@@ -260,7 +267,8 @@ export default function ParaphrasePage() {
         profile: preparedProfile, 
         debug: false,
         stylePreset: selectedStyle,
-        styleInstructions
+        styleInstructions,
+        paraphraseMode
       };
       const res = await fetch('/api/paraphrase', {
         method: 'POST',
@@ -665,372 +673,130 @@ export default function ParaphrasePage() {
             </div>
           )}
           
-          {!profile && <p className="text-sm text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded p-3">No style profile found. Create one for better alignment.</p>}
+          {/* System Mode Toggle */}
+          <div className="flex items-center gap-4 bg-slate-800/50 p-1.5 rounded-lg border border-white/10 inline-flex">
+            <button
+              onClick={() => setParaphraseMode('style')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                paraphraseMode === 'style'
+                  ? 'bg-brand-500 text-slate-900 shadow-lg'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              }`}
+            >
+              <span className="text-lg">✍️</span> StyleSync
+            </button>
+            <button
+              onClick={() => setParaphraseMode('robotics')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                paraphraseMode === 'robotics'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              }`}
+            >
+              <span className="text-lg">🤖</span> Robotics
+            </button>
+          </div>
+
+          {paraphraseMode === 'style' && !profile && <p className="text-sm text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded p-3">No style profile found. Create one for better alignment.</p>}
           
-          {/* Style Selection */}
-          <StyleSelector 
-            selectedStyle={selectedStyle}
-            onStyleChange={setSelectedStyle}
-            disabled={busy}
-          />
+          {/* Style Selection - only in style mode */}
+          {paraphraseMode === 'style' && (
+            <StyleSelector 
+              selectedStyle={selectedStyle}
+              onStyleChange={setSelectedStyle}
+              disabled={busy}
+            />
+          )}
           
           <div className="space-y-4">
             <label className="text-sm font-medium">Input Text</label>
             <textarea 
               value={input} 
               onChange={e => setInput(e.target.value)} 
-              placeholder="Paste text to paraphrase..." 
+              placeholder={paraphraseMode === 'robotics' ? "Paste robotics text or code to paraphrase and explain..." : "Paste text to paraphrase..."} 
               rows={10} 
               className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed" 
             />
           </div>
 
-          {/* Multiple Excerpts for Better Style Recognition */}
-          <div className="space-y-3 rounded-lg border border-white/10 bg-slate-800/30 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-100">Additional Style Samples</h3>
-                <p className="text-xs text-slate-400 mt-1">Add more of your writing for better style recognition and model training (optional)</p>
+          {/* Multiple Excerpts for Better Style Recognition - only in style mode */}
+          {paraphraseMode === 'style' && (
+            <div className="space-y-3 rounded-lg border border-white/10 bg-slate-800/30 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-100">Additional Style Samples</h3>
+                  <p className="text-xs text-slate-400 mt-1">Add more of your writing for better style recognition and model training (optional)</p>
+                </div>
               </div>
-            </div>
-            
-            {additionalExcerpts.length > 0 && (
-              <div className="space-y-2">
-                {additionalExcerpts.map((excerpt, idx) => (
-                  <div key={idx} className="flex gap-2 items-start bg-slate-900/40 rounded p-2">
-                    <div className="flex-1 text-xs text-slate-300 line-clamp-2">{excerpt}</div>
-                    <button
-                      onClick={() => setAdditionalExcerpts(excerpts => excerpts.filter((_, i) => i !== idx))}
-                      className="flex-shrink-0 px-2 py-1 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+              
+              {additionalExcerpts.length > 0 && (
+                <div className="space-y-2">
+                  {additionalExcerpts.map((excerpt, idx) => (
+                    <div key={idx} className="flex gap-2 items-start bg-slate-900/40 rounded p-2">
+                      <div className="flex-1 text-xs text-slate-300 line-clamp-2">{excerpt}</div>
+                      <button
+                        onClick={() => setAdditionalExcerpts(excerpts => excerpts.filter((_, i) => i !== idx))}
+                        className="flex-shrink-0 px-2 py-1 text-xs bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-            <textarea
-              value={excerptInput}
-              onChange={e => setExcerptInput(e.target.value)}
-              placeholder="Paste another writing sample..."
-              rows={4}
-              className="w-full rounded-lg bg-slate-900/60 border border-white/10 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed text-slate-200"
-            />
-            
-            <button
-              onClick={() => {
-                if (excerptInput.trim()) {
-                  setAdditionalExcerpts(prev => [...prev, excerptInput.trim()]);
-                  setExcerptInput('');
-                }
-              }}
-              disabled={!excerptInput.trim()}
-              className="w-full px-3 py-2 rounded-lg text-xs font-medium bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 border border-brand-500/30 disabled:opacity-40 transition-colors"
-            >
-              + Add Excerpt ({additionalExcerpts.length} added)
-            </button>
-          </div>
+              <textarea
+                value={excerptInput}
+                onChange={e => setExcerptInput(e.target.value)}
+                placeholder="Paste another writing sample..."
+                rows={4}
+                className="w-full rounded-lg bg-slate-900/60 border border-white/10 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed text-slate-200"
+              />
+              
+              <button
+                onClick={() => {
+                  if (excerptInput.trim()) {
+                    setAdditionalExcerpts(prev => [...prev, excerptInput.trim()]);
+                    setExcerptInput('');
+                  }
+                }}
+                disabled={!excerptInput.trim()}
+                className="w-full px-3 py-2 rounded-lg text-xs font-medium bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 border border-brand-500/30 disabled:opacity-40 transition-colors"
+              >
+                + Add Excerpt ({additionalExcerpts.length} added)
+              </button>
+            </div>
+          )}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
             <button 
               onClick={handleParaphrase} 
               disabled={!input.trim() || busy} 
-              className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 font-semibold disabled:opacity-40 transition sm:min-w-[160px] text-center"
-            >
-              {busy ? 'Processing…' : 'Paraphrase'}
-            </button>
-            <button 
-              onClick={() => { 
-                setInput(''); 
-                setOutput(''); 
-                setError(null); 
-                setUsedModel(false); 
-                setActions([]); 
-                setMetrics(null); 
-                setModerationResult(null);
-                setAdditionalExcerpts([]);
-                setExcerptInput('');
-              }} 
-              className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-lg border border-white/10 hover:border-brand-400/60 text-slate-200 text-sm transition text-center"
-            >
-              Reset
-            </button>
-          </div>
+"""
 
-        </div>
-        {(error || output) && (
-          <div ref={resultsRef} className="glass-panel p-4 sm:p-5 space-y-3 scroll-mt-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <h2 className="font-semibold text-brand-300 flex items-center gap-2 text-sm sm:text-base">
-                Result
-              </h2>
-              {output && (
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <button 
-                    onClick={handleCopyResult}
-                    className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 justify-center ${
-                      copied 
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                        : 'bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 border border-brand-500/30 hover:border-brand-400/50'
-                    }`}
-                    title="Copy result to clipboard"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-            {error && <p className="text-xs text-amber-400">{error}</p>}
-            {output && <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200">{output}</p>}
-            
-            {/* User Rating Feedback */}
-            {output && (
-              <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/10">
-                <span className="text-xs text-slate-400">Rate this result:</span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <button
-                      key={star}
-                      onClick={async () => {
-                        setRating(star);
-                        // Track rating in analytics
-                        if (userId && profile) {
-                          await fetch('/api/analytics/update-satisfaction', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              userId,
-                              profileId: profile.id,
-                              profileName: profile.name,
-                              ...(verificationScore > 0 ? { verification_score: verificationScore } : {}),
-                              rating: star, // 1-5 rating
-                              input_length: input.length,
-                              output_length: output.length,
-                              consent_given: userConsent
-                            })
-                          });
-                        }
-                      }}
-                      className={`transition-colors ${
-                        rating && star <= rating ? 'text-yellow-400' : 'text-slate-500 hover:text-yellow-300'
-                      }`}
-                      title={`Rate ${star} star${star > 1 ? 's' : ''}`}
-                    >
-                      <Star className={`w-4 h-4 ${rating && star <= rating ? 'fill-current' : ''}`} />
-                    </button>
-                  ))}
-                </div>
-                {rating && <span className="text-xs text-slate-300 ml-2">({rating}/5)</span>}
-              </div>
-            )}
-            
-            {/* Report button */}
-            {output && (
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
-                <ReportButton 
-                  contentText={output}
-                  userId={userId}
-                  variant="full"
-                />
-              </div>
-            )}
+import os
 
-            {/* A/B/C Multiple Output Options */}
-            {output && profile && (
-              <div className="pt-2 border-t border-white/10">
-                <ABTestingPanel 
-                  paraphrasedText={output}
-                />
-              </div>
-            )}
-            
-            {/* Content Moderation Warning */}
-            {moderationResult && !moderationResult.isClean && (
-              <div className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <h4 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  Content Warning
-                </h4>
-                <p className="text-xs text-red-300">
-                  Inappropriate content detected: {moderationResult.flaggedWords.map(w => `"${w.word}" (${w.category})`).join(', ')}
-                </p>
-                {moderationResult.suggestions.length > 0 && (
-                  <ul className="mt-2 text-xs text-slate-300">
-                    {moderationResult.suggestions.map((s, i) => <li key={i}>• {s}</li>)}
-                  </ul>
-                )}
-              </div>
-            )}
+broken_path = r'c:\Users\MSI\Documents\GitHub\new_Stylesync\src\app\paraphrase\page.tsx'
 
-            {hasStyleDiagnostics && (
-              <div className="mt-4 rounded-lg border border-brand-500/30 bg-brand-500/5 p-4 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-brand-300/80">Style lock</p>
-                    <p className="text-sm text-white">Every pass is tuned to your samples.</p>
-                  </div>
-                  {metrics && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded border ${metrics.isHumanized ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : 'bg-amber-500/15 border-amber-500/40 text-amber-300'}`}>
-                      {metrics.isHumanized ? 'Aligned' : 'Adjusting'} · {metrics.passes ?? 0} passes
-                    </span>
-                  )}
-                </div>
+with open(broken_path, 'r', encoding='utf-8') as f:
+    broken_content = f.read()
 
-                {metrics && (
-                  <div className="grid grid-cols-2 gap-3 text-xs text-slate-200">
-                    {styleMetricData.map(metric => (
-                      <div key={metric.label} className="bg-slate-900/40 rounded-md border border-white/5 p-2">
-                        <p className="text-[10px] uppercase tracking-wide text-slate-400">{metric.label}</p>
-                        <p className="text-base font-semibold text-white">{metric.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
+# We need to extract lines 74 to end from broken_content
+# Line 74 starts with: '              className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-lg bg-brand-500'
+lines = broken_content.splitlines()
 
-                {actions.length > 0 && (
-                  <div>
-                    <p className="text-[11px] font-semibold text-brand-200 mb-1">Micro-adjustments ({actions.length})</p>
-                    <ul className="space-y-1 text-xs text-slate-200">
-                      {actions.slice(0, 4).map((action, idx) => (
-                        <li key={`${action.code}-${idx}`} className="flex items-start gap-2">
-                          <span className="text-brand-300">•</span>
-                          <span>{describeAction(action)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    {actions.length > 4 && (
-                      <p className="text-[10px] text-slate-500 mt-1">+{actions.length - 4} more adjustments</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {/* Context-Aware Quality Suggestions */}
-            {output && input && (
-              <QualitySuggestions
-                input={input}
-                output={output}
-                styleType={selectedStyle}
-                profileSample={profile?.sampleExcerpt}
-              />
-            )}
-            
-            <p className="text-[10px] text-slate-500">Review output carefully. Cite sources and disclose AI assistance.</p>
-          </div>
-        )}
+# find index
+start_idx = -1
+for i, line in enumerate(lines):
+    if 'className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-lg bg-brand-500 hover:bg-brand-400' in line:
+        start_idx = i
+        break
 
-        {/* Style Application Proof - Shows REAL evidence of style being applied */}
-        {output && input && profile?.sampleExcerpt && styleTransformation && (
-          <div className="glass-panel p-4 sm:p-5 border-2 border-brand-500/50">
-            <StyleProofPanel
-              userSampleText={profile.sampleExcerpt}
-              originalInput={input}
-              paraphrasedOutput={output}
-              userStyle={styleTransformation.userStyle}
-              verification={verification}
-            />
-          </div>
-        )}
+if start_idx != -1:
+    bottom_part = '\\n'.join(lines[start_idx:])
+    
+    with open(broken_path, 'w', encoding='utf-8') as f:
+        f.write(top_part + bottom_part + '\\n')
+    print("File successfully restored!")
+else:
+    print("Could not find the hook line.")
 
-        {/* Style Verification - Hidden (user doesn't need to see this) */}
-        {/* Still calculates score in background for analytics */}
-        {output && input && (
-          <div style={{ display: 'none' }}>
-            <StyleVerification 
-              original={input}
-              transformed={output}
-              profile={profile}
-              onScoreCalculated={handleVerificationScore}
-            />
-          </div>
-        )}
-      </div>
-      
-      {/* Style Transformation Analysis Modal */}
-      {showStyleAnalysis && styleTransformation && isMounted && createPortal(
-        <div 
-          className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-50 overflow-y-auto"
-          onClick={() => setShowStyleAnalysis(false)}
-        >
-          <div className="min-h-screen flex items-center justify-center p-2 sm:p-4 md:p-6">
-            <div 
-              className="w-full max-w-[95vw] lg:max-w-6xl my-8"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="glass-panel p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-slate-900/90 backdrop-blur-sm pb-4 border-b border-white/10 z-10">
-                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">Style Transformation Analysis</h3>
-                  <button 
-                    onClick={() => setShowStyleAnalysis(false)}
-                    className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors flex-shrink-0 flex items-center gap-2"
-                  >
-                    <span>Close</span>
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <StyleComparisonPanel 
-                  transformation={styleTransformation} 
-                  originalText={input}
-                  paraphrasedText={output}
-                />
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      
-      <aside className="lg:col-span-2 space-y-4 order-first lg:order-last">
-        <div className="glass-panel p-4">
-          <h2 className="font-semibold text-brand-300 text-sm sm:text-base mb-2">Current Style Profile</h2>
-          {profile ? (
-            <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-300">
-                <div className="flex justify-between"><span className="text-slate-400">Tone:</span> <span className="text-white font-medium">{profile.tone}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Formality:</span> <span className="text-white font-medium">{pct(profile.formality)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Pacing:</span> <span className="text-white font-medium">{pct(profile.pacing)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Descriptiveness:</span> <span className="text-white font-medium">{pct(profile.descriptiveness)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Directness:</span> <span className="text-white font-medium">{pct(profile.directness)}</span></div>
-              </div>
-              {profile.customLexicon.length > 0 && (
-                <div className="pt-2 border-t border-white/10">
-                  <div className="text-[10px] text-slate-400 mb-1">Keywords:</div>
-                  <div className="flex flex-wrap gap-1">
-                    {profile.customLexicon.map(word => (
-                      <span key={word} className="px-1.5 py-0.5 bg-brand-500/20 text-brand-300 rounded text-[10px]">{word}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {/* {profile.notes && (
-                <div className="pt-2 border-t border-white/10">
-                  <div className="text-[10px] text-slate-400 mb-1">Notes:</div>
-                  <div className="text-xs text-slate-300 line-clamp-2">{profile.notes}</div>
-                </div>
-              )} */}
-            </div>
-          ) : <p className="text-xs text-slate-400">No profile loaded.</p>}
-        </div>
-        <div className="glass-panel p-4"><StyleProfileManager onSelect={p => setProfile(p ? ensureProfileHasAnalysis(p) : null)} /></div>
-      </aside>
-        </div>
-        {busy && <FullScreenSpinner label="Generating paraphrase" />}
-        {!authChecked && <FullScreenSpinner label="Checking authentication" />}
-        
-        {/* Style Options Help Tool */}
-        <StyleOptionsHelp />
-      </div>
-    </div>
-  );
-}
