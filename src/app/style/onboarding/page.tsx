@@ -21,7 +21,7 @@ function OnboardingInner() {
   const router = useRouter();
   
   // Mode toggle: 'essays' or 'questions'
-  const [mode, setMode] = useState<'essays' | 'questions'>('questions');
+  const [mode, setMode] = useState<'essays' | 'questions'>('essays');
   
   // Multi-essay state
   const [profileName, setProfileName] = useState('');
