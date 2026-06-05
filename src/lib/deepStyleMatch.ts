@@ -337,36 +337,9 @@ function matchSentenceStructure(text: string, patterns: DeepStylePatterns): stri
 }
 
 function matchVocabulary(text: string, patterns: DeepStylePatterns): string {
-  let result = text;
-  
-  // Replace words with user's preferred vocabulary where possible
-  const wordReplacements = new Map<string, string>();
-  
-  // Build simple synonym map from user's frequent words
-  // This is a simplified approach - in production, you'd use a more sophisticated NLP model
-  const userPreferredWords = Array.from(patterns.preferredWords.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 20)
-    .map(([word]) => word);
-  
-  // Replace generic words with user's preferred alternatives if semantic match
-  const genericToSpecific: Record<string, string[]> = {
-    'use': ['utilize', 'employ', 'apply', 'leverage', 'implement'],
-    'show': ['demonstrate', 'illustrate', 'display', 'exhibit', 'reveal'],
-    'make': ['create', 'produce', 'generate', 'construct', 'develop'],
-    'get': ['obtain', 'acquire', 'secure', 'gain', 'procure'],
-    'help': ['assist', 'aid', 'support', 'facilitate', 'enable'],
-  };
-  
-  Object.entries(genericToSpecific).forEach(([generic, alternatives]) => {
-    const userPreferred = alternatives.find(alt => userPreferredWords.includes(alt));
-    if (userPreferred) {
-      const regex = new RegExp(`\\b${generic}\\b`, 'gi');
-      result = result.replace(regex, userPreferred);
-    }
-  });
-  
-  return result;
+  // Disabled: Blind synonym swapping (e.g. "make" -> "create") causes severe grammatical errors.
+  // We now rely purely on the AI model to match vocabulary naturally through prompting.
+  return text;
 }
 
 function matchGrammarPatterns(text: string, patterns: DeepStylePatterns, sampleStyle: SampleStyle): string {
@@ -472,14 +445,8 @@ function matchTransitionsAndFlow(text: string, patterns: DeepStylePatterns): str
     
     if (!sentence.trim()) continue;
     
-    // Add transitions if user frequently uses them
-    if (patterns.paragraphTransitions.length > 0 && i > 1 && Math.random() < 0.3) {
-      const transition = patterns.paragraphTransitions[Math.floor(Math.random() * patterns.paragraphTransitions.length)];
-      if (!sentence.toLowerCase().startsWith(transition)) {
-        sentence = transition.charAt(0).toUpperCase() + transition.slice(1) + ', ' + 
-                   sentence.charAt(0).toLowerCase() + sentence.slice(1);
-      }
-    }
+    // Disabled: Randomly injecting transitions (e.g. "However,") ruins logical flow.
+    // The AI model is already prompted to use the user's preferred transitions naturally.
     
     // Add preferred adverbs if user frequently uses them
     if (patterns.preferredAdverbs.length > 0 && Math.random() < 0.2) {

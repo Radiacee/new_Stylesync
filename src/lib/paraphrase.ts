@@ -576,7 +576,9 @@ function cleanText(text: string): string {
   result = result.replace(/,\s*\./g, '.');  // comma before period
   result = result.replace(/\.\s*,/g, '.');  // period before comma
   result = result.replace(/,,+/g, ',');  // multiple commas
-  result = result.replace(/\.\.+/g, '.');  // multiple periods (not ellipsis handling)
+  // Preserve ellipses but fix double periods
+  result = result.replace(/\.{4,}/g, '...');
+  result = result.replace(/(?<!\.)\.\.(?!\.)/g, '.');
   result = result.replace(/\s{2,}/g, ' ');  // multiple spaces
 
   // Ensure proper ending
