@@ -3,7 +3,6 @@ import './globals.css';
 import type { ReactNode } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { ConditionalLayout } from '../components/ConditionalLayout';
-import ServiceWorkerRegistration from '../components/ServiceWorkerRegistration';
 import InstallPrompt from '../components/InstallPrompt';
 import SurveyButton from '../components/SurveyButton';
 
@@ -61,7 +60,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       {/* suppressHydrationWarning on body to ignore extension-injected attrs (e.g. Grammarly) */}
       <body suppressHydrationWarning>
-        <ServiceWorkerRegistration />
         <InstallPrompt />
         <ConditionalLayout>
           {children}
