@@ -531,7 +531,6 @@ export default function StyleProofDetailed({
                 <ul className="text-xs text-slate-300 space-y-1">
                   <li>• {userStyle.usesContractions ? 'Uses contractions (casual tone)' : 'Avoids contractions (formal tone)'}</li>
                   <li>• Average sentence length: ~{Math.round(userStyle.avgSentenceLength)} words</li>
-                  <li>• Perspective: {userStyle.personalVoice}</li>
                   {userStyle.preferredTransitions.length > 0 && (
                     <li>• Prefers transitions: {userStyle.preferredTransitions.slice(0, 3).join(', ')}</li>
                   )}

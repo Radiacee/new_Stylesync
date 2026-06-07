@@ -58,9 +58,7 @@ export default function AITransparencyPanel({
       
       if (analysis.preferredTransitions && analysis.preferredTransitions.length > 0) {
         prompt += `• Preferred transitions: ${analysis.preferredTransitions.slice(0, 3).join(', ')}\n`;
-      }
-      
-      prompt += `• Voice perspective: ${analysis.personalVoice}\n`;
+
     }
 
     return prompt;

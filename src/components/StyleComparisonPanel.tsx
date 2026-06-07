@@ -248,11 +248,7 @@ export default function StyleComparisonPanel({
             <div className="text-white font-medium">{transformation.userStyle.usesContractions ? 'Yes' : 'No'}</div>
             <div className="text-slate-400 text-xs">{transformation.userStyle.usesContractions ? 'casual style' : 'formal style'}</div>
           </div>
-          <div>
-            <div className="text-slate-400 mb-1">Voice</div>
-            <div className="text-white font-medium">{transformation.userStyle.personalVoice}</div>
-            <div className="text-slate-400 text-xs">perspective</div>
-          </div>
+
         </div>
         
         {/* Preferred Transitions */}

@@ -101,7 +101,7 @@ export default function ABTestingPanel({ paraphrasedText }: ABTestingPanelProps)
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-400"></div>
             </div>
           ) : versions ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex flex-col gap-4">
               {/* Version A: Professional */}
               <div className="bg-slate-800/40 border border-white/10 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">

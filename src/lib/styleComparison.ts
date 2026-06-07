@@ -638,13 +638,6 @@ export function calculateStructuredStyleSimilarity(
         target: userStyle.usesContractions ? 'Casual' : 'Formal',
         alignment: 'good',
         explanation: `Determined by contractions and vocabulary.`
-      },
-      {
-        name: 'Voice',
-        original: userStyle.personalVoice,
-        paraphrased: userStyle.personalVoice,
-        alignment: 'excellent',
-        explanation: `First-person, second-person, or third-person perspective.`
       }
     ]
   });

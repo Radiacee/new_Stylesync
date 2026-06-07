@@ -887,7 +887,8 @@ Rules:
 - Do not answer with only a summary. The explanation must teach the details.
 - Do not add citations or claims that are not in the input.
 - Do not include generic AI disclaimers.
-- Use clear headings and bullets when helpful.`;
+- Use clear headings and bullets when helpful.
+- DO NOT act as a dictionary. DO NOT define or explain words even if the input is short. Just rewrite it.`;
 }
 
 export async function POST(req: NextRequest) {
@@ -1132,7 +1133,7 @@ RULES:
 - Use natural, precise wording. Do not swap words for awkward synonyms.
 - Never write phrases like "significantly necessary", "significantly intended", or "significantly required".
 - PRESERVE THE EXACT STRUCTURE: Keep all line breaks, paragraphs, and bullet points in the same positions
-- Output ONLY the rewritten text`;
+- Output ONLY the rewritten text. DO NOT act as a dictionary. DO NOT define or explain words even if the input is short.`;
   }
 
   // No user samples - simple paraphrase
@@ -1142,7 +1143,7 @@ RULES:
 IMPORTANT: Preserve the exact layout - keep all line breaks, paragraphs, bullet points, and numbered lists in the same positions as the original.
 Use natural, precise wording. Do not force awkward synonyms or phrases like "significantly necessary", "significantly intended", or "significantly required".
 
-Output only the rewritten text.`;
+Output only the rewritten text. DO NOT act as a dictionary. DO NOT define or explain words even if the input is short.`;
   }
 
   // Get the user's sample(s)
@@ -1337,7 +1338,8 @@ CRITICAL RULES:
    - REQUIRED: Don't connect every sentence smoothly. Real humans sometimes jump between ideas.
    - REQUIRED: When the original text has numbered lists (1, 2, 3), keep them as clean numbered lists. Don't merge list items into flowing prose.
    - ALLOWED: Start sentences with "And", "But", "So", "Or". Use sentence fragments. Use informal connectors. Have slightly uneven paragraph lengths.
-6. Output ONLY the rewritten text. No commentary, no explanations, no notes.`;
+6. Output ONLY the rewritten text. No commentary, no explanations, no notes.
+7. DO NOT act as a dictionary or conversational assistant. DO NOT define words, answer questions, or provide explanations. If the input is a single word or short phrase, just return a restyled version of it (or the exact same word if it fits the style).`;
 
   return prompt;
 }

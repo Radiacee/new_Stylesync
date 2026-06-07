@@ -681,10 +681,7 @@ function OnboardingInner() {
                     <p className="text-slate-400 text-xs mb-1">Sentence Length</p>
                     <p className="text-white font-medium">{Math.round(analysis.avgSentenceLength)} words avg</p>
                   </div>
-                  <div>
-                    <p className="text-slate-400 text-xs mb-1">Voice</p>
-                    <p className="text-white font-medium">{analysis.personalVoice}</p>
-                  </div>
+
                   {(analysis.vocabularyComplexity ?? 0) > 0 && (
                     <div>
                       <p className="text-slate-400 text-xs mb-1">Vocabulary</p>
@@ -757,15 +754,7 @@ function OnboardingInner() {
                       }
                     </p>
                   )}
-                  {analysis.personalVoice !== 'third-person' && (
-                    <p>
-                      <span className="font-medium">Voice:</span> {
-                        analysis.personalVoice === 'first-person'
-                          ? "You write with a personal touch using \"I\" and \"we\"."
-                          : "You address the reader directly using \"you\"."
-                      }
-                    </p>
-                  )}
+
                 </div>
                 <button
                   onClick={() => setShowComparison(true)}
@@ -874,12 +863,7 @@ function OnboardingInner() {
                   {!analysis.usesContractions && (
                     <li>• Kept formal language without contractions (matching your style)</li>
                   )}
-                  {analysis.personalVoice === 'second-person' && (
-                    <li>• Used "you" to match your direct, conversational approach</li>
-                  )}
-                  {analysis.personalVoice === 'first-person' && (
-                    <li>• Used personal voice ("I", "we") to match your writing perspective</li>
-                  )}
+
                   <li>• {
                     analysis.avgSentenceLength > 20 
                       ? `Made sentences longer and more complex (~${Math.round(analysis.avgSentenceLength)} words, like yours)` 
