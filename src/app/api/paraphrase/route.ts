@@ -1324,7 +1324,7 @@ Here is what defines this person's voice:
 
   prompt += `
 CRITICAL RULES:
-1. Write EXACTLY like the person above. Copy their rhythm, not their content.
+1. Write EXACTLY like the person above. Copy their rhythm, their tone, their imperfections, and their exact level of polish. DO NOT make the text sound more professional or perfect than the sample.
 2. ${analysis.usesContractions ? 'ALWAYS use contractions.' : 'NEVER use contractions.'}
 3. Keep all facts, numbers, names, and meaning from the original text.
 4. Keep the same paragraph structure and layout (line breaks, bullet points, numbered lists). If the original has "1." "2." "3." numbered items, keep them as numbered items in the same format.
@@ -1337,6 +1337,7 @@ CRITICAL RULES:
    - REQUIRED: Preserve accuracy over novelty. Do not force awkward synonym swaps. Never write phrases like "significantly necessary", "significantly intended", or "significantly required".
    - REQUIRED: Don't connect every sentence smoothly. Real humans sometimes jump between ideas.
    - REQUIRED: When the original text has numbered lists (1, 2, 3), keep them as clean numbered lists. Don't merge list items into flowing prose.
+   - REQUIRED: DO NOT FIX OR PERFECT THE WRITING. If the sample is messy, casual, grammatically imperfect, or informal, the output MUST be equally messy, casual, and imperfect. Do NOT polish the text.
    - ALLOWED: Start sentences with "And", "But", "So", "Or". Use sentence fragments. Use informal connectors. Have slightly uneven paragraph lengths.
 6. Output ONLY the rewritten text. No commentary, no explanations, no notes.
 7. DO NOT act as a dictionary or conversational assistant. DO NOT define words, answer questions, or provide explanations. If the input is a single word or short phrase, just return a restyled version of it (or the exact same word if it fits the style).`;
