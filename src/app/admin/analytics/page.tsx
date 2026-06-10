@@ -1,5 +1,10 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  BarChart, Bar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabaseClient';
 import AdminLayout from '../AdminLayout';
@@ -241,6 +246,30 @@ export default function AnalyticsPage() {
     setCurrentPage(1);
   }, [filter, sortBy]);
 
+  const timelineData = useMemo(() => {
+    if (!analytics.length) return [];
+    const countsByDate = new Map<string, number>();
+    const sorted = [...analytics].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    sorted.forEach(item => {
+      const date = new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      countsByDate.set(date, (countsByDate.get(date) || 0) + 1);
+    });
+    return Array.from(countsByDate.entries()).map(([date, count]) => ({ date, count }));
+  }, [analytics]);
+
+  const styleData = useMemo(() => {
+    if (!stats) return [];
+    return [
+      { name: 'Formality', value: Math.round(stats.averageFormality * 100) },
+      { name: 'Pacing', value: Math.round(stats.averagePacing * 100) },
+      { name: 'Descriptiveness', value: Math.round(stats.averageDescriptiveness * 100) },
+      { name: 'Directness', value: Math.round(stats.averageDirectness * 100) },
+    ];
+  }, [stats]);
+
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444'];
+
+
   if (loading) {
     return (
       <AdminLayout>
@@ -332,56 +361,99 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {/* Average Style Settings */}
+      {/* Charts Dashboard */}
       {stats && (
-        <div className="glass-panel p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-brand-300">Average Style Settings</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <div className="text-sm text-slate-400 mb-2">Formality</div>
-              <div className="text-2xl font-bold">{pct(stats.averageFormality)}</div>
-            </div>
-            <div>
-              <div className="text-sm text-slate-400 mb-2">Pacing</div>
-              <div className="text-2xl font-bold">{pct(stats.averagePacing)}</div>
-            </div>
-            <div>
-              <div className="text-sm text-slate-400 mb-2">Descriptiveness</div>
-              <div className="text-2xl font-bold">{pct(stats.averageDescriptiveness)}</div>
-            </div>
-            <div>
-              <div className="text-sm text-slate-400 mb-2">Directness</div>
-              <div className="text-2xl font-bold">{pct(stats.averageDirectness)}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Top Tones */}
-      {stats && stats.topTones.length > 0 && (
-        <div className="glass-panel p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-brand-300">Top Tones</h2>
-          <div className="space-y-3">
-            {stats.topTones.map((item, idx) => (
-              <div key={item.tone} className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-300 font-semibold text-sm">
-                  {idx + 1}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white capitalize">{item.tone}</span>
-                    <span className="text-slate-400 text-sm">{item.count} uses</span>
-                  </div>
-                  <div className="mt-1 h-2 bg-slate-800 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-brand-500 to-brand-400"
-                      style={{ width: `${(item.count / stats.totalSubmissions) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Timeline Chart */}
+          {timelineData.length > 0 && (
+            <div className="glass-panel p-6 col-span-1 md:col-span-2">
+              <h2 className="text-xl font-semibold text-brand-300 mb-4">Submissions Over Time</h2>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={timelineData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#94a3b8" 
+                      tick={{ fill: '#94a3b8', fontSize: 12 }}
+                      tickMargin={10}
+                    />
+                    <YAxis 
+                      stroke="#94a3b8" 
+                      tick={{ fill: '#94a3b8', fontSize: 12 }}
+                      tickFormatter={(value) => Math.round(value).toString()}
+                    />
+                    <RechartsTooltip 
+                      contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#e2e8f0' }}
+                      itemStyle={{ color: '#3b82f6' }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="count" 
+                      name="Submissions"
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, fill: '#60a5fa' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-            ))}
+            </div>
+          )}
+
+          {/* Average Style Settings - Radar Chart */}
+          <div className="glass-panel p-6">
+            <h2 className="text-xl font-semibold text-brand-300 mb-4">Average Style Settings</h2>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={styleData}>
+                  <PolarGrid stroke="#334155" />
+                  <PolarAngleAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Radar name="Average Settings" dataKey="value" stroke="#10b981" fill="#10b981" fillOpacity={0.5} />
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px' }}
+                    itemStyle={{ color: '#e2e8f0' }}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
+
+          {/* Top Tones - Pie Chart */}
+          {stats.topTones.length > 0 && (
+            <div className="glass-panel p-6">
+              <h2 className="text-xl font-semibold text-brand-300 mb-4">Top Tones</h2>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats.topTones}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="count"
+                      nameKey="tone"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {stats.topTones.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip 
+                      contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px' }}
+                      itemStyle={{ color: '#e2e8f0' }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px', color: '#94a3b8' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
