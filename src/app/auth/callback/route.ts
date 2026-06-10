@@ -28,14 +28,15 @@ export async function GET(request: NextRequest) {
     if (!error) {
       // Check if the user is an admin
       const { data: { user } } = await supabase.auth.getUser();
-      const isRecovery = searchParams.get('type') === 'recovery';
+      const nextParam = searchParams.get('next') || '/paraphrase';
+      const isRecovery = searchParams.get('type') === 'recovery' || nextParam === '/auth/update-password';
       
       if (isRecovery) {
         return NextResponse.redirect(`${origin}/auth/update-password`);
       } else if (user && ADMIN_EMAILS.includes(user.email || '')) {
         return NextResponse.redirect(`${origin}/admin`);
       } else {
-        return NextResponse.redirect(`${origin}/paraphrase`);
+        return NextResponse.redirect(`${origin}${nextParam.startsWith('/') ? nextParam : '/' + nextParam}`);
       }
     } else {
       console.error('Code exchange error:', error);
@@ -43,6 +44,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // If no code, redirect to confirmation page to handle hash tokens
-  return NextResponse.redirect(`${origin}/auth/confirm`);
+  // If no code, redirect to confirmation page to handle hash tokens, forwarding query parameters
+  const nextParamsString = searchParams.toString();
+  const redirectUrl = nextParamsString ? `${origin}/auth/confirm?${nextParamsString}` : `${origin}/auth/confirm`;
+  return NextResponse.redirect(redirectUrl);
 }

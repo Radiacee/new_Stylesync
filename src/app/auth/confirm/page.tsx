@@ -33,11 +33,15 @@ export default function AuthConfirmPage() {
           const hashParams = new URLSearchParams(hash);
           access_token = hashParams.get('access_token');
           refresh_token = hashParams.get('refresh_token');
-          isRecovery = hashParams.get('type') === 'recovery' || searchParams.get('type') === 'recovery';
+          isRecovery = hashParams.get('type') === 'recovery' || 
+                       searchParams.get('type') === 'recovery' ||
+                       hashParams.get('next') === '/auth/update-password' ||
+                       searchParams.get('next') === '/auth/update-password';
         } else {
           access_token = searchParams.get('access_token');
           refresh_token = searchParams.get('refresh_token');
-          isRecovery = searchParams.get('type') === 'recovery';
+          isRecovery = searchParams.get('type') === 'recovery' || 
+                       searchParams.get('next') === '/auth/update-password';
         }
 
         if (access_token && refresh_token) {

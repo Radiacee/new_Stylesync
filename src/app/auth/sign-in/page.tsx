@@ -55,7 +55,7 @@ export default function SignInPage() {
     
     try {
       if (mode === 'forgot') {
-        const redirectUrl = `${window.location.origin}/auth/callback?type=recovery`;
+        const redirectUrl = `${window.location.origin}/auth/callback?next=/auth/update-password`;
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: redirectUrl
         });
