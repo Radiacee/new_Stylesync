@@ -930,6 +930,81 @@ Only output the JSON object. Do not add any other text or markdown formatting.`;
   }
 }
 
+// Generate style preset verification/proof explanation
+async function generateStylePresetExplanation(
+  originalText: string,
+  paraphrasedText: string,
+  stylePreset: string
+): Promise<string> {
+  const systemPrompt = `You are a style analysis assistant. The user requested to rewrite a text into the "${stylePreset}" writing style.
+We have successfully generated the paraphrased version. Your job is to analyze both the original and rewritten text, and provide a concise, convincing "proof" or explanation (3-4 bullet points) demonstrating exactly why the output qualifies as "${stylePreset}".
+
+Be specific. Quote 1 or 2 brief examples (words or phrases) from the original vs the paraphrased text to show the contrast and prove the style transfer was done correctly.
+
+Focus on elements relevant to "${stylePreset}":
+- If "creative": highlight vivid imagery, expressive adjectives, varied rhythm, or metaphorical/impactful phrasing.
+- If "professional": highlight conciseness, directness, business-appropriate vocabulary, or action-oriented tone.
+- If "academic": highlight objective tone, lack of personal pronouns, precise scholarly vocabulary, and formal structure.
+- If "formal": highlight complete sentences, sophisticated syntax, and absence of informal contractions.
+- If "casual": highlight conversational flow, contractions, friendly tone, and natural phrasing.
+
+Format the output as a clean bulleted list. Do not include introductory or concluding remarks (like "Here is the analysis:"). Just output the bullet points.`;
+
+  const userContent = `ORIGINAL TEXT:
+"""
+${originalText}
+"""
+
+PARAPHRASED TEXT:
+"""
+${paraphrasedText}
+"""
+
+Provide the style preset proof explanation:`;
+
+  try {
+    const hasGroqKey = !!process.env.GROQ_API_KEY;
+    const hasGeminiKey = !!process.env.GEMINI_API_KEY;
+
+    if (hasGroqKey) {
+      const GroqMod = await import('groq-sdk');
+      const Groq = (GroqMod as any).default ?? (GroqMod as any).Groq;
+      const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      const completion = await client.chat.completions.create({
+        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        temperature: 0.3,
+        max_tokens: 1000,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent }
+        ]
+      });
+      return completion.choices?.[0]?.message?.content?.trim() || '';
+    } else if (hasGeminiKey) {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: `${systemPrompt}\n\n${userContent}` }]
+          }],
+          generationConfig: { 
+            temperature: 0.3, 
+            maxOutputTokens: 1000 
+          }
+        })
+      });
+      if (!response.ok) throw new Error(`Gemini error: ${response.status}`);
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+    }
+    return '';
+  } catch (error) {
+    console.error('Failed to generate style explanation:', error);
+    return '';
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
@@ -1038,6 +1113,12 @@ export async function POST(req: NextRequest) {
     // Calculate detailed metrics for the style lock panel
     const outputMetrics = calculateOutputMetrics(output, profile);
 
+    // Generate explanation for preset style choices
+    let presetExplanation = '';
+    if (usedAIModel && !isRoboticsMode && stylePreset && stylePreset !== 'original') {
+      presetExplanation = await generateStylePresetExplanation(text, output, stylePreset);
+    }
+
     return new Response(JSON.stringify({ 
       result: output, 
       usedModel: usedAIModel,
@@ -1045,7 +1126,8 @@ export async function POST(req: NextRequest) {
       actions: outputMetrics.actions,
       styleMatch,
       verification: verificationResult,
-      paraphraseMode
+      paraphraseMode,
+      presetExplanation
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...formatRateLimitHeaders(rl) }

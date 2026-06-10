@@ -14,6 +14,7 @@ import StyleVerification from '../../components/StyleVerification';
 import StyleOptionsHelp from '../../components/StyleOptionsHelp';
 import AnalyticsConsent from '../../components/AnalyticsConsent';
 import StyleProofPanel from '../../components/StyleProofPanel';
+import PresetStyleProofPanel from '../../components/PresetStyleProofPanel';
 import StyleSelector, { type StylePreset, getStyleInstructions } from '../../components/StyleSelector';
 import WritingSuggestionsPanel from '../../components/WritingSuggestionsPanel';
 import QualitySuggestions from '../../components/QualitySuggestions';
@@ -85,6 +86,7 @@ export default function ParaphrasePage() {
   const [rating, setRating] = useState<number | null>(null); // User rating feedback
   const [additionalExcerpts, setAdditionalExcerpts] = useState<string[]>([]); // Multiple excerpts for style training
   const [excerptInput, setExcerptInput] = useState(''); // Current excerpt being added
+  const [presetExplanation, setPresetExplanation] = useState<string>(''); // Explanation of preset style choice
 
   const hasUserEssay = input.trim().length > 0;
   const hasStyleDiagnostics = Boolean(metrics) || actions.length > 0;
@@ -217,6 +219,7 @@ export default function ParaphrasePage() {
     setModerationResult(null); // Reset moderation
     setStyleMatch(null); // Reset style match
     setVerification(null); // Reset verification
+    setPresetExplanation(''); // Reset preset explanation
     analyticsSubmittedRef.current = false; // Reset analytics submission flag for new paraphrase
     
     // Content moderation check
@@ -281,6 +284,7 @@ export default function ParaphrasePage() {
       setUsedModel(!!data.usedModel);
       setStyleMatch(data.styleMatch || null);
       setVerification(data.verification || null);
+      setPresetExplanation(data.presetExplanation || '');
   
       // Automatically run style analysis after getting output
       if (preparedProfile?.sampleExcerpt && input && data.result) {
@@ -760,6 +764,7 @@ export default function ParaphrasePage() {
                 setModerationResult(null);
                 setAdditionalExcerpts([]);
                 setExcerptInput('');
+                setPresetExplanation('');
               }} 
               className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-lg border border-white/10 hover:border-brand-400/60 text-slate-200 text-sm transition text-center"
             >
@@ -941,7 +946,7 @@ export default function ParaphrasePage() {
         )}
 
         {/* Style Application Proof - Shows REAL evidence of style being applied */}
-        {output && input && profile?.sampleExcerpt && styleTransformation && (
+        {output && input && selectedStyle === 'original' && profile?.sampleExcerpt && styleTransformation && (
           <div className="glass-panel p-4 sm:p-5 border-2 border-brand-500/50">
             <StyleProofPanel
               userSampleText={profile.sampleExcerpt}
@@ -949,6 +954,16 @@ export default function ParaphrasePage() {
               paraphrasedOutput={output}
               userStyle={styleTransformation.userStyle}
               verification={verification}
+            />
+          </div>
+        )}
+
+        {/* Preset Style Match Proof - Shows explanation of preset style choices */}
+        {output && input && selectedStyle !== 'original' && presetExplanation && (
+          <div className="glass-panel p-4 sm:p-5 border-2 border-brand-500/50">
+            <PresetStyleProofPanel
+              stylePreset={selectedStyle}
+              explanation={presetExplanation}
             />
           </div>
         )}
