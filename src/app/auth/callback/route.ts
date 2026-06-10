@@ -23,13 +23,27 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
     
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     
     if (!error) {
       // Check if the user is an admin
       const { data: { user } } = await supabase.auth.getUser();
       const nextParam = searchParams.get('next') || '/paraphrase';
-      const isRecovery = searchParams.get('type') === 'recovery' || nextParam === '/auth/update-password';
+      
+      // Decode JWT access token to check if this is a password recovery flow
+      const session = data?.session;
+      const isRecoveryJWT = session?.access_token ? (() => {
+        try {
+          const payload = JSON.parse(Buffer.from(session.access_token.split('.')[1], 'base64').toString());
+          return payload?.amr?.some((item: any) => item === 'recovery' || item?.method === 'recovery') || false;
+        } catch (e) {
+          return false;
+        }
+      })() : false;
+
+      const isRecovery = searchParams.get('type') === 'recovery' || 
+                         nextParam === '/auth/update-password' ||
+                         isRecoveryJWT;
       
       if (isRecovery) {
         return NextResponse.redirect(`${origin}/auth/update-password`);

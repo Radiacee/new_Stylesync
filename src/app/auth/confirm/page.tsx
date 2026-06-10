@@ -29,6 +29,21 @@ export default function AuthConfirmPage() {
         
         let access_token, refresh_token, isRecovery = false;
         
+        const isTokenRecovery = (token: string | null) => {
+          if (!token) return false;
+          try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            const payload = JSON.parse(jsonPayload);
+            return payload?.amr?.some((item: any) => item === 'recovery' || item?.method === 'recovery') || false;
+          } catch (e) {
+            return false;
+          }
+        };
+
         if (hash) {
           const hashParams = new URLSearchParams(hash);
           access_token = hashParams.get('access_token');
@@ -36,12 +51,14 @@ export default function AuthConfirmPage() {
           isRecovery = hashParams.get('type') === 'recovery' || 
                        searchParams.get('type') === 'recovery' ||
                        hashParams.get('next') === '/auth/update-password' ||
-                       searchParams.get('next') === '/auth/update-password';
+                       searchParams.get('next') === '/auth/update-password' ||
+                       isTokenRecovery(access_token);
         } else {
           access_token = searchParams.get('access_token');
           refresh_token = searchParams.get('refresh_token');
           isRecovery = searchParams.get('type') === 'recovery' || 
-                       searchParams.get('next') === '/auth/update-password';
+                       searchParams.get('next') === '/auth/update-password' ||
+                       isTokenRecovery(access_token);
         }
 
         if (access_token && refresh_token) {

@@ -33,20 +33,43 @@ export function AuthStatus() {
         // Helper to check if the current page has password recovery parameters in hash or search params
         const isRecoveryFlow = () => {
           if (typeof window === 'undefined') return false;
+          
+          // 1. Check current URL hash or search params
           const hash = window.location.hash;
           const search = window.location.search;
-          return (
+          if (
             hash.includes('type=recovery') ||
             search.includes('type=recovery') ||
             hash.includes('update-password') ||
             search.includes('update-password')
-          );
+          ) {
+            return true;
+          }
+
+          // 2. Decode session JWT if available to check for amr claim containing 'recovery'
+          if (session?.access_token) {
+            try {
+              const base64Url = session.access_token.split('.')[1];
+              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+              const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+              }).join(''));
+              const payload = JSON.parse(jsonPayload);
+              return payload?.amr?.some((item: any) => item === 'recovery' || item?.method === 'recovery') || false;
+            } catch (e) {
+              // Ignore
+            }
+          }
+          return false;
         };
 
         // If a recovery flow is detected, redirect immediately to the update password page
         if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && isRecoveryFlow())) {
           if (typeof window !== 'undefined') {
-            window.location.href = '/auth/update-password';
+            // Prevent redirect loop if the user is already on the update password page
+            if (window.location.pathname !== '/auth/update-password') {
+              window.location.href = '/auth/update-password';
+            }
           }
           return;
         }
