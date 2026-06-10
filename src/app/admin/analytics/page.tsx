@@ -437,7 +437,7 @@ export default function AnalyticsPage() {
                       paddingAngle={5}
                       dataKey="count"
                       nameKey="tone"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
                       {stats.topTones.map((entry, index) => (
