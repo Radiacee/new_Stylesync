@@ -30,6 +30,27 @@ export function AuthStatus() {
         setReady(true);
       });
       const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+        // Helper to check if the current page has password recovery parameters in hash or search params
+        const isRecoveryFlow = () => {
+          if (typeof window === 'undefined') return false;
+          const hash = window.location.hash;
+          const search = window.location.search;
+          return (
+            hash.includes('type=recovery') ||
+            search.includes('type=recovery') ||
+            hash.includes('update-password') ||
+            search.includes('update-password')
+          );
+        };
+
+        // If a recovery flow is detected, redirect immediately to the update password page
+        if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && isRecoveryFlow())) {
+          if (typeof window !== 'undefined') {
+            window.location.href = '/auth/update-password';
+          }
+          return;
+        }
+
         const nextEmail = session?.user?.email ?? null;
         const prev = prevEmailRef.current;
         const changed = prev !== nextEmail;
