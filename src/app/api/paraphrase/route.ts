@@ -891,6 +891,45 @@ Rules:
 - DO NOT act as a dictionary. DO NOT define or explain words even if the input is short. Just rewrite it.`;
 }
 
+// =============================================================================
+// FACTUAL VERIFICATION
+// =============================================================================
+
+async function verifyFactualAccuracy(text: string): Promise<{ isTrue: boolean, reason: string }> {
+  const prompt = `You are a strict fact-checking assistant. Evaluate the factual accuracy of the user's input text.
+If it contains objectively false claims, respond with JSON {"isFactuallyAccurate": false, "reason": "<explanation of why it is false>"}.
+If it is true, subjective, an opinion, or harmless, respond with {"isFactuallyAccurate": true, "reason": ""}.
+Only output the JSON object. Do not add any other text or markdown formatting.`;
+
+  try {
+    const hasGroqKey = !!process.env.GROQ_API_KEY;
+    const hasGeminiKey = !!process.env.GEMINI_API_KEY;
+    let resultJsonStr = '';
+
+    if (hasGroqKey) {
+      resultJsonStr = await callGroqAPI(text, prompt, 0.1, false);
+    } else if (hasGeminiKey) {
+      resultJsonStr = await callGeminiAPI(text, prompt, 0.1, false);
+    } else {
+      return { isTrue: true, reason: '' };
+    }
+
+    resultJsonStr = resultJsonStr.replace(/```json\n?|```/gi, '').trim();
+    const parsed = JSON.parse(resultJsonStr);
+    
+    if (parsed && typeof parsed.isFactuallyAccurate === 'boolean') {
+      return {
+        isTrue: parsed.isFactuallyAccurate,
+        reason: parsed.reason || 'Text contains false information'
+      };
+    }
+    return { isTrue: true, reason: '' };
+  } catch (error) {
+    console.error('Fact checking failed:', error);
+    return { isTrue: true, reason: '' };
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
@@ -915,6 +954,15 @@ export async function POST(req: NextRequest) {
     let verificationResult: VerificationResult;
     
     if (canUseAI && (useModel ?? true)) {
+      // Run factual verification first
+      const factCheck = await verifyFactualAccuracy(text);
+      if (!factCheck.isTrue) {
+        return new Response(JSON.stringify({ 
+          error: 'FACT_CHECK_FAILED', 
+          message: factCheck.reason 
+        }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
       // Use AI to paraphrase with the selected mode
       output = await paraphraseWithAI(
         text,

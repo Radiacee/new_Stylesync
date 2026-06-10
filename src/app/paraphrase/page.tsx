@@ -269,6 +269,9 @@ export default function ParaphrasePage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(()=>({}));
+        if (err.error === 'FACT_CHECK_FAILED') {
+          throw new Error(`FACT_CHECK_FAILED: ${err.message}`);
+        }
         throw new Error(err.error || 'API error');
       }
       const data = await res.json();
@@ -299,6 +302,13 @@ export default function ParaphrasePage() {
         setHistory(h => [{ id: crypto.randomUUID(), input, output: data.result || '', note: '', usedModel: !!data.usedModel, createdAt: new Date().toISOString(), localOnly: true }, ...h].slice(0,50));
       }
     } catch (e: any) {
+      if (e.message && e.message.startsWith('FACT_CHECK_FAILED:')) {
+        setError(e.message.replace('FACT_CHECK_FAILED: ', 'Cannot paraphrase: '));
+        setActions([]);
+        setMetrics(null);
+        setStyleTransformation(null);
+        return;
+      }
       // Fallback to local heuristic
       const fallback = paraphraseWithProfile(input, preparedProfile || undefined);
       setOutput(fallback);
@@ -314,7 +324,7 @@ export default function ParaphrasePage() {
       } else {
         setHistory(h => [{ id: crypto.randomUUID(), input, output: fallback, note: '', usedModel: false, createdAt: new Date().toISOString(), localOnly: true }, ...h].slice(0,50));
       }
-    } finally { 
+    } finally {
       setBusy(false);
       
       // Smooth scroll to results after paraphrase completes
