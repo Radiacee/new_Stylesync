@@ -27,15 +27,17 @@ export default function AuthConfirmPage() {
         const hash = window.location.hash.substring(1);
         const searchParams = new URLSearchParams(window.location.search);
         
-        let access_token, refresh_token;
+        let access_token, refresh_token, isRecovery = false;
         
         if (hash) {
           const hashParams = new URLSearchParams(hash);
           access_token = hashParams.get('access_token');
           refresh_token = hashParams.get('refresh_token');
+          isRecovery = hashParams.get('type') === 'recovery' || searchParams.get('type') === 'recovery';
         } else {
           access_token = searchParams.get('access_token');
           refresh_token = searchParams.get('refresh_token');
+          isRecovery = searchParams.get('type') === 'recovery';
         }
 
         if (access_token && refresh_token) {
@@ -58,7 +60,7 @@ export default function AuthConfirmPage() {
             
             // Check if user is admin and redirect accordingly
             const isAdmin = ADMIN_EMAILS.includes(data.user.email || '');
-            const redirectPath = isAdmin ? '/admin' : '/paraphrase';
+            const redirectPath = isRecovery ? '/auth/update-password' : (isAdmin ? '/admin' : '/paraphrase');
             
             // Wait a moment then redirect
             setTimeout(() => {
@@ -79,7 +81,7 @@ export default function AuthConfirmPage() {
             // Check if user is admin and redirect accordingly
             const { data: { user } } = await supabase.auth.getUser();
             const isAdmin = user && ADMIN_EMAILS.includes(user.email || '');
-            const redirectPath = isAdmin ? '/admin' : '/paraphrase';
+            const redirectPath = isRecovery ? '/auth/update-password' : (isAdmin ? '/admin' : '/paraphrase');
             
             setTimeout(() => {
               router.push(redirectPath);

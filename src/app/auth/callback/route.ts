@@ -28,8 +28,11 @@ export async function GET(request: NextRequest) {
     if (!error) {
       // Check if the user is an admin
       const { data: { user } } = await supabase.auth.getUser();
+      const isRecovery = searchParams.get('type') === 'recovery';
       
-      if (user && ADMIN_EMAILS.includes(user.email || '')) {
+      if (isRecovery) {
+        return NextResponse.redirect(`${origin}/auth/update-password`);
+      } else if (user && ADMIN_EMAILS.includes(user.email || '')) {
         return NextResponse.redirect(`${origin}/admin`);
       } else {
         return NextResponse.redirect(`${origin}/paraphrase`);
