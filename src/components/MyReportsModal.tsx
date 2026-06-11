@@ -78,10 +78,10 @@ export default function MyReportsModal({ userId, onClose }: MyReportsModalProps)
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 bg-white dark:bg-slate-900/98 backdrop-blur-xl z-[60] overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-50 dark:bg-slate-900 z-[60] overflow-y-auto">
       <div className="min-h-screen flex flex-col">
         {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4 z-10">
+        <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-white/10 px-6 py-4 z-10">
           <div className="max-w-3xl mx-auto flex items-center justify-between">
             <h3 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-brand-500/20 flex items-center justify-center">

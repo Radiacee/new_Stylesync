@@ -4,7 +4,7 @@ export default function AboutPage() {
       <div className="max-w-4xl mx-auto">
         <div className="glass-panel p-8 lg:p-12 space-y-8">
           <div className="space-y-4">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-brand-600 dark:from-brand-400 to-brand-300 bg-clip-text text-transparent">About StyleSync</h1>
+            <h1 className="inline-block text-4xl font-bold bg-gradient-to-r from-brand-600 dark:from-brand-400 to-brand-300 bg-clip-text text-transparent pb-1 pr-2">About StyleSync</h1>
             <p className="text-lg text-slate-800 dark:text-slate-300 leading-relaxed">
               StyleSync is an AI-powered writing tool that helps maintain consistent personal writing style across all your content. 
               Instead of replacing your voice with generic AI text, it learns and enhances your unique writing patterns.

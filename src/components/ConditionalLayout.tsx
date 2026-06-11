@@ -31,7 +31,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
             {/* Left side - Logo and Nav Links grouped together */}
             <div className="flex items-center gap-8">
               {/* Logo */}
-              <Link href="/" className="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-600 to-brand-500 dark:from-brand-300 dark:to-brand-400 bg-clip-text text-transparent">
+              <Link href="/" className="font-bold text-lg tracking-tight bg-gradient-to-r from-brand-600 to-brand-500 dark:from-brand-300 dark:to-brand-400 bg-clip-text text-transparent pb-1 pr-1">
                 StyleSync
               </Link>
 

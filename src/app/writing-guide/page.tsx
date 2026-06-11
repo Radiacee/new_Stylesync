@@ -788,7 +788,7 @@ export default function WritingGuidePage() {
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold">
           Master the Art of{' '}
-          <span className="bg-gradient-to-r from-brand-600 dark:from-brand-300 to-brand-500 bg-clip-text text-transparent">
+          <span className="inline-block bg-gradient-to-r from-brand-600 dark:from-brand-300 to-brand-500 bg-clip-text text-transparent pb-1 pr-2">
             Clear Writing
           </span>
         </h1>

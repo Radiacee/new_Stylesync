@@ -19,7 +19,7 @@ export default function PricingPage() {
         {/* Header */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white">
-            Unlock <span className="bg-gradient-to-r from-brand-600 to-brand-500 dark:from-brand-300 dark:to-brand-400 bg-clip-text text-transparent">StyleSync Premium</span>
+            Unlock <span className="inline-block bg-gradient-to-r from-brand-600 to-brand-500 dark:from-brand-300 dark:to-brand-400 bg-clip-text text-transparent pb-1 pr-2">StyleSync Premium</span>
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
             Get unrestricted access to all writing styles, unlimited paraphrasing, and deep style analytics to perfect your voice.

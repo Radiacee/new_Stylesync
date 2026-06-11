@@ -103,7 +103,7 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
 
       {/* Full Screen Modal - Rendered via Portal */}
       {showModal && mounted && createPortal(
-        <div className="fixed inset-0 bg-white dark:bg-slate-900/98 backdrop-blur-xl z-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-white dark:bg-slate-900/95 backdrop-blur-xl z-50 overflow-y-auto">
           <div className="min-h-screen flex flex-col">
             {/* Header */}
             <div className="sticky top-0 bg-white dark:bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4 z-10">

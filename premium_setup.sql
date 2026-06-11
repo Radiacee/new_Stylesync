@@ -17,7 +17,11 @@ CREATE POLICY "Users can view own subscription"
 ON public.premium_subscriptions FOR SELECT 
 USING (auth.uid() = user_id);
 
--- Policy: Admins can do everything (assuming you enforce admin via application logic or another policy, but for now we'll allow insert/update from authenticated if they are admin. A simple approach is just allow service role or authenticated to insert if they know what they are doing, but since it's an admin dashboard, we can just allow read/write for now and enforce it in the API route).
-CREATE POLICY "Allow full access to authenticated users for admin purposes" 
+-- Policy: Admins can do everything
+-- (For this demo, we allow authenticated users full access. In a real app, restrict by admin email/role)
+DROP POLICY IF EXISTS "Allow full access to authenticated users for admin purposes";
+CREATE POLICY "Allow admin access" 
 ON public.premium_subscriptions FOR ALL 
-USING (auth.role() = 'authenticated');
+TO authenticated 
+USING (true) 
+WITH CHECK (true);

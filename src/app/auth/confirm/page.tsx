@@ -133,7 +133,7 @@ export default function AuthConfirmPage() {
       <div className="flex min-h-screen items-center justify-center p-6 relative z-10">
         <div className="w-full max-w-md glass-panel p-12 space-y-8 animate-fade-in-up">
           <div className="text-center space-y-4">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-brand-600 dark:from-brand-400 to-brand-300 bg-clip-text text-transparent">
+            <h1 className="inline-block text-2xl font-bold bg-gradient-to-r from-brand-600 dark:from-brand-400 to-brand-300 bg-clip-text text-transparent pb-1 pr-2">
               StyleSync
             </h1>
             <p className="text-base text-slate-600 dark:text-slate-500 dark:text-slate-400">Email Confirmation</p>
