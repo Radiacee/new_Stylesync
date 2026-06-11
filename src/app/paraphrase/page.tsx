@@ -83,6 +83,7 @@ export default function ParaphrasePage() {
   const [moderationResult, setModerationResult] = useState<ModerationResult | null>(null); // Content moderation
   const [showSuggestions, setShowSuggestions] = useState(false); // Writing suggestions toggle
   const [styleMatch, setStyleMatch] = useState<{ overallMatch: number; issues: string[] } | null>(null); // Style match report
+  const [showReviewToast, setShowReviewToast] = useState(false); // Review reminder toast
   const [rating, setRating] = useState<number | null>(null); // User rating feedback
 
   const [presetExplanation, setPresetExplanation] = useState<string>(''); // Explanation of preset style choice
@@ -265,6 +266,7 @@ export default function ParaphrasePage() {
       }
       const data = await res.json();
       setOutput(data.result || '');
+      if (data.result) setShowReviewToast(true);
       setActions(data.actions || []);
       setMetrics(data.metrics || null);
       setUsedModel(!!data.usedModel);
@@ -302,6 +304,7 @@ export default function ParaphrasePage() {
       // Fallback to local heuristic
       const fallback = paraphraseWithProfile(input, preparedProfile || undefined);
       setOutput(fallback);
+      if (fallback) setShowReviewToast(true);
       setError(e.message || 'Failed to use model, showed heuristic result.');
       setActions([]);
       setMetrics(null);
@@ -703,7 +706,7 @@ export default function ParaphrasePage() {
                 setActions([]); 
                 setMetrics(null); 
                 setModerationResult(null);
-
+                setShowReviewToast(false);
                 setPresetExplanation('');
               }} 
               className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-lg border border-white/10 hover:border-brand-400/60 text-slate-200 text-sm transition text-center"
@@ -992,6 +995,25 @@ export default function ParaphrasePage() {
         </div>
         {busy && <FullScreenSpinner label="Generating paraphrase" />}
         {!authChecked && <FullScreenSpinner label="Checking authentication" />}
+        
+        {/* Review Reminder Toast */}
+        {showReviewToast && (
+          <div className="fixed top-20 right-6 lg:top-24 lg:right-10 z-[100] bg-[#0f172a] border border-amber-500/30 rounded-xl p-4 shadow-2xl shadow-amber-500/10 flex flex-col sm:flex-row items-start sm:items-center gap-4 max-w-md animate-in slide-in-from-top-5 fade-in duration-300">
+            <div className="w-10 h-10 rounded-full bg-amber-500/20 flex-shrink-0 flex items-center justify-center text-amber-400">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-slate-100">Please review the result</p>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">Always read and verify the AI-generated text before using it to ensure it perfectly matches your intent.</p>
+            </div>
+            <button
+              onClick={() => setShowReviewToast(false)}
+              className="px-4 py-2 w-full sm:w-auto rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-900 text-xs font-bold transition-colors whitespace-nowrap shadow-lg shadow-amber-500/20"
+            >
+              I understand
+            </button>
+          </div>
+        )}
         
         {/* Style Options Help Tool */}
         <StyleOptionsHelp />
