@@ -141,7 +141,7 @@ export default function DatabaseManagement() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push('/admin')}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 hover:text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600/50 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -150,7 +150,7 @@ export default function DatabaseManagement() {
           </button>
           <div className="h-8 w-px bg-slate-600"></div>
           <div>
-            <h2 className="text-3xl font-bold text-white">Database Management</h2>
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Database Management</h2>
             <p className="text-gray-400">Execute queries and manage database operations</p>
           </div>
         </div>
@@ -158,7 +158,7 @@ export default function DatabaseManagement() {
         {/* Database Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Tables</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Tables</h3>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {tables.map((table, index) => (
                 <div
@@ -170,7 +170,7 @@ export default function DatabaseManagement() {
                       : 'bg-white/5 hover:bg-white/10'
                   }`}
                 >
-                  <p className="text-white font-medium">{table.table_name}</p>
+                  <p className="text-slate-900 dark:text-white font-medium">{table.table_name}</p>
                   <p className="text-xs text-gray-400">{table.table_type}</p>
                 </div>
               ))}
@@ -178,7 +178,7 @@ export default function DatabaseManagement() {
           </div>
 
           <div className="md:col-span-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Quick Queries</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Quick Queries</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {commonQueries.map((queryItem, index) => (
                 <button
@@ -186,7 +186,7 @@ export default function DatabaseManagement() {
                   onClick={() => quickQuery(queryItem.query)}
                   className="p-3 bg-white/5 hover:bg-white/10 rounded-lg text-left transition-colors"
                 >
-                  <p className="text-white font-medium text-sm">{queryItem.name}</p>
+                  <p className="text-slate-900 dark:text-white font-medium text-sm">{queryItem.name}</p>
                   <p className="text-xs text-gray-400 mt-1 truncate">{queryItem.query}</p>
                 </button>
               ))}
@@ -197,18 +197,18 @@ export default function DatabaseManagement() {
         {/* SQL Query Editor */}
         <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-white">SQL Query Editor</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">SQL Query Editor</h3>
             <div className="flex space-x-2">
               <button
                 onClick={executeQuery}
                 disabled={loading || !sqlQuery.trim()}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                className="bg-green-600 hover:bg-green-700 text-slate-900 dark:text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
               >
                 {loading ? 'Executing...' : 'Execute'}
               </button>
               <button
                 onClick={() => setSqlQuery('')}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-gray-600 hover:bg-gray-700 text-slate-900 dark:text-white px-4 py-2 rounded-lg transition-colors"
               >
                 Clear
               </button>
@@ -219,26 +219,26 @@ export default function DatabaseManagement() {
             value={sqlQuery}
             onChange={(e) => setSqlQuery(e.target.value)}
             placeholder="Enter your SQL query here... (SELECT queries only for security)"
-            className="w-full h-32 bg-gray-900 border border-gray-600 rounded-lg p-4 text-white font-mono text-sm resize-none focus:border-purple-500 focus:outline-none"
+            className="w-full h-32 bg-gray-900 border border-gray-600 rounded-lg p-4 text-slate-900 dark:text-white font-mono text-sm resize-none focus:border-purple-500 focus:outline-none"
           />
           
           {selectedTable && (
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 onClick={() => quickQuery(`SELECT * FROM ${selectedTable} LIMIT 10`)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-slate-900 dark:text-white px-3 py-1 rounded text-sm transition-colors"
               >
                 Show 10 rows
               </button>
               <button
                 onClick={() => quickQuery(`SELECT COUNT(*) FROM ${selectedTable}`)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-slate-900 dark:text-white px-3 py-1 rounded text-sm transition-colors"
               >
                 Count rows
               </button>
               <button
                 onClick={() => quickQuery(`SELECT * FROM ${selectedTable} ORDER BY created_at DESC LIMIT 5`)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-slate-900 dark:text-white px-3 py-1 rounded text-sm transition-colors"
               >
                 Recent entries
               </button>
@@ -259,14 +259,14 @@ export default function DatabaseManagement() {
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-white">Query Results</h3>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Query Results</h3>
                 <p className="text-sm text-gray-400">
                   {queryResult.rowCount} rows returned in {queryResult.executionTime}ms
                 </p>
               </div>
               <button
                 onClick={exportData}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-purple-600 hover:bg-purple-700 text-slate-900 dark:text-white px-4 py-2 rounded-lg transition-colors"
               >
                 Export CSV
               </button>

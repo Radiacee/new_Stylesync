@@ -70,6 +70,63 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function GET(req: NextRequest) {
+  try {
+    const url = new URL(req.url);
+    const userId = url.searchParams.get('userId');
+
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'User ID is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+    const { createClient } = await import('@supabase/supabase-js');
+    
+    // Create an authenticated client if token is provided
+    const supabaseOptions = token ? {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    } : {};
+    
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseOptions
+    );
+
+    const { data, error } = await supabase
+      .from('content_reports')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      if (error.code === 'PGRST205' || error.message?.includes('does not exist')) {
+        return new Response(JSON.stringify({ reports: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      throw error;
+    }
+
+    return new Response(JSON.stringify({ reports: data || [] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (err: any) {
+    console.error('Fetch reports error:', err);
+    return new Response(JSON.stringify({ error: err.message || 'Failed to fetch reports' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 // SQL for creating the reports table (run in Supabase SQL editor)
 // Note: This is documentation only, not exported
 /*
@@ -82,6 +139,7 @@ create table if not exists public.content_reports (
   status text default 'pending',
   reviewed_by uuid references auth.users(id),
   reviewed_at timestamptz,
+  admin_action text,
   created_at timestamptz default now()
 );
 

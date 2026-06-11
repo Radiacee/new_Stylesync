@@ -135,7 +135,7 @@ export default function AITransparencyPanel({
       >
         <div className="flex items-center space-x-3">
           <span className="text-lg">👁️</span>
-          <h3 className="text-lg font-semibold text-white">AI Transparency</h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">AI Transparency</h3>
           <span className="text-sm text-gray-400">
             See how your style was applied
           </span>
@@ -152,7 +152,7 @@ export default function AITransparencyPanel({
           <div className="p-4 bg-gradient-to-r from-purple-500/10 to-blue-500/10">
             <div className="flex items-center space-x-2 mb-2">
               <span>⚙️</span>
-              <h4 className="font-medium text-white">Processing Summary</h4>
+              <h4 className="font-medium text-slate-900 dark:text-white">Processing Summary</h4>
             </div>
             <p className="text-sm text-gray-300">
               Applied your {profile.tone} tone with {(profile.formality * 100).toFixed(0)}% formality, 
@@ -167,7 +167,7 @@ export default function AITransparencyPanel({
               onClick={() => toggleSection('parameters')}
               className="flex items-center justify-between w-full text-left mb-3 hover:text-purple-400 transition-colors"
             >
-              <h4 className="font-medium text-white">Style Parameters Applied</h4>
+              <h4 className="font-medium text-slate-900 dark:text-white">Style Parameters Applied</h4>
               <span className="text-gray-400">
                 {activeSection === 'parameters' ? '▼' : '▶'}
               </span>
@@ -203,7 +203,7 @@ export default function AITransparencyPanel({
               onClick={() => toggleSection('changes')}
               className="flex items-center justify-between w-full text-left mb-3 hover:text-purple-400 transition-colors"
             >
-              <h4 className="font-medium text-white">Specific Changes Made</h4>
+              <h4 className="font-medium text-slate-900 dark:text-white">Specific Changes Made</h4>
               <span className="text-gray-400">
                 {activeSection === 'changes' ? '▼' : '▶'}
               </span>
@@ -235,7 +235,7 @@ export default function AITransparencyPanel({
               onClick={() => toggleSection('prompt')}
               className="flex items-center justify-between w-full text-left mb-3 hover:text-purple-400 transition-colors"
             >
-              <h4 className="font-medium text-white">AI Instructions Used</h4>
+              <h4 className="font-medium text-slate-900 dark:text-white">AI Instructions Used</h4>
               <span className="text-gray-400">
                 {activeSection === 'prompt' ? '▼' : '▶'}
               </span>

@@ -165,7 +165,7 @@ export default function UserManagement() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-6">
           <button
             onClick={() => router.push('/admin')}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/50 transition-colors text-sm"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 hover:text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600/50 transition-colors text-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -175,13 +175,13 @@ export default function UserManagement() {
           <div className="hidden sm:block h-8 w-px bg-slate-600"></div>
           <div className="flex-1 w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white">User Management</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">User Management</h2>
               <p className="text-sm text-gray-400">Manage user accounts and permissions</p>
             </div>
             <button
               onClick={loadUsers}
               disabled={loading}
-              className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
+              className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-slate-900 dark:text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
             >
               {loading ? 'Loading...' : 'Refresh'}
             </button>
@@ -194,7 +194,7 @@ export default function UserManagement() {
             <div className="flex flex-wrap items-center gap-4 sm:space-x-4">
               <div>
                 <p className="text-sm text-gray-400">Total Users</p>
-                <p className="text-2xl font-bold text-white">{users.length}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{users.length}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-400">Confirmed</p>
@@ -209,7 +209,7 @@ export default function UserManagement() {
                 placeholder="Search users by email or ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-gray-400"
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-slate-900 dark:text-white placeholder-gray-400"
               />
             </div>
           </div>
@@ -233,7 +233,7 @@ export default function UserManagement() {
                   <tr key={user.id} className="hover:bg-white/5">
                     <td className="p-4">
                       <div>
-                        <p className="text-white font-medium">{user.email || 'No email'}</p>
+                        <p className="text-slate-900 dark:text-white font-medium">{user.email || 'No email'}</p>
                         <p className="text-xs text-gray-400">{user.id}</p>
                       </div>
                     </td>
@@ -259,14 +259,14 @@ export default function UserManagement() {
                             setSelectedUser(user);
                             setShowUserModal(true);
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                          className="bg-blue-600 hover:bg-blue-700 text-slate-900 dark:text-white px-3 py-1 rounded text-sm transition-colors"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => deleteUser(user.id)}
                           disabled={actionLoading}
-                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors disabled:opacity-50"
+                          className="bg-red-600 hover:bg-red-700 text-slate-900 dark:text-white px-3 py-1 rounded text-sm transition-colors disabled:opacity-50"
                         >
                           Delete
                         </button>
@@ -283,7 +283,7 @@ export default function UserManagement() {
         {showUserModal && selectedUser && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-800 border border-white/20 rounded-xl p-6 max-w-md w-full">
-              <h3 className="text-xl font-bold text-white mb-4">Edit User</h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Edit User</h3>
               
               <div className="space-y-4">
                 <div>
@@ -306,7 +306,7 @@ export default function UserManagement() {
                     type="email"
                     defaultValue={selectedUser.email || ''}
                     id="userEmail"
-                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-slate-900 dark:text-white"
                   />
                 </div>
 
@@ -332,13 +332,13 @@ export default function UserManagement() {
                       }
                     }}
                     disabled={actionLoading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors disabled:opacity-50"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-slate-900 dark:text-white py-2 rounded-lg transition-colors disabled:opacity-50"
                   >
                     {actionLoading ? 'Updating...' : 'Update'}
                   </button>
                   <button
                     onClick={() => setShowUserModal(false)}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors"
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-slate-900 dark:text-white py-2 rounded-lg transition-colors"
                   >
                     Cancel
                   </button>

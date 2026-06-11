@@ -35,9 +35,10 @@ function newBlankProfile(): StyleProfile {
 
 export interface StyleProfileManagerProps {
   onSelect?: (p: StyleProfile | null) => void;
+  isPremium?: boolean;
 }
 
-export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
+export function StyleProfileManager({ onSelect, isPremium = false }: StyleProfileManagerProps) {
   const [profiles, setProfiles] = useState<StyleProfile[]>([]);
   const [activeId, setActive] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -297,21 +298,21 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
   return (
     <div className="space-y-3 text-xs">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-brand-300 text-sm">Saved Styles</h3>
+        <h3 className="font-semibold text-brand-600 dark:text-brand-300 text-sm">Saved Styles</h3>
         <button 
           onClick={isAuthenticated ? createProfile : () => window.location.href = "/auth/sign-in"}
           disabled={!isAuthenticated}
           className={`px-2 py-1 rounded text-[11px] transition-colors ${
             isAuthenticated 
-              ? 'bg-brand-500/20 hover:bg-brand-500/30 text-brand-200' 
-              : 'bg-slate-600/30 text-slate-400 cursor-not-allowed'
+              ? 'bg-brand-500/20 hover:bg-brand-500/30 text-brand-700 dark:text-brand-200' 
+              : 'bg-slate-600/30 text-slate-600 dark:text-slate-500 dark:text-slate-400 cursor-not-allowed'
           }`}
           title={!isAuthenticated ? "Please sign in to create styles" : "Create new style profile"}
         >
           New
         </button>
       </div>
-      {profiles.length === 0 && <p className="text-slate-500">No styles yet.</p>}
+      {profiles.length === 0 && <p className="text-slate-600 dark:text-slate-500">No styles yet.</p>}
       
       {profiles.length > 0 && (
         <>
@@ -322,21 +323,21 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                 const active = p.id === activeId;
                 const isEditing = p.id === editingId;
                 return (
-                  <li key={p.id} className={`group border border-white/5 rounded p-2 bg-slate-800/40 flex flex-col gap-1 ${active ? 'ring-1 ring-brand-500/50' : ''}`}>
+                  <li key={p.id} className={`group border border-white/5 rounded p-2 bg-slate-50 dark:bg-slate-800/40 flex flex-col gap-1 ${active ? 'ring-1 ring-brand-500/50' : ''}`}>
                     <div className="flex items-center gap-2">
                       <button onClick={() => setActiveProfile(p.id)} className={`w-2.5 h-2.5 rounded-full border ${active ? 'bg-brand-500 border-brand-400' : 'border-slate-500 group-hover:border-brand-400'} shrink-0`} aria-label="Activate" />
                       {isEditing ? (
-                        <input autoFocus value={p.name || ''} onChange={e => rename(p.id, e.target.value)} onBlur={() => setEditingId(null)} className="bg-slate-900/60 border border-white/10 rounded px-2 py-1 text-[11px] w-32" />
+                        <input autoFocus value={p.name || ''} onChange={e => rename(p.id, e.target.value)} onBlur={() => setEditingId(null)} className="bg-white dark:bg-slate-900/60 border border-white/10 rounded px-2 py-1 text-[11px] w-32" />
                       ) : (
-                        <span className="font-medium text-slate-200 cursor-text" onDoubleClick={() => setEditingId(p.id)}>{p.name || 'Unnamed'}</span>
+                        <span className="font-medium text-slate-800 dark:text-slate-200 cursor-text" onDoubleClick={() => setEditingId(p.id)}>{p.name || 'Unnamed'}</span>
                       )}
                       <div className="ml-auto flex gap-1 opacity-70 group-hover:opacity-100 transition">
-                        <button onClick={() => openEditModal(p)} className="px-1 py-0.5 rounded bg-slate-700/40 hover:bg-blue-600/40" title="Edit Profile">⚙</button>
-                        <button onClick={() => setEditingId(p.id)} className="px-1 py-0.5 rounded bg-slate-700/40 hover:bg-slate-600/50" title="Rename">✎</button>
-                        <button onClick={() => requestDeleteProfile(p)} className="px-1 py-0.5 rounded bg-slate-700/40 hover:bg-red-600/40" title="Delete">✕</button>
+                        <button onClick={() => openEditModal(p)} className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40 hover:bg-blue-600/40" title="Edit Profile">⚙</button>
+                        <button onClick={() => setEditingId(p.id)} className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40 hover:bg-slate-600/50" title="Rename">✎</button>
+                        <button onClick={() => requestDeleteProfile(p)} className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40 hover:bg-red-600/40" title="Delete">✕</button>
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-[10px] text-slate-400">
+                    <div className="flex flex-wrap gap-2 text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400">
                       <span>F{Math.round(p.formality*100)}</span>
                       <span>P{Math.round(p.pacing*100)}</span>
                       <span>Dsc{Math.round(p.descriptiveness*100)}</span>
@@ -354,19 +355,19 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 rounded text-[11px] bg-slate-700/40 hover:bg-slate-600/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1 rounded text-[11px] bg-slate-100 dark:bg-slate-700/40 hover:bg-slate-600/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 ← Prev
               </button>
               
-              <span className="text-[10px] text-slate-400">
+              <span className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400">
                 Page {currentPage} of {Math.ceil(profiles.length / profilesPerPage)} ({profiles.length} total)
               </span>
               
               <button
                 onClick={() => setCurrentPage(Math.min(Math.ceil(profiles.length / profilesPerPage), currentPage + 1))}
                 disabled={currentPage >= Math.ceil(profiles.length / profilesPerPage)}
-                className="px-3 py-1 rounded text-[11px] bg-slate-700/40 hover:bg-slate-600/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1 rounded text-[11px] bg-slate-100 dark:bg-slate-700/40 hover:bg-slate-600/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
                 Next →
               </button>
@@ -375,7 +376,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
         </>
       )}
       
-      <p className="text-[10px] text-slate-500">Double‑click a name to rename. Activate to use during paraphrasing.</p>
+      <p className="text-[10px] text-slate-600 dark:text-slate-500">Double‑click a name to rename. Activate to use during paraphrasing.</p>
       
       {/* Top Performing Styles Section */}
       <div className="mt-6 pt-4 border-t border-white/10">
@@ -385,15 +386,15 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
         >
           <div className="flex items-center gap-2 flex-wrap">
             <svg 
-              className={`w-4 h-4 text-brand-300 transition-transform flex-shrink-0 ${showTopStyles ? 'rotate-90' : ''}`}
+              className={`w-4 h-4 text-brand-600 dark:text-brand-300 transition-transform flex-shrink-0 ${showTopStyles ? 'rotate-90' : ''}`}
               fill="none" 
               stroke="currentColor" 
               viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            <h3 className="font-semibold text-brand-300 text-sm">Top Performing Styles</h3>
-            <span className="px-2 py-0.5 rounded text-[9px] bg-purple-500/20 text-purple-300 border border-purple-500/30">
+            <h3 className="font-semibold text-brand-600 dark:text-brand-300 text-sm">Top Performing Styles</h3>
+            <span className="px-2 py-0.5 rounded text-[9px] bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 font-bold">
               PREMIUM
             </span>
           </div>
@@ -405,13 +406,13 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                   loadTopStyles();
                 }}
                 disabled={loadingTopStyles}
-                className="px-2 py-1 rounded text-[10px] bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 transition-colors disabled:opacity-50"
+                className="px-2 py-1 rounded text-[10px] bg-brand-500/20 hover:bg-brand-500/30 text-brand-600 dark:text-brand-300 transition-colors disabled:opacity-50"
                 title="Refresh top styles"
               >
                 {loadingTopStyles ? '⟳' : '↻'}
               </button>
             )}
-            <span className="text-xs text-slate-500 flex-shrink-0">
+            <span className="text-xs text-slate-600 dark:text-slate-500 flex-shrink-0">
               {showTopStyles ? 'Hide' : 'Show'}
             </span>
           </div>
@@ -419,17 +420,11 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
         
         {showTopStyles && (
           <>
-            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-500/10 to-brand-500/10 border border-purple-500/20 mb-3">
-              <p className="text-[10px] sm:text-xs text-slate-300 leading-relaxed">
-                🎯 <strong>Premium Feature Preview:</strong> See styles with the highest success rates from our community. 
-                Try them now for free - premium launching soon!
-              </p>
-            </div>
-            
+
             {loadingTopStyles ? (
-              <div className="text-center py-4 text-slate-500 text-xs">Loading top styles...</div>
+              <div className="text-center py-4 text-slate-600 dark:text-slate-500 text-xs">Loading top styles...</div>
             ) : topStyles.length === 0 ? (
-              <div className="text-center py-4 text-slate-500 text-xs">
+              <div className="text-center py-4 text-slate-600 dark:text-slate-500 text-xs">
                 No top styles available yet. Be the first to contribute by using StyleSync with high verification scores!
               </div>
             ) : (
@@ -441,34 +436,34 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                     return (
                       <li 
                         key={suggestion.id} 
-                        className="group border border-purple-500/20 rounded-lg p-3 bg-gradient-to-br from-slate-800/60 to-slate-900/60 hover:border-purple-500/40 transition-all"
+                        className="group border border-purple-500/20 rounded-lg p-3 bg-white dark:bg-transparent dark:bg-gradient-to-br dark:from-slate-800/60 dark:to-slate-900/60 hover:border-purple-500/40 transition-all shadow-sm dark:shadow-none"
                       >
                         <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-2">
                           <div className="flex-1 w-full">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                              <span className="text-xs font-semibold text-white">
+                              <span className="text-xs font-semibold text-slate-900 dark:text-white">
                                 #{rank} Top Style
                               </span>
                               <div className="flex items-center gap-1">
-                                <div className="w-16 sm:w-12 bg-slate-700 rounded-full h-1.5">
+                                <div className="w-16 sm:w-12 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
                                   <div 
                                     className="h-1.5 rounded-full bg-gradient-to-r from-brand-500 to-purple-500"
                                     style={{ width: `${suggestion.verificationScore}%` }}
                                   />
                                 </div>
-                                <span className="text-[10px] font-bold text-brand-300">
+                                <span className="text-[10px] font-bold text-brand-600 dark:text-brand-300">
                                   {suggestion.verificationScore}%
                                 </span>
                               </div>
                             </div>
-                            <div className="flex flex-wrap gap-1.5 text-[9px] text-slate-400 mb-2">
-                              <span className="px-1.5 py-0.5 rounded bg-slate-700/40">Tone: {suggestion.styleOptions.tone}</span>
-                              <span className="px-1.5 py-0.5 rounded bg-slate-700/40">F{Math.round(suggestion.styleOptions.formality*100)}</span>
-                              <span className="px-1.5 py-0.5 rounded bg-slate-700/40">P{Math.round(suggestion.styleOptions.pacing*100)}</span>
-                              <span className="px-1.5 py-0.5 rounded bg-slate-700/40">Dsc{Math.round(suggestion.styleOptions.descriptiveness*100)}</span>
-                              <span className="px-1.5 py-0.5 rounded bg-slate-700/40">Dir{Math.round(suggestion.styleOptions.directness*100)}</span>
+                            <div className="flex flex-wrap gap-1.5 text-[9px] text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2">
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40">Tone: {suggestion.styleOptions.tone}</span>
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40">F{Math.round(suggestion.styleOptions.formality*100)}</span>
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40">P{Math.round(suggestion.styleOptions.pacing*100)}</span>
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40">Dsc{Math.round(suggestion.styleOptions.descriptiveness*100)}</span>
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40">Dir{Math.round(suggestion.styleOptions.directness*100)}</span>
                             </div>
-                            <div className="text-[9px] text-slate-500">
+                            <div className="text-[9px] text-slate-600 dark:text-slate-500">
                               Used successfully {suggestion.usageCount}x · Avg score: {suggestion.averageScore}%
                             </div>
                           </div>
@@ -482,8 +477,8 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                                   alreadySaved
                                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-not-allowed'
                                     : isAuthenticated
-                                    ? 'bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-400 hover:to-purple-400 text-white shadow-lg hover:shadow-brand-500/50'
-                                    : 'bg-slate-600/30 text-slate-500 cursor-not-allowed'
+                                    ? 'bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 dark:from-brand-400 hover:to-purple-400 text-white shadow-lg hover:shadow-brand-500/50'
+                                    : 'bg-slate-600/30 text-slate-600 dark:text-slate-500 cursor-not-allowed'
                                 }`}
                                 title={
                                   alreadySaved 
@@ -500,10 +495,10 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                         </div>
                         {suggestion.sampleExcerpt && (
                           <details className="mt-2">
-                            <summary className="text-[9px] text-brand-400 cursor-pointer hover:text-brand-300">
+                            <summary className="text-[9px] text-brand-600 dark:text-brand-400 cursor-pointer hover:text-brand-600 dark:text-brand-300">
                               View sample excerpt →
                             </summary>
-                            <div className="mt-2 p-2 rounded bg-slate-900/60 text-[9px] text-slate-300 leading-relaxed border-l-2 border-brand-500/40">
+                            <div className="mt-2 p-2 rounded bg-white dark:bg-slate-900/60 text-[9px] text-slate-800 dark:text-slate-300 leading-relaxed border-l-2 border-brand-500/40">
                               {suggestion.sampleExcerpt.substring(0, 200)}
                               {suggestion.sampleExcerpt.length > 200 && '...'}
                             </div>
@@ -515,37 +510,36 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                 </ul>
                 
                 {/* Locked Premium Styles */}
-                {topStyles.length > 1 && (
-                  <div className="relative rounded-lg border border-purple-500/30 overflow-hidden bg-slate-800/40 min-h-[200px] sm:min-h-[300px] flex items-center justify-center">
+                {topStyles.length > 1 && !isPremium && (
+                  <div className="relative rounded-lg border border-purple-500/30 overflow-hidden bg-slate-50 dark:bg-slate-800/40 min-h-[200px] sm:min-h-[300px] flex items-center justify-center">
                     {/* Premium Lock Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-purple-900/30 to-slate-900/95 z-10 flex items-center justify-center">
                       <div className="text-center space-y-3 sm:space-y-4 p-4 sm:p-6 max-w-xs">
                         <div className="text-3xl sm:text-4xl">🔒</div>
                         <div>
-                          <div className="text-sm sm:text-base font-bold text-white mb-2">
+                          <div className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-2">
                             {topStyles.length - 1} More Top Style{topStyles.length - 1 > 1 ? 's' : ''} Available
                           </div>
-                          <div className="text-xs text-slate-300 leading-relaxed mb-2">
+                          <div className="text-xs text-slate-800 dark:text-slate-300 leading-relaxed mb-2">
                             Unlock premium to access all top-performing styles from our community
                           </div>
                           {topStyles[0] && (
                             <div className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-brand-500/20 border border-purple-500/40">
-                              <span className="text-[10px] sm:text-[12px] text-slate-400">Including #1 style at</span>
-                              <span className="text-xs sm:text-sm font-bold text-brand-300">{topStyles[0].verificationScore}%</span>
-                              <span className="text-[10px] sm:text-[12px] text-slate-400">match</span>
+                              <span className="text-[10px] sm:text-[12px] text-slate-600 dark:text-slate-500 dark:text-slate-400">Including #1 style at</span>
+                              <span className="text-xs sm:text-sm font-bold text-brand-600 dark:text-brand-300">{topStyles[0].verificationScore}%</span>
+                              <span className="text-[10px] sm:text-[12px] text-slate-600 dark:text-slate-500 dark:text-slate-400">match</span>
                             </div>
                           )}
                         </div>
                         <button
                           className="w-full px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-gradient-to-r from-purple-600 to-brand-600 hover:from-purple-500 hover:to-brand-500 text-white font-semibold text-xs sm:text-sm transition-all shadow-lg hover:shadow-xl hover:scale-105"
                           onClick={() => {
-                            // Placeholder for future subscription functionality
-                            alert('Premium subscriptions coming soon! 🚀');
+                            router.push('/pricing');
                           }}
                         >
                           Subscribe to Premium
                         </button>
-                        <div className="text-[9px] sm:text-[10px] text-slate-400">
+                        <div className="text-[9px] sm:text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400">
                           Get access to all top styles, priority support, and more
                         </div>
                       </div>
@@ -561,6 +555,88 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                     </div>
                   </div>
                 )}
+                
+                {/* Unlocked Premium Styles */}
+                {topStyles.length > 1 && isPremium && (
+                  <ul className="space-y-2 mt-4">
+                    {topStyles.slice(0, -1).reverse().map((suggestion, index) => {
+                      const rank = topStyles.length - 1 - index;
+                      return (
+                        <li 
+                          key={suggestion.id} 
+                          className="group border border-purple-500/20 rounded-lg p-3 bg-white dark:bg-transparent dark:bg-gradient-to-br dark:from-slate-800/60 dark:to-slate-900/60 hover:border-purple-500/40 transition-all shadow-sm dark:shadow-none"
+                        >
+                          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-2">
+                            <div className="flex-1 w-full">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                                  #{rank} Top Style
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <div className="w-16 sm:w-12 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
+                                    <div 
+                                      className="h-1.5 rounded-full bg-gradient-to-r from-brand-500 to-purple-500"
+                                      style={{ width: `${suggestion.verificationScore}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-brand-600 dark:text-brand-300">
+                                    {suggestion.verificationScore}%
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 text-[9px] text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2">
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40">Tone: {suggestion.styleOptions.tone}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40">F{Math.round(suggestion.styleOptions.formality*100)}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40">P{Math.round(suggestion.styleOptions.pacing*100)}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40">Dsc{Math.round(suggestion.styleOptions.descriptiveness*100)}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700/40">Dir{Math.round(suggestion.styleOptions.directness*100)}</span>
+                              </div>
+                              <div className="text-[9px] text-slate-600 dark:text-slate-500">
+                                Used successfully {suggestion.usageCount}x · Avg score: {suggestion.averageScore}%
+                              </div>
+                            </div>
+                            {(() => {
+                              const alreadySaved = isStyleAlreadySaved(suggestion);
+                              return (
+                                <button
+                                  onClick={() => applyTopStyle(suggestion)}
+                                  disabled={!isAuthenticated || alreadySaved}
+                                  className={`w-full sm:w-auto px-3 py-1.5 rounded text-[10px] font-medium transition-all flex-shrink-0 ${
+                                    alreadySaved
+                                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 cursor-not-allowed'
+                                      : isAuthenticated
+                                      ? 'bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 dark:from-brand-400 hover:to-purple-400 text-white shadow-lg hover:shadow-brand-500/50'
+                                      : 'bg-slate-600/30 text-slate-600 dark:text-slate-500 cursor-not-allowed'
+                                  }`}
+                                  title={
+                                    alreadySaved 
+                                      ? "This style is already in your saved styles" 
+                                      : !isAuthenticated 
+                                      ? "Sign in to use this style" 
+                                      : "Add this style to your saved styles"
+                                  }
+                                >
+                                  {alreadySaved ? '✓ Saved' : 'Use Style'}
+                                </button>
+                              );
+                            })()}
+                          </div>
+                          {suggestion.sampleExcerpt && (
+                            <details className="mt-2">
+                              <summary className="text-[9px] text-brand-600 dark:text-brand-400 cursor-pointer hover:text-brand-600 dark:text-brand-300">
+                                View sample excerpt →
+                              </summary>
+                              <div className="mt-2 p-2 rounded bg-white dark:bg-slate-900/60 text-[9px] text-slate-800 dark:text-slate-300 leading-relaxed border-l-2 border-brand-500/40">
+                                {suggestion.sampleExcerpt.substring(0, 200)}
+                                {suggestion.sampleExcerpt.length > 200 && '...'}
+                              </div>
+                            </details>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             )}
           </>
@@ -569,19 +645,19 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
       
       {/* Edit Profile Modal - Full Screen (Portal to document body) */}
       {showEditModal && editingProfile && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-slate-950 z-[9999] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-50 dark:bg-slate-950 z-[9999] overflow-y-auto">
           <div className="min-h-screen py-4 sm:py-8">
             <div className="max-w-4xl mx-auto px-3 sm:px-4">
               <div className="glass-panel p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8">
                 {/* Header */}
                 <div className="flex items-start sm:items-center justify-between pb-4 sm:pb-6 border-b border-white/10 gap-3">
                   <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-white">Edit Style Profile</h2>
-                    <p className="text-xs sm:text-sm text-slate-400 mt-1">Modify your writing style parameters and settings</p>
+                    <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Edit Style Profile</h2>
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-1">Modify your writing style parameters and settings</p>
                   </div>
                   <button 
                     onClick={cancelEdit}
-                    className="text-slate-400 hover:text-white transition text-xl sm:text-2xl px-2 sm:px-3 flex-shrink-0"
+                    className="text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition text-xl sm:text-2xl px-2 sm:px-3 flex-shrink-0"
                     title="Close"
                   >
                     ✕
@@ -590,22 +666,22 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                 
                 {/* Profile Name */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-slate-300 block">Profile Name *</label>
+                  <label className="text-sm font-medium text-slate-800 dark:text-slate-300 block">Profile Name *</label>
                   <input 
                     value={editingProfile.name || ''} 
                     onChange={e => updateEditingProfile('name', e.target.value)} 
-                    className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-500" 
+                    className="w-full rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-500" 
                     placeholder="e.g. Academic Concise, Professional Friendly" 
                   />
                 </div>
                 
                 {/* Tone */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-slate-300 block">Overall Tone *</label>
+                  <label className="text-sm font-medium text-slate-800 dark:text-slate-300 block">Overall Tone *</label>
                   <input 
                     value={editingProfile.tone} 
                     onChange={e => updateEditingProfile('tone', e.target.value)} 
-                    className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-500" 
+                    className="w-full rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-500" 
                     placeholder="e.g. balanced, encouraging, critical"
                   />
                 </div>
@@ -613,16 +689,16 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                 {/* Style Parameters */}
                 <div className="space-y-6">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 pb-2 border-b border-white/10">
-                    <h3 className="text-base sm:text-lg font-semibold text-brand-300">Style Parameters</h3>
-                    <span className="text-xs text-slate-500">(Adjust sliders to fine-tune your style)</span>
+                    <h3 className="text-base sm:text-lg font-semibold text-brand-600 dark:text-brand-300">Style Parameters</h3>
+                    <span className="text-xs text-slate-600 dark:text-slate-500">(Adjust sliders to fine-tune your style)</span>
                   </div>
                   
                   <div className="grid gap-6 sm:gap-8 md:grid-cols-2">
                     {/* Formality */}
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm text-slate-400">
+                      <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">
                         <span className="font-medium">Formality</span>
-                        <span className="font-mono text-brand-400 font-semibold">{Math.round(editingProfile.formality * 100)}%</span>
+                        <span className="font-mono text-brand-600 dark:text-brand-400 font-semibold">{Math.round(editingProfile.formality * 100)}%</span>
                       </div>
                       <input 
                         type="range" 
@@ -633,7 +709,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                         onChange={e => updateEditingProfile('formality', parseFloat(e.target.value))} 
                         className="w-full h-2 accent-brand-500 cursor-pointer" 
                       />
-                      <div className="text-xs text-slate-500 flex justify-between">
+                      <div className="text-xs text-slate-600 dark:text-slate-500 flex justify-between">
                         <span>Casual</span>
                         <span>Academic</span>
                       </div>
@@ -641,9 +717,9 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                     
                     {/* Pacing */}
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm text-slate-400">
+                      <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">
                         <span className="font-medium">Pacing</span>
-                        <span className="font-mono text-brand-400 font-semibold">{Math.round(editingProfile.pacing * 100)}%</span>
+                        <span className="font-mono text-brand-600 dark:text-brand-400 font-semibold">{Math.round(editingProfile.pacing * 100)}%</span>
                       </div>
                       <input 
                         type="range" 
@@ -654,7 +730,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                         onChange={e => updateEditingProfile('pacing', parseFloat(e.target.value))} 
                         className="w-full h-2 accent-brand-500 cursor-pointer" 
                       />
-                      <div className="text-xs text-slate-500 flex justify-between">
+                      <div className="text-xs text-slate-600 dark:text-slate-500 flex justify-between">
                         <span>Measured</span>
                         <span>Rapid</span>
                       </div>
@@ -662,9 +738,9 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                     
                     {/* Descriptiveness */}
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm text-slate-400">
+                      <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">
                         <span className="font-medium">Descriptiveness</span>
-                        <span className="font-mono text-brand-400 font-semibold">{Math.round(editingProfile.descriptiveness * 100)}%</span>
+                        <span className="font-mono text-brand-600 dark:text-brand-400 font-semibold">{Math.round(editingProfile.descriptiveness * 100)}%</span>
                       </div>
                       <input 
                         type="range" 
@@ -675,7 +751,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                         onChange={e => updateEditingProfile('descriptiveness', parseFloat(e.target.value))} 
                         className="w-full h-2 accent-brand-500 cursor-pointer" 
                       />
-                      <div className="text-xs text-slate-500 flex justify-between">
+                      <div className="text-xs text-slate-600 dark:text-slate-500 flex justify-between">
                         <span>Minimal</span>
                         <span>Vivid</span>
                       </div>
@@ -683,9 +759,9 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                     
                     {/* Directness */}
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm text-slate-400">
+                      <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">
                         <span className="font-medium">Directness</span>
-                        <span className="font-mono text-brand-400 font-semibold">{Math.round(editingProfile.directness * 100)}%</span>
+                        <span className="font-mono text-brand-600 dark:text-brand-400 font-semibold">{Math.round(editingProfile.directness * 100)}%</span>
                       </div>
                       <input 
                         type="range" 
@@ -696,7 +772,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                         onChange={e => updateEditingProfile('directness', parseFloat(e.target.value))} 
                         className="w-full h-2 accent-brand-500 cursor-pointer" 
                       />
-                      <div className="text-xs text-slate-500 flex justify-between">
+                      <div className="text-xs text-slate-600 dark:text-slate-500 flex justify-between">
                         <span>Implicit</span>
                         <span>Straightforward</span>
                       </div>
@@ -706,40 +782,40 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                 
                 {/* Keywords */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-slate-300 block">Keywords (optional)</label>
+                  <label className="text-sm font-medium text-slate-800 dark:text-slate-300 block">Keywords (optional)</label>
                   <input 
                     value={editingProfile.customLexicon.join(', ')} 
                     onChange={e => updateEditingProfile('customLexicon', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} 
-                    className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-500" 
+                    className="w-full rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-500" 
                     placeholder="e.g. innovative, strategic, efficient" 
                   />
-                  <p className="text-xs text-slate-400">Separate keywords with commas. These words will be emphasized in your paraphrased text.</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">Separate keywords with commas. These words will be emphasized in your paraphrased text.</p>
                 </div>
                 
                 {/* Sample Excerpt */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-slate-300 block">Sample Excerpt (optional)</label>
+                  <label className="text-sm font-medium text-slate-800 dark:text-slate-300 block">Sample Excerpt (optional)</label>
                   <textarea 
                     value={editingProfile.sampleExcerpt} 
                     onChange={e => updateEditingProfile('sampleExcerpt', e.target.value)} 
                     rows={6} 
-                    className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-4 py-3 text-base leading-relaxed focus:outline-none focus:ring-2 focus:ring-brand-500" 
+                    className="w-full rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10 px-4 py-3 text-base leading-relaxed focus:outline-none focus:ring-2 focus:ring-brand-500" 
                     placeholder="Paste a sample of your writing to reference your style..." 
                   />
-                  <p className="text-xs text-slate-400">A sample of your writing helps maintain consistency with your natural style.</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">A sample of your writing helps maintain consistency with your natural style.</p>
                 </div>
                 
                 {/* Notes */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-slate-300 block">Notes (optional)</label>
+                  <label className="text-sm font-medium text-slate-800 dark:text-slate-300 block">Notes (optional)</label>
                   <textarea 
                     value={editingProfile.notes} 
                     onChange={e => updateEditingProfile('notes', e.target.value)} 
                     rows={3} 
-                    className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-500" 
+                    className="w-full rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-500" 
                     placeholder="e.g. Professional tone, avoid jargon, use active voice" 
                   />
-                  <p className="text-xs text-slate-400">Additional guidelines or preferences for this style profile.</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">Additional guidelines or preferences for this style profile.</p>
                 </div>
                 
                 {/* Action Buttons */}
@@ -752,7 +828,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                   </button>
                   <button 
                     onClick={cancelEdit}
-                    className="w-full sm:w-auto px-6 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold text-sm sm:text-base transition order-2"
+                    className="w-full sm:w-auto px-6 py-3 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-600 text-slate-900 dark:text-white font-semibold text-sm sm:text-base transition order-2"
                   >
                     Cancel
                   </button>
@@ -767,7 +843,7 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
       {/* Delete Confirmation Modal (Portal to document body) */}
       {showDeleteConfirm && profileToDelete && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-3 sm:p-4">
-          <div className="bg-slate-900 rounded-xl border border-red-500/30 max-w-md w-full shadow-2xl">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-red-500/30 max-w-md w-full shadow-2xl">
             <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {/* Header */}
               <div className="flex items-start gap-3">
@@ -775,25 +851,25 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
                   <span className="text-xl sm:text-2xl">⚠️</span>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-base sm:text-lg font-bold text-white">Delete Style Profile?</h3>
-                  <p className="text-xs sm:text-sm text-slate-400 mt-1">This action cannot be undone.</p>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Delete Style Profile?</h3>
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-1">This action cannot be undone.</p>
                 </div>
               </div>
               
               {/* Profile Info */}
-              <div className="bg-slate-800/50 rounded-lg p-4 border border-white/5">
-                <p className="text-sm text-slate-300 mb-2">
+              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-white/5">
+                <p className="text-sm text-slate-800 dark:text-slate-300 mb-2">
                   You are about to delete:
                 </p>
-                <p className="text-base font-semibold text-white">
+                <p className="text-base font-semibold text-slate-900 dark:text-white">
                   {profileToDelete.name || 'Unnamed Profile'}
                 </p>
-                <div className="flex flex-wrap gap-2 mt-3 text-[10px] text-slate-400">
-                  <span className="px-2 py-1 rounded bg-slate-700/40">Tone: {profileToDelete.tone}</span>
-                  <span className="px-2 py-1 rounded bg-slate-700/40">F{Math.round(profileToDelete.formality*100)}</span>
-                  <span className="px-2 py-1 rounded bg-slate-700/40">P{Math.round(profileToDelete.pacing*100)}</span>
-                  <span className="px-2 py-1 rounded bg-slate-700/40">Dsc{Math.round(profileToDelete.descriptiveness*100)}</span>
-                  <span className="px-2 py-1 rounded bg-slate-700/40">Dir{Math.round(profileToDelete.directness*100)}</span>
+                <div className="flex flex-wrap gap-2 mt-3 text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400">
+                  <span className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700/40">Tone: {profileToDelete.tone}</span>
+                  <span className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700/40">F{Math.round(profileToDelete.formality*100)}</span>
+                  <span className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700/40">P{Math.round(profileToDelete.pacing*100)}</span>
+                  <span className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700/40">Dsc{Math.round(profileToDelete.descriptiveness*100)}</span>
+                  <span className="px-2 py-1 rounded bg-slate-100 dark:bg-slate-700/40">Dir{Math.round(profileToDelete.directness*100)}</span>
                 </div>
               </div>
               
@@ -808,13 +884,13 @@ export function StyleProfileManager({ onSelect }: StyleProfileManagerProps) {
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button 
                   onClick={cancelDelete}
-                  className="w-full sm:flex-1 px-4 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-semibold transition order-2 sm:order-1"
+                  className="w-full sm:flex-1 px-4 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-600 text-slate-900 dark:text-white font-semibold transition order-2 sm:order-1"
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={confirmDelete}
-                  className="w-full sm:flex-1 px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold transition shadow-lg hover:shadow-red-500/50 order-1 sm:order-2"
+                  className="w-full sm:flex-1 px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-slate-900 dark:text-white font-bold transition shadow-lg hover:shadow-red-500/50 order-1 sm:order-2"
                 >
                   Delete Profile
                 </button>

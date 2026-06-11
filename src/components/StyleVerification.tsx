@@ -112,9 +112,9 @@ export default function StyleVerification({ original, transformed, profile, onSc
   }, [styleMatchPercentage, original, transformed]); // Removed onScoreCalculated from deps
   
   return (
-    <div className="mt-6 p-6 bg-slate-800/40 border border-white/10 rounded-xl space-y-4">
+    <div className="mt-6 p-6 bg-slate-50 dark:bg-slate-800/40 border border-white/10 rounded-xl space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-brand-300">Style Verification</h3>
+        <h3 className="text-lg font-semibold text-brand-600 dark:text-brand-300">Style Verification</h3>
         <div className="flex items-center gap-2">
           <div className="w-32 bg-gray-700 rounded-full h-3">
             <div 
@@ -126,76 +126,76 @@ export default function StyleVerification({ original, transformed, profile, onSc
               style={{ width: `${styleMatchPercentage}%` }}
             />
           </div>
-          <span className="text-white font-bold text-lg">{styleMatchPercentage}%</span>
+          <span className="text-slate-900 dark:text-white font-bold text-lg">{styleMatchPercentage}%</span>
         </div>
       </div>
       
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div className="space-y-2">
-          <h4 className="text-brand-200 font-medium">Original Text</h4>
+          <h4 className="text-brand-700 dark:text-brand-200 font-medium">Original Text</h4>
           <div className="space-y-1 text-gray-400">
             <div className="flex justify-between">
               <span>Formality:</span>
-              <span className="text-white">{(originalMetrics.formalityScore * 100).toFixed(0)}%</span>
+              <span className="text-slate-900 dark:text-white">{(originalMetrics.formalityScore * 100).toFixed(0)}%</span>
             </div>
             <div className="flex justify-between">
               <span>Avg Sentence Length:</span>
-              <span className="text-white">{originalMetrics.sentenceLengthAvg.toFixed(1)} words</span>
+              <span className="text-slate-900 dark:text-white">{originalMetrics.sentenceLengthAvg.toFixed(1)} words</span>
             </div>
             <div className="flex justify-between">
               <span>Adjective Density:</span>
-              <span className="text-white">{(originalMetrics.adjectiveDensity * 100).toFixed(1)}%</span>
+              <span className="text-slate-900 dark:text-white">{(originalMetrics.adjectiveDensity * 100).toFixed(1)}%</span>
             </div>
             <div className="flex justify-between">
               <span>Contractions:</span>
-              <span className="text-white">{originalMetrics.contractionCount}</span>
+              <span className="text-slate-900 dark:text-white">{originalMetrics.contractionCount}</span>
             </div>
           </div>
         </div>
         
         <div className="space-y-2">
-          <h4 className="text-brand-200 font-medium">Transformed Text</h4>
+          <h4 className="text-brand-700 dark:text-brand-200 font-medium">Transformed Text</h4>
           <div className="space-y-1 text-gray-400">
             <div className="flex justify-between">
               <span>Formality:</span>
-              <span className="text-white">{(transformedMetrics.formalityScore * 100).toFixed(0)}%</span>
+              <span className="text-slate-900 dark:text-white">{(transformedMetrics.formalityScore * 100).toFixed(0)}%</span>
             </div>
             <div className="flex justify-between">
               <span>Avg Sentence Length:</span>
-              <span className="text-white">{transformedMetrics.sentenceLengthAvg.toFixed(1)} words</span>
+              <span className="text-slate-900 dark:text-white">{transformedMetrics.sentenceLengthAvg.toFixed(1)} words</span>
             </div>
             <div className="flex justify-between">
               <span>Adjective Density:</span>
-              <span className="text-white">{(transformedMetrics.adjectiveDensity * 100).toFixed(1)}%</span>
+              <span className="text-slate-900 dark:text-white">{(transformedMetrics.adjectiveDensity * 100).toFixed(1)}%</span>
             </div>
             <div className="flex justify-between">
               <span>Contractions:</span>
-              <span className="text-white">{transformedMetrics.contractionCount}</span>
+              <span className="text-slate-900 dark:text-white">{transformedMetrics.contractionCount}</span>
             </div>
           </div>
         </div>
       </div>
       
       {profile && (
-        <div className="mt-4 p-4 bg-slate-900/60 rounded-lg">
-          <h4 className="text-brand-200 font-medium mb-3">Your Style Profile Settings</h4>
+        <div className="mt-4 p-4 bg-white dark:bg-slate-900/60 rounded-lg">
+          <h4 className="text-brand-700 dark:text-brand-200 font-medium mb-3">Your Style Profile Settings</h4>
           <div className="grid grid-cols-2 gap-3 text-sm text-gray-400">
             <div className="flex justify-between">
               <span>Target Formality:</span>
-              <span className="text-white">{((profile.formality || 0.5) * 100).toFixed(0)}%</span>
+              <span className="text-slate-900 dark:text-white">{((profile.formality || 0.5) * 100).toFixed(0)}%</span>
             </div>
             <div className="flex justify-between">
               <span>Target Descriptiveness:</span>
-              <span className="text-white">{((profile.descriptiveness || 0.5) * 100).toFixed(0)}%</span>
+              <span className="text-slate-900 dark:text-white">{((profile.descriptiveness || 0.5) * 100).toFixed(0)}%</span>
             </div>
             <div className="flex justify-between">
               <span>Target Directness:</span>
-              <span className="text-white">{((profile.directness || 0.5) * 100).toFixed(0)}%</span>
+              <span className="text-slate-900 dark:text-white">{((profile.directness || 0.5) * 100).toFixed(0)}%</span>
             </div>
             {profile.customLexicon && profile.customLexicon.length > 0 && (
               <div className="flex justify-between">
                 <span>Custom Lexicon:</span>
-                <span className="text-white">{profile.customLexicon.length} words</span>
+                <span className="text-slate-900 dark:text-white">{profile.customLexicon.length} words</span>
               </div>
             )}
           </div>

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface StyleOption {
   name: string;
@@ -177,6 +177,12 @@ export default function StyleOptionsHelp() {
     directness: 'medium'
   });
 
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('open-style-help', handleOpen);
+    return () => window.removeEventListener('open-style-help', handleOpen);
+  }, []);
+
   const handleExampleChange = (key: string, value: 'low' | 'medium' | 'high') => {
     setSelectedExample(prev => ({ ...prev, [key]: value }));
   };
@@ -188,7 +194,7 @@ export default function StyleOptionsHelp() {
       {/* Help Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 group"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500 hover:from-brand-600 hover:to-brand-500 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 group"
         title="Learn about style options"
       >
         <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -207,16 +213,16 @@ export default function StyleOptionsHelp() {
           />
           
           {/* Modal Content */}
-          <div className="relative w-full max-w-5xl max-h-[90vh] bg-slate-900 rounded-2xl shadow-2xl border border-white/10 overflow-hidden flex flex-col">
+          <div className="relative w-full max-w-5xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-white/10 overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-gradient-to-r from-brand-500/10 to-purple-500/10">
               <div>
-                <h2 className="text-2xl font-bold text-white">Style Options Guide</h2>
-                <p className="text-sm text-slate-300 mt-1">Learn how each setting affects your writing style</p>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Style Options Guide</h2>
+                <p className="text-sm text-slate-800 dark:text-slate-300 mt-1">Learn how each setting affects your writing style</p>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                className="p-2 rounded-lg hover:bg-white/10 text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
                 title="Close"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,14 +232,14 @@ export default function StyleOptionsHelp() {
             </div>
 
             {/* Tab Navigation */}
-            <div className="px-6 pt-4 bg-slate-800/50">
+            <div className="px-6 pt-4 bg-slate-50 dark:bg-slate-800/50">
               <div className="flex gap-1 overflow-x-auto scrollbar-hide">
                 <button
                   onClick={() => setActiveTab('overview')}
                   className={`relative px-5 py-3 text-sm font-medium transition-all whitespace-nowrap ${
                     activeTab === 'overview'
-                      ? 'text-brand-300'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'text-brand-600 dark:text-brand-300'
+                      : 'text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
                   }`}
                 >
                   <span className="relative z-10">📚 Overview</span>
@@ -245,8 +251,8 @@ export default function StyleOptionsHelp() {
                   onClick={() => setActiveTab('tone')}
                   className={`relative px-5 py-3 text-sm font-medium transition-all whitespace-nowrap ${
                     activeTab === 'tone'
-                      ? 'text-brand-300'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'text-brand-600 dark:text-brand-300'
+                      : 'text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
                   }`}
                 >
                   <span className="relative z-10">🎭 Tone</span>
@@ -260,8 +266,8 @@ export default function StyleOptionsHelp() {
                     onClick={() => setActiveTab(option.key)}
                     className={`relative px-5 py-3 text-sm font-medium transition-all whitespace-nowrap ${
                       activeTab === option.key
-                        ? 'text-brand-300'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'text-brand-600 dark:text-brand-300'
+                        : 'text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
                     }`}
                   >
                     <span className="relative z-10">{option.name}</span>
@@ -275,32 +281,32 @@ export default function StyleOptionsHelp() {
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 bg-slate-900">
+            <div className="flex-1 overflow-y-auto px-6 py-6 bg-white dark:bg-slate-900">
               {activeTab === 'overview' && (
                 <div className="space-y-6">
                   <div className="glass-panel p-6 space-y-4">
-                    <h3 className="text-xl font-semibold text-brand-300">Welcome to StyleSync!</h3>
-                    <p className="text-slate-300 leading-relaxed">
+                    <h3 className="text-xl font-semibold text-brand-600 dark:text-brand-300">Welcome to StyleSync!</h3>
+                    <p className="text-slate-800 dark:text-slate-300 leading-relaxed">
                       StyleSync allows you to transform any text to match your unique writing style. Each option controls a specific aspect of how your text reads and feels.
                     </p>
                   </div>
 
                   <div className="glass-panel p-6 space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Quick Overview</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Quick Overview</h3>
                     <div className="grid gap-4 md:grid-cols-2">
                       {styleOptions.map(option => (
-                        <div key={option.key} className="p-4 rounded-lg bg-slate-800/40 border border-white/5">
+                        <div key={option.key} className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-white/5">
                           <div className="flex items-center justify-between mb-2">
-                            <h4 className="font-medium text-brand-300">{option.name}</h4>
+                            <h4 className="font-medium text-brand-600 dark:text-brand-300">{option.name}</h4>
                             <button
                               onClick={() => setActiveTab(option.key)}
-                              className="text-xs px-2 py-1 rounded bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 transition-colors"
+                              className="text-xs px-2 py-1 rounded bg-brand-500/20 hover:bg-brand-500/30 text-brand-600 dark:text-brand-400 transition-colors"
                             >
                               Learn More →
                             </button>
                           </div>
-                          <p className="text-sm text-slate-400">{option.description}</p>
-                          <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                          <p className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">{option.description}</p>
+                          <div className="mt-3 flex items-center justify-between text-xs text-slate-600 dark:text-slate-500">
                             <span>{option.lowLabel}</span>
                             <span>↔</span>
                             <span>{option.highLabel}</span>
@@ -311,23 +317,23 @@ export default function StyleOptionsHelp() {
                   </div>
 
                   <div className="glass-panel p-6 space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Getting Started</h3>
-                    <ol className="space-y-3 text-slate-300">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Getting Started</h3>
+                    <ol className="space-y-3 text-slate-800 dark:text-slate-300">
                       <li className="flex gap-3">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500/20 text-brand-300 flex items-center justify-center text-sm font-semibold">1</span>
-                        <span><strong className="text-white">Create a style profile:</strong> Use the Style Profile Manager to set up your preferences</span>
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500/20 text-brand-600 dark:text-brand-300 flex items-center justify-center text-sm font-semibold">1</span>
+                        <span><strong className="text-slate-900 dark:text-white">Create a style profile:</strong> Use the Style Profile Manager to set up your preferences</span>
                       </li>
                       <li className="flex gap-3">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500/20 text-brand-300 flex items-center justify-center text-sm font-semibold">2</span>
-                        <span><strong className="text-white">Provide a sample:</strong> Paste a few paragraphs of your own writing to help AI understand your style</span>
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500/20 text-brand-600 dark:text-brand-300 flex items-center justify-center text-sm font-semibold">2</span>
+                        <span><strong className="text-slate-900 dark:text-white">Provide a sample:</strong> Paste a few paragraphs of your own writing to help AI understand your style</span>
                       </li>
                       <li className="flex gap-3">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500/20 text-brand-300 flex items-center justify-center text-sm font-semibold">3</span>
-                        <span><strong className="text-white">Adjust settings:</strong> Fine-tune each option based on what you learn here</span>
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500/20 text-brand-600 dark:text-brand-300 flex items-center justify-center text-sm font-semibold">3</span>
+                        <span><strong className="text-slate-900 dark:text-white">Adjust settings:</strong> Fine-tune each option based on what you learn here</span>
                       </li>
                       <li className="flex gap-3">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500/20 text-brand-300 flex items-center justify-center text-sm font-semibold">4</span>
-                        <span><strong className="text-white">Paraphrase and refine:</strong> Test different texts and adjust your profile as needed</span>
+                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-brand-500/20 text-brand-600 dark:text-brand-300 flex items-center justify-center text-sm font-semibold">4</span>
+                        <span><strong className="text-slate-900 dark:text-white">Paraphrase and refine:</strong> Test different texts and adjust your profile as needed</span>
                       </li>
                     </ol>
                   </div>
@@ -342,8 +348,8 @@ export default function StyleOptionsHelp() {
               {activeTab === 'tone' && (
                 <div className="space-y-6">
                   <div className="glass-panel p-6 space-y-4">
-                    <h3 className="text-xl font-semibold text-brand-300">Tone</h3>
-                    <p className="text-slate-300 leading-relaxed">
+                    <h3 className="text-xl font-semibold text-brand-600 dark:text-brand-300">Tone</h3>
+                    <p className="text-slate-800 dark:text-slate-300 leading-relaxed">
                       Tone is the overall emotional character and attitude of your writing. It's expressed through word choice, 
                       sentence structure, and the general feeling your text conveys. Unlike the other numeric settings, tone is 
                       described with words like "professional," "friendly," "authoritative," etc.
@@ -351,14 +357,14 @@ export default function StyleOptionsHelp() {
                   </div>
 
                   <div className="glass-panel p-6 space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Common Tone Examples</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Common Tone Examples</h3>
                     <div className="grid gap-4 md:grid-cols-2">
                       {toneExamples.map(tone => (
-                        <div key={tone.name} className="p-4 rounded-lg bg-slate-800/40 border border-white/5 space-y-2">
-                          <h4 className="font-medium text-brand-300">{tone.name}</h4>
-                          <p className="text-xs text-slate-400">{tone.description}</p>
-                          <div className="mt-2 p-3 rounded bg-slate-900/60 border border-white/5">
-                            <p className="text-sm text-slate-200 italic">"{tone.example}"</p>
+                        <div key={tone.name} className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-white/5 space-y-2">
+                          <h4 className="font-medium text-brand-600 dark:text-brand-300">{tone.name}</h4>
+                          <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">{tone.description}</p>
+                          <div className="mt-2 p-3 rounded bg-white dark:bg-slate-900/60 border border-white/5">
+                            <p className="text-sm text-slate-800 dark:text-slate-200 italic">"{tone.example}"</p>
                           </div>
                         </div>
                       ))}
@@ -366,22 +372,22 @@ export default function StyleOptionsHelp() {
                   </div>
 
                   <div className="glass-panel p-6 space-y-3">
-                    <h3 className="text-lg font-semibold text-white">Tips for Choosing Your Tone</h3>
-                    <ul className="space-y-2 text-slate-300 text-sm">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Tips for Choosing Your Tone</h3>
+                    <ul className="space-y-2 text-slate-800 dark:text-slate-300 text-sm">
                       <li className="flex gap-2">
-                        <span className="text-brand-400">•</span>
+                        <span className="text-brand-600 dark:text-brand-400">•</span>
                         <span>Match your audience: Professional for business, friendly for blogs, authoritative for expertise</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-brand-400">•</span>
+                        <span className="text-brand-600 dark:text-brand-400">•</span>
                         <span>Be consistent: Your tone should remain steady throughout a piece of writing</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-brand-400">•</span>
+                        <span className="text-brand-600 dark:text-brand-400">•</span>
                         <span>Consider the context: Formal presentations need different tones than casual emails</span>
                       </li>
                       <li className="flex gap-2">
-                        <span className="text-brand-400">•</span>
+                        <span className="text-brand-600 dark:text-brand-400">•</span>
                         <span>You can combine tones: "Professional yet friendly" or "Authoritative but approachable"</span>
                       </li>
                     </ul>
@@ -396,16 +402,16 @@ export default function StyleOptionsHelp() {
                     return (
                       <>
                         <div className="glass-panel p-6 space-y-4">
-                          <h3 className="text-xl font-semibold text-brand-300">{option.name}</h3>
-                          <p className="text-slate-300 leading-relaxed">{option.description}</p>
+                          <h3 className="text-xl font-semibold text-brand-600 dark:text-brand-300">{option.name}</h3>
+                          <p className="text-slate-800 dark:text-slate-300 leading-relaxed">{option.description}</p>
                           <div className="flex items-center justify-between text-sm">
-                            <span className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                            <span className="px-3 py-1.5 rounded-lg bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-500/30">
                               {option.lowLabel}
                             </span>
                             <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                             </svg>
-                            <span className="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            <span className="px-3 py-1.5 rounded-lg bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/30">
                               {option.highLabel}
                             </span>
                           </div>
@@ -413,8 +419,8 @@ export default function StyleOptionsHelp() {
 
                         <div className="glass-panel p-6 space-y-4">
                           <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-white">Interactive Examples</h3>
-                            <span className="text-xs text-slate-500">Click to see different levels</span>
+                            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Interactive Examples</h3>
+                            <span className="text-xs text-slate-600 dark:text-slate-500">Click to see different levels</span>
                           </div>
                           
                           {/* Example Selector */}
@@ -423,8 +429,8 @@ export default function StyleOptionsHelp() {
                               onClick={() => handleExampleChange(option.key, 'low')}
                               className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                                 selectedExample[option.key] === 'low'
-                                  ? 'bg-blue-500/30 text-blue-200 border-2 border-blue-400 shadow-lg'
-                                  : 'bg-slate-800/40 text-slate-400 border border-white/10 hover:border-blue-400/50'
+                                  ? 'bg-blue-500/30 text-blue-800 dark:text-blue-200 border-2 border-blue-400 shadow-lg'
+                                  : 'bg-slate-50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-500 dark:text-slate-400 border border-white/10 hover:border-blue-400/50'
                               }`}
                             >
                               <div className="text-xs opacity-70 mb-1">Low</div>
@@ -434,8 +440,8 @@ export default function StyleOptionsHelp() {
                               onClick={() => handleExampleChange(option.key, 'medium')}
                               className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                                 selectedExample[option.key] === 'medium'
-                                  ? 'bg-brand-500/30 text-brand-200 border-2 border-brand-400 shadow-lg'
-                                  : 'bg-slate-800/40 text-slate-400 border border-white/10 hover:border-brand-400/50'
+                                  ? 'bg-brand-500/30 text-brand-700 dark:text-brand-200 border-2 border-brand-400 shadow-lg'
+                                  : 'bg-slate-50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-500 dark:text-slate-400 border border-white/10 hover:border-brand-400/50'
                               }`}
                             >
                               <div className="text-xs opacity-70 mb-1">Medium</div>
@@ -445,8 +451,8 @@ export default function StyleOptionsHelp() {
                               onClick={() => handleExampleChange(option.key, 'high')}
                               className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
                                 selectedExample[option.key] === 'high'
-                                  ? 'bg-purple-500/30 text-purple-200 border-2 border-purple-400 shadow-lg'
-                                  : 'bg-slate-800/40 text-slate-400 border border-white/10 hover:border-purple-400/50'
+                                  ? 'bg-purple-500/30 text-purple-800 dark:text-purple-200 border-2 border-purple-400 shadow-lg'
+                                  : 'bg-slate-50 dark:bg-slate-800/40 text-slate-600 dark:text-slate-500 dark:text-slate-400 border border-white/10 hover:border-purple-400/50'
                               }`}
                             >
                               <div className="text-xs opacity-70 mb-1">High</div>
@@ -455,29 +461,29 @@ export default function StyleOptionsHelp() {
                           </div>
 
                           {/* Example Display */}
-                          <div className="p-5 rounded-lg bg-gradient-to-br from-slate-800/60 to-slate-800/30 border-2 border-brand-500/30">
+                          <div className="p-5 rounded-lg bg-slate-100 dark:bg-transparent dark:bg-gradient-to-br dark:from-slate-800/60 dark:to-slate-800/30 border-2 border-brand-500/30">
                             <div className="flex items-center justify-between mb-3">
-                              <span className="text-xs font-semibold text-brand-300 uppercase tracking-wide">
+                              <span className="text-xs font-semibold text-brand-600 dark:text-brand-300 uppercase tracking-wide">
                                 {option.examples[selectedExample[option.key]].label}
                               </span>
-                              <span className="text-xs px-2 py-1 rounded bg-brand-500/20 text-brand-300">
+                              <span className="text-xs px-2 py-1 rounded bg-brand-500/20 text-brand-600 dark:text-brand-300">
                                 Example Output
                               </span>
                             </div>
-                            <p className="text-slate-100 leading-relaxed">
+                            <p className="text-slate-900 dark:text-slate-100 leading-relaxed">
                               {option.examples[selectedExample[option.key]].text}
                             </p>
                           </div>
 
                           {/* Visual Slider Representation */}
-                          <div className="p-4 rounded-lg bg-slate-800/30">
-                            <div className="relative h-2 bg-slate-700 rounded-full overflow-hidden">
+                          <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/30">
+                            <div className="relative h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                               <div 
                                 className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 via-brand-500 to-purple-500 transition-all duration-500"
                                 style={{ width: `${option.examples[selectedExample[option.key]].value * 100}%` }}
                               />
                             </div>
-                            <div className="flex justify-between mt-2 text-xs text-slate-500">
+                            <div className="flex justify-between mt-2 text-xs text-slate-600 dark:text-slate-500">
                               <span>0%</span>
                               <span>25%</span>
                               <span>50%</span>
@@ -488,14 +494,14 @@ export default function StyleOptionsHelp() {
                         </div>
 
                         <div className="glass-panel p-6 space-y-3">
-                          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                          <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                             <span>💡</span>
                             <span>Best Practices</span>
                           </h3>
-                          <ul className="space-y-2 text-slate-300 text-sm">
+                          <ul className="space-y-2 text-slate-800 dark:text-slate-300 text-sm">
                             {option.tips.map((tip, idx) => (
                               <li key={idx} className="flex gap-2">
-                                <span className="text-brand-400">•</span>
+                                <span className="text-brand-600 dark:text-brand-400">•</span>
                                 <span>{tip}</span>
                               </li>
                             ))}
@@ -509,13 +515,13 @@ export default function StyleOptionsHelp() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-white/10 bg-slate-800/50 flex items-center justify-between">
-              <p className="text-xs text-slate-400">
+            <div className="px-6 py-4 border-t border-white/10 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+              <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">
                 💡 Tip: Combine multiple settings to create your unique writing style
               </p>
               <button
                 onClick={() => setIsOpen(false)}
-                className="px-6 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-white font-medium transition-colors"
+                className="px-6 py-2 rounded-lg bg-brand-500 hover:bg-brand-400 text-slate-900 dark:text-white font-medium transition-colors"
               >
                 Got it!
               </button>

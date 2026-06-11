@@ -170,8 +170,8 @@ export default function SignInPage() {
               <div className="absolute inset-0 h-16 w-16 rounded-full border-4 border-brand-500 border-t-transparent animate-spin" />
             </div>
             <div className="text-center space-y-3">
-              <p className="text-lg font-medium text-slate-200">StyleSync</p>
-              <p className="text-sm text-slate-400 tracking-wider uppercase">Authenticating</p>
+              <p className="text-lg font-medium text-slate-800 dark:text-slate-200">StyleSync</p>
+              <p className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 tracking-wider uppercase">Authenticating</p>
             </div>
           </div>
         </div>
@@ -191,49 +191,49 @@ export default function SignInPage() {
         {/* Left side - Branding/Info */}
         <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 flex-col justify-center px-8 lg:px-12 xl:px-20 relative z-10">
           <div className="max-w-2xl">
-            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent mb-6 lg:mb-8 pb-2">
+            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-brand-600 dark:from-brand-400 to-brand-300 bg-clip-text text-transparent mb-6 lg:mb-8 pb-2">
               StyleSync
             </h1>
             <div 
               key={mode}
               className={`transition-all duration-300 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}
             >
-              <p className="text-lg lg:text-xl xl:text-2xl text-slate-300 mb-8 lg:mb-12 leading-relaxed max-w-lg">
+              <p className="text-lg lg:text-xl xl:text-2xl text-slate-800 dark:text-slate-300 mb-8 lg:mb-12 leading-relaxed max-w-lg">
                 {mode === 'signin' 
                   ? 'Welcome back! Continue your journey to transform writing with AI-powered paraphrasing that matches your unique style' 
                   : mode === 'signup'
                   ? 'Join StyleSync and start transforming your writing with AI-powered paraphrasing tailored to your personal style'
                   : 'Reset your password to regain access to your writing tools and personalized style profiles.'}
               </p>
-              <div className="space-y-4 lg:space-y-6 text-slate-400">
+              <div className="space-y-4 lg:space-y-6 text-slate-700 dark:text-slate-300">
                 {mode === 'signin' ? (
                   <>
                     <div className="flex items-center gap-3 lg:gap-4">
                       <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
-                      <span className="text-base lg:text-lg">Access your saved style profiles</span>
+                      <span className="text-base lg:text-lg font-medium">Access your saved style profiles</span>
                     </div>
                     <div className="flex items-center gap-3 lg:gap-4">
                       <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
-                      <span className="text-base lg:text-lg">Continue your writing transformation</span>
+                      <span className="text-base lg:text-lg font-medium">Continue your writing transformation</span>
                     </div>
                     <div className="flex items-center gap-3 lg:gap-4">
                       <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
-                      <span className="text-base lg:text-lg">Pick up where you left off</span>
+                      <span className="text-base lg:text-lg font-medium">Pick up where you left off</span>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="flex items-center gap-3 lg:gap-4">
                       <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
-                      <span className="text-base lg:text-lg">Create personalized style profiles</span>
+                      <span className="text-base lg:text-lg font-medium">Create personalized style profiles</span>
                     </div>
                     <div className="flex items-center gap-3 lg:gap-4">
                       <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
-                      <span className="text-base lg:text-lg">Advanced AI paraphrasing engine</span>
+                      <span className="text-base lg:text-lg font-medium">Advanced AI paraphrasing engine</span>
                     </div>
                     <div className="flex items-center gap-3 lg:gap-4">
                       <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
-                      <span className="text-base lg:text-lg">Start transforming in seconds</span>
+                      <span className="text-base lg:text-lg font-medium">Start transforming in seconds</span>
                     </div>
                   </>
                 )}
@@ -247,20 +247,20 @@ export default function SignInPage() {
           <div className={`w-full max-w-sm lg:max-w-md space-y-3 lg:space-y-4 transform transition-all duration-700 ease-out animate-fade-in-up ${isAnimating ? 'scale-95 opacity-80' : 'scale-100 opacity-100'}`}>
             {/* Mobile branding */}
             <div className="text-center lg:hidden mb-3 lg:mb-4">
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent mb-2 pb-1">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-brand-600 dark:from-brand-400 to-brand-300 bg-clip-text text-transparent mb-2 pb-1">
                 StyleSync
               </h1>
-              <p className="text-slate-400 text-sm sm:text-base">AI-powered writing transformation</p>
+              <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm sm:text-base">AI-powered writing transformation</p>
             </div>
 
             {/* Auth card */}
             <div className="glass-panel p-4 lg:p-5 xl:p-6 space-y-3 lg:space-y-4">
               {/* Header */}
               <div className="text-center space-y-1">
-                <h2 className={`text-xl lg:text-2xl xl:text-3xl font-bold text-slate-100 transition-all duration-300 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
+                <h2 className={`text-xl lg:text-2xl xl:text-3xl font-bold text-slate-900 dark:text-slate-100 transition-all duration-300 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
                   {mode === 'signin' ? 'Welcome Back' : mode === 'signup' ? 'Get Started' : 'Reset Password'}
                 </h2>
-                <p className={`text-slate-400 text-xs lg:text-sm transition-all duration-300 delay-75 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
+                <p className={`text-slate-700 dark:text-slate-300 font-medium text-xs lg:text-sm transition-all duration-300 delay-75 ${isAnimating ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'}`}>
                   {mode === 'signin' ? 'Sign in to continue your writing journey' : mode === 'signup' ? 'Create your account and start transforming text' : 'Enter your email to receive a password recovery link'}
                 </p>
               </div>
@@ -273,13 +273,13 @@ export default function SignInPage() {
 
               <form onSubmit={handleSubmit} className={`space-y-3 lg:space-y-4 transition-all duration-300 delay-100 ${isAnimating ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}>
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-slate-300">Email Address</label>
+                  <label className="text-sm font-semibold text-slate-800 dark:text-slate-200">Email Address</label>
                   <input 
                     type="email" 
                     value={email} 
                     onChange={e=>setEmail(e.target.value)} 
                     required 
-                    className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 lg:px-4 py-3 lg:py-4 text-sm lg:text-base placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all duration-200" 
+                    className="w-full rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 px-3 lg:px-4 py-3 lg:py-4 text-sm lg:text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all duration-200" 
                     placeholder="Enter your email address"
                   />
                 </div>
@@ -287,7 +287,7 @@ export default function SignInPage() {
                 {mode !== 'forgot' && (
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center">
-                      <label className="text-sm font-medium text-slate-300">Password</label>
+                      <label className="text-sm font-semibold text-slate-800 dark:text-slate-200">Password</label>
                       {mode === 'signin' && (
                         <button
                           type="button"
@@ -297,7 +297,7 @@ export default function SignInPage() {
                             setTimeout(() => setMode('forgot'), 250);
                             setTimeout(() => setIsAnimating(false), 500);
                           }}
-                          className="text-xs text-brand-400 hover:text-brand-300 font-medium transition-colors"
+                          className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-bold transition-colors"
                         >
                           Forgot password?
                         </button>
@@ -309,13 +309,13 @@ export default function SignInPage() {
                         value={pw} 
                         onChange={e=>setPw(e.target.value)} 
                         required 
-                        className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 lg:px-4 py-3 lg:py-4 pr-12 text-sm lg:text-base placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all duration-200" 
+                        className="w-full rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 px-3 lg:px-4 py-3 lg:py-4 pr-12 text-sm lg:text-base text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all duration-200" 
                         placeholder="Enter your password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors duration-200 focus:outline-none"
+                        className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-300 transition-colors duration-200 focus:outline-none"
                         aria-label={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? (
@@ -335,11 +335,11 @@ export default function SignInPage() {
                 
                 <button 
                   disabled={loading} 
-                  className="w-full px-4 lg:px-6 py-3 lg:py-4 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-slate-900 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center shadow-lg hover:shadow-brand-500/25 text-sm lg:text-base mt-3 lg:mt-4"
+                  className="w-full px-4 lg:px-6 py-3 lg:py-4 rounded-lg bg-brand-600 hover:bg-brand-500 dark:bg-brand-500 dark:hover:bg-brand-400 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center shadow-lg shadow-brand-500/25 text-sm lg:text-base mt-3 lg:mt-4"
                 >
                   {loading ? (
                     <div className="flex items-center gap-2 lg:gap-3">
-                      <div className="h-4 w-4 lg:h-5 lg:w-5 border-2 border-slate-900/30 border-t-slate-900 animate-spin rounded-full" />
+                      <div className="h-4 w-4 lg:h-5 lg:w-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />
                       <span>{mode === 'signin' ? 'Signing In...' : mode === 'signup' ? 'Creating Account...' : 'Sending Link...'}</span>
                     </div>
                   ) : (
@@ -359,10 +359,10 @@ export default function SignInPage() {
                       setTimeout(() => setMode('signin'), 250);
                       setTimeout(() => setIsAnimating(false), 500);
                     }} 
-                    className="text-slate-400 hover:text-brand-400 transition-colors duration-200 group text-sm lg:text-base"
+                    className="text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 font-medium transition-colors duration-200 group text-sm lg:text-base"
                   >
                     Remember your password?{' '}
-                    <span className="text-brand-400 group-hover:text-brand-300 font-medium">
+                    <span className="text-brand-600 dark:text-brand-400 group-hover:text-brand-700 dark:group-hover:text-brand-300 font-bold">
                       Sign in
                     </span>
                   </button>
@@ -370,10 +370,10 @@ export default function SignInPage() {
                   <button 
                     type="button"
                     onClick={handleModeSwitch} 
-                    className="text-slate-400 hover:text-brand-400 transition-colors duration-200 group text-sm lg:text-base"
+                    className="text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 font-medium transition-colors duration-200 group text-sm lg:text-base"
                   >
                     {mode === 'signin' ? "Don't have an account? " : "Already have an account? "}
-                    <span className="text-brand-400 group-hover:text-brand-300 font-medium">
+                    <span className="text-brand-600 dark:text-brand-400 group-hover:text-brand-700 dark:group-hover:text-brand-300 font-bold">
                       {mode === 'signin' ? 'Sign up' : 'Sign in'}
                     </span>
                   </button>
@@ -388,7 +388,7 @@ export default function SignInPage() {
                       ? 'bg-red-500/10 border-red-500/30 text-red-400' 
                       : msgType === 'success'
                       ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                      : 'bg-brand-500/10 border-brand-500/30 text-brand-400'
+                      : 'bg-brand-500/10 border-brand-500/30 text-brand-600 dark:text-brand-400'
                   }`}>
                     <div className="flex items-start gap-3">
                       {msgType === 'error' && (

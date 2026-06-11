@@ -44,7 +44,7 @@ export default function UAT_FeedbackModal({ formLink, isOpen, onClose }: UAT_Fee
           onClick={handleClose}
           className="absolute top-6 right-6 p-2 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors z-20"
         >
-          <X className="w-6 h-6 text-white" />
+          <X className="w-6 h-6 text-slate-900 dark:text-white" />
         </button>
 
         {/* Content */}
@@ -59,10 +59,10 @@ export default function UAT_FeedbackModal({ formLink, isOpen, onClose }: UAT_Fee
 
             {/* Heading */}
             <div className="space-y-4 text-center">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
                 Help Us Improve StyleSync! 🎯
               </h2>
-              <p className="text-base sm:text-lg text-white/80 mx-auto max-w-2xl">
+              <p className="text-base sm:text-lg text-slate-900 dark:text-white/80 mx-auto max-w-2xl">
                 Your feedback and screen recording are invaluable to us.
               </p>
             </div>
@@ -70,7 +70,7 @@ export default function UAT_FeedbackModal({ formLink, isOpen, onClose }: UAT_Fee
             <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
               {/* Main Description */}
               <div className="bg-white/5 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-white/10">
-                <p className="text-white/90 text-sm sm:text-base leading-relaxed">
+                <p className="text-slate-900 dark:text-white/90 text-sm sm:text-base leading-relaxed">
                   We're currently testing StyleSync and would love to hear about your experience. Your honest feedback helps us make the app better for everyone.
                 </p>
               </div>
@@ -80,7 +80,7 @@ export default function UAT_FeedbackModal({ formLink, isOpen, onClose }: UAT_Fee
                 <p className="text-xs sm:text-sm font-semibold text-blue-200 uppercase tracking-[0.12em] mb-3">
                   We'd like to know:
                 </p>
-                <ul className="text-sm text-white/90 space-y-2">
+                <ul className="text-sm text-slate-900 dark:text-white/90 space-y-2">
                   <li className="flex items-start gap-3">
                     <span className="mt-1 text-blue-200">✓</span>
                     <span>What features worked well?</span>
@@ -130,8 +130,8 @@ export default function UAT_FeedbackModal({ formLink, isOpen, onClose }: UAT_Fee
                 </p>
               </div>
 
-              <div className="bg-slate-950/10 rounded-2xl p-5 sm:p-6 border border-white/10">
-                <p className="text-sm text-white/80 leading-relaxed">
+              <div className="bg-slate-50 dark:bg-slate-950/10 rounded-2xl p-5 sm:p-6 border border-white/10">
+                <p className="text-sm text-slate-900 dark:text-white/80 leading-relaxed">
                   This modal is now designed to fit most screens without scrolling. If the form still extends beyond your viewport, try opening it in a new tab and complete the recording steps first.
                 </p>
               </div>
@@ -141,7 +141,7 @@ export default function UAT_FeedbackModal({ formLink, isOpen, onClose }: UAT_Fee
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 onClick={handleOpenForm}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-2xl transition-colors flex items-center justify-center gap-2 text-base sm:text-lg backdrop-blur-sm border border-blue-400/50 hover:border-blue-300"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-slate-900 dark:text-white font-semibold py-3 rounded-2xl transition-colors flex items-center justify-center gap-2 text-base sm:text-lg backdrop-blur-sm border border-blue-400/50 hover:border-blue-300"
               >
                 <span>Open Feedback Form</span>
                 <ExternalLink className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -149,14 +149,14 @@ export default function UAT_FeedbackModal({ formLink, isOpen, onClose }: UAT_Fee
 
               <button
                 onClick={handleClose}
-                className="w-full bg-white/10 hover:bg-white/20 text-white font-semibold py-3 rounded-2xl transition-colors text-base sm:text-lg backdrop-blur-sm border border-white/20 hover:border-white/30"
+                className="w-full bg-white/10 hover:bg-white/20 text-slate-900 dark:text-white font-semibold py-3 rounded-2xl transition-colors text-base sm:text-lg backdrop-blur-sm border border-white/20 hover:border-white/30"
               >
                 Close
               </button>
             </div>
 
             {/* Footer note */}
-            <p className="text-xs sm:text-sm text-white/70 text-center">
+            <p className="text-xs sm:text-sm text-slate-900 dark:text-white/70 text-center">
               Takes about 5 minutes (including screen recording) • Your email is optional
             </p>
           </div>

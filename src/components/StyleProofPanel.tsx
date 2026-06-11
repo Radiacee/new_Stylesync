@@ -330,11 +330,11 @@ export default function StyleProofPanel({ userSampleText, originalInput, paraphr
     <div className="space-y-4">
       {/* Header with Overall Score */}
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-brand-300 flex items-center gap-2 text-sm sm:text-base">
+        <h2 className="font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-2 text-sm sm:text-base">
           <span className="text-lg">🔍</span> Style Application Proof
         </h2>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400">{matchedCount}/{evidence.length} matched</span>
+          <span className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">{matchedCount}/{evidence.length} matched</span>
           {passed ? (
             <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 flex items-center gap-1">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -358,25 +358,25 @@ export default function StyleProofPanel({ userSampleText, originalInput, paraphr
       {directEvidence.length > 0 && (
         <div className="rounded-lg border border-brand-500/40 bg-brand-500/5 p-3">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-medium text-brand-300 flex items-center gap-1">
+            <p className="text-xs font-medium text-brand-600 dark:text-brand-300 flex items-center gap-1">
               📋 Direct Evidence from Your Essay
             </p>
-            <span className="text-[10px] px-2 py-0.5 rounded bg-brand-500/20 text-brand-300">
+            <span className="text-[10px] px-2 py-0.5 rounded bg-brand-500/20 text-brand-600 dark:text-brand-300">
               {directEvidence.length} patterns matched
             </span>
           </div>
           <div className="space-y-2">
             {directEvidence.map((ev, idx) => (
-              <div key={idx} className="grid grid-cols-2 gap-2 text-xs bg-slate-900/50 rounded p-2">
+              <div key={idx} className="grid grid-cols-2 gap-2 text-xs bg-white dark:bg-slate-900/50 rounded p-2">
                 <div>
-                  <p className="text-[10px] uppercase text-slate-500 mb-0.5">From Your Essay</p>
+                  <p className="text-[10px] uppercase text-slate-600 dark:text-slate-500 mb-0.5">From Your Essay</p>
                   <p className="text-emerald-300">{ev.fromEssay}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase text-slate-500 mb-0.5">Applied to Result</p>
-                  <p className="text-brand-300">{ev.inOutput}</p>
+                  <p className="text-[10px] uppercase text-slate-600 dark:text-slate-500 mb-0.5">Applied to Result</p>
+                  <p className="text-brand-600 dark:text-brand-300">{ev.inOutput}</p>
                 </div>
-                <p className="col-span-2 text-[10px] text-slate-400 border-t border-white/5 pt-1 mt-1">
+                <p className="col-span-2 text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 border-t border-white/5 pt-1 mt-1">
                   ✓ {ev.description}
                 </p>
               </div>
@@ -388,7 +388,7 @@ export default function StyleProofPanel({ userSampleText, originalInput, paraphr
       {/* Show/Hide Details Button */}
       <button
         onClick={() => setShowDetails(!showDetails)}
-        className="w-full text-xs text-slate-400 hover:text-white py-2 flex items-center justify-center gap-1 transition-colors"
+        className="w-full text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white py-2 flex items-center justify-center gap-1 transition-colors"
       >
         {showDetails ? (
           <>Hide Detailed Breakdown <span className="text-lg">▲</span></>
@@ -401,7 +401,7 @@ export default function StyleProofPanel({ userSampleText, originalInput, paraphr
       {verification && verification.issues.length > 0 && !verification.passed && showDetails && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
           <p className="text-xs font-medium text-amber-300 mb-2">⚠️ Areas for Improvement</p>
-          <ul className="space-y-1 text-xs text-slate-300">
+          <ul className="space-y-1 text-xs text-slate-800 dark:text-slate-300">
             {verification.issues.slice(0, 3).map((issue, idx) => (
               <li key={idx} className="flex items-start gap-2">
                 <span className="text-amber-400">•</span>
@@ -434,7 +434,7 @@ export default function StyleProofPanel({ userSampleText, originalInput, paraphr
             }`}>
               <div className="flex items-center gap-2">
                 <span>{item.icon}</span>
-                <span className="font-medium text-white text-sm">{item.category}</span>
+                <span className="font-medium text-slate-900 dark:text-white text-sm">{item.category}</span>
               </div>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                 item.match === 'perfect' ? 'bg-emerald-500/20 text-emerald-400' :
@@ -453,12 +453,12 @@ export default function StyleProofPanel({ userSampleText, originalInput, paraphr
             <div className="grid grid-cols-2 divide-x divide-white/10">
               {/* Your Style */}
               <div className="p-3 space-y-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-400 font-medium">Your Style</div>
-                <p className="text-xs text-slate-300 font-medium">{item.userValue}</p>
+                <div className="text-[10px] uppercase tracking-wide text-slate-600 dark:text-slate-500 dark:text-slate-400 font-medium">Your Style</div>
+                <p className="text-xs text-slate-800 dark:text-slate-300 font-medium">{item.userValue}</p>
                 {item.userExamples.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {item.userExamples.map((ex, i) => (
-                      <span key={i} className="text-[10px] px-1.5 py-0.5 bg-slate-800/70 rounded text-slate-400">
+                      <span key={i} className="text-[10px] px-1.5 py-0.5 bg-slate-50 dark:bg-slate-800/70 rounded text-slate-600 dark:text-slate-500 dark:text-slate-400">
                         {ex}
                       </span>
                     ))}
@@ -468,15 +468,15 @@ export default function StyleProofPanel({ userSampleText, originalInput, paraphr
               
               {/* Result */}
               <div className="p-3 space-y-2">
-                <div className="text-[10px] uppercase tracking-wide text-brand-400 font-medium">Result</div>
-                <p className="text-xs text-slate-300 font-medium">{item.resultValue}</p>
+                <div className="text-[10px] uppercase tracking-wide text-brand-600 dark:text-brand-400 font-medium">Result</div>
+                <p className="text-xs text-slate-800 dark:text-slate-300 font-medium">{item.resultValue}</p>
                 {item.resultExamples.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {item.resultExamples.map((ex, i) => (
                       <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${
                         item.match === 'perfect' || item.match === 'good'
                           ? 'bg-emerald-500/20 text-emerald-300'
-                          : 'bg-slate-800/70 text-slate-400'
+                          : 'bg-slate-50 dark:bg-slate-800/70 text-slate-600 dark:text-slate-500 dark:text-slate-400'
                       }`}>
                         {ex}
                       </span>
@@ -488,7 +488,7 @@ export default function StyleProofPanel({ userSampleText, originalInput, paraphr
             
             {/* Explanation */}
             <div className="px-3 py-2 bg-black/20 border-t border-white/5">
-              <p className="text-[10px] text-slate-400">{item.explanation}</p>
+              <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400">{item.explanation}</p>
             </div>
           </div>
         ))}
@@ -501,7 +501,7 @@ export default function StyleProofPanel({ userSampleText, originalInput, paraphr
         overallMatch >= 0.5 ? 'bg-blue-500/10 border border-blue-500/30' :
         'bg-yellow-500/10 border border-yellow-500/30'
       }`}>
-        <p className="text-xs text-slate-300">
+        <p className="text-xs text-slate-800 dark:text-slate-300">
           {overallMatch >= 0.7 ? (
             <><span className="text-emerald-400 font-medium">✓ Great style match!</span> The output closely follows your writing patterns.</>
           ) : overallMatch >= 0.5 ? (

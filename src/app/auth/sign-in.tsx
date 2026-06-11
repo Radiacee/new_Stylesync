@@ -38,7 +38,7 @@ export default function SignInPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900">
       <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-8 text-center">
-        <h1 className="text-2xl font-bold text-white mb-4">Sign In</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Sign In</h1>
         <p className="text-gray-300 mb-6">{status || "Please check your email for a confirmation link."}</p>
       </div>
     </div>

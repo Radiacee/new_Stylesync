@@ -2,16 +2,17 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Info } from 'lucide-react';
 import { saveProfile, type StyleProfile, saveProfileRemote, upsertProfileLocal, setActiveProfileId, listProfiles } from '../../../lib/styleProfile.ts';
 import { analyzeSampleStyle, type SampleStyle } from '../../../lib/paraphrase.ts';
 import { calculateLexicalDensity, calculateSentenceLengthVariety, calculateParagraphLengthVariety } from '../../../lib/deepStyleMatch.ts';
 import { supabase } from '../../../lib/supabaseClient.ts';
 import { FullScreenSpinner } from '../../../components/FullScreenSpinner';
+import StyleOptionsHelp from '../../../components/StyleOptionsHelp';
 
 export default function StyleOnboardingPage() {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-slate-400">Loading…</div>}>
+    <Suspense fallback={<div className="p-6 text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">Loading…</div>}>
       <OnboardingInner />
     </Suspense>
   );
@@ -383,13 +384,17 @@ function OnboardingInner() {
 
   return (
     <div className="min-h-screen py-8">
-      <div className="max-w-3xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 items-start">
+          
+          {/* Main Left Content */}
+          <div className="lg:col-span-2 space-y-6">
         {/* Header */}
         <div className="glass-panel p-6 mb-6">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-brand-300 mb-2">Create Your Writing Style</h1>
-              <p className="text-slate-300">
+              <h1 className="text-3xl font-bold text-brand-600 dark:text-brand-300 mb-2">Create Your Writing Style</h1>
+              <p className="text-slate-800 dark:text-slate-300">
                 Add one or more samples of your writing (essays, articles, etc.) and we'll learn your style to paraphrase text just like you write.
               </p>
             </div>
@@ -411,7 +416,7 @@ function OnboardingInner() {
                 className={`px-6 py-3 rounded-lg font-medium transition ${
                   mode === 'essays'
                     ? 'bg-brand-500 text-slate-900'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 hover:bg-slate-600'
                 }`}
               >
                 📝 Upload Essays
@@ -421,22 +426,22 @@ function OnboardingInner() {
               className={`px-6 py-3 rounded-lg font-medium transition ${
                 mode === 'questions'
                   ? 'bg-brand-500 text-slate-900'
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 hover:bg-slate-600'
               }`}
             >
               ❓ Answer Questions
             </button>
           </div>
           {validEssays.length === 0 && mode === 'questions' && (
-            <div className="mt-3 text-center text-xs text-slate-400">
+            <div className="mt-3 text-center text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">
               No essay sample added yet. <button
                 type="button"
                 onClick={() => setMode('essays')}
-                className="underline text-brand-300 hover:text-brand-200"
+                className="underline text-brand-600 dark:text-brand-300 hover:text-brand-700 dark:text-brand-200"
               >Open essay mode</button> to paste a writing sample anytime.
             </div>
           )}
-          <p className="text-center text-sm text-slate-400 mt-3">
+          <p className="text-center text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-3">
             {mode === 'essays' 
               ? 'Paste your writing samples for precise style analysis'
               : 'Answer 4 quick questions to generate your style profile'
@@ -448,12 +453,12 @@ function OnboardingInner() {
         <div className="glass-panel p-6 space-y-6">
           {/* Profile Name */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white">Profile Name</label>
+            <label className="text-sm font-medium text-slate-900 dark:text-white">Profile Name</label>
             <input 
               type="text"
               value={profileName} 
               onChange={e => setProfileName(e.target.value)} 
-              className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" 
+              className="w-full rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" 
               placeholder="e.g., My Academic Style, Casual Blog Style" 
             />
           </div>
@@ -463,7 +468,7 @@ function OnboardingInner() {
               {/* Multi-Essay Interface */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-white">Your Writing Samples</label>
+                  <label className="text-sm font-medium text-slate-900 dark:text-white">Your Writing Samples</label>
                   <span className={`text-xs ${totalWords < 50 ? 'text-amber-400' : 'text-emerald-400'}`}>
                     {validEssays.length} essay{validEssays.length !== 1 ? 's' : ''} · {totalWords} words total
                   </span>
@@ -474,23 +479,23 @@ function OnboardingInner() {
                   {essays.map((essay, index) => {
                     const wordCount = essay.trim().split(/\s+/).filter(Boolean).length;
                     return (
-                      <div key={index} className="bg-slate-800/40 rounded-xl border border-white/10 overflow-hidden">
+                      <div key={index} className="bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-white/10 overflow-hidden">
                         {/* Essay Header */}
-                        <div className="flex items-center justify-between px-4 py-2.5 bg-slate-800/60 border-b border-white/10">
+                        <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border-b border-white/10">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-xs font-bold text-brand-300">
+                            <div className="w-6 h-6 rounded-full bg-brand-500/20 flex items-center justify-center text-xs font-bold text-brand-600 dark:text-brand-300">
                               {index + 1}
                             </div>
-                            <span className="text-sm font-medium text-white">Essay {index + 1}</span>
+                            <span className="text-sm font-medium text-slate-900 dark:text-white">Essay {index + 1}</span>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className={`text-xs ${wordCount > 0 ? 'text-slate-400' : 'text-slate-500'}`}>
+                            <span className={`text-xs ${wordCount > 0 ? 'text-slate-600 dark:text-slate-500 dark:text-slate-400' : 'text-slate-600 dark:text-slate-500'}`}>
                               {wordCount} words
                             </span>
                             {essays.length > 1 && (
                               <button
                                 onClick={() => removeEssay(index)}
-                                className="p-1 rounded hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition"
+                                className="p-1 rounded hover:bg-red-500/20 text-slate-600 dark:text-slate-500 hover:text-red-400 transition"
                                 title="Remove this essay"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -506,7 +511,7 @@ function OnboardingInner() {
                           value={essay}
                           onChange={e => updateEssay(index, e.target.value)}
                           rows={6}
-                          className="w-full bg-transparent px-4 py-3 text-sm leading-relaxed focus:outline-none resize-none text-slate-200 placeholder-slate-500"
+                          className="w-full bg-transparent px-4 py-3 text-sm leading-relaxed focus:outline-none resize-none text-slate-800 dark:text-slate-200 placeholder-slate-500"
                           placeholder="Paste your essay or writing sample here..."
                         />
                       </div>
@@ -517,7 +522,7 @@ function OnboardingInner() {
                 {/* Add New Essay Button */}
                 <button
                   onClick={addEssay}
-                  className="w-full py-3 rounded-xl border-2 border-dashed border-slate-700 hover:border-brand-500/50 hover:bg-brand-500/5 text-slate-400 hover:text-brand-300 transition flex items-center justify-center gap-2"
+                  className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-brand-500/50 hover:bg-brand-500/5 text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:text-brand-300 transition flex items-center justify-center gap-2"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -527,11 +532,11 @@ function OnboardingInner() {
 
                 {/* Tips and Analyze Button */}
                 <div className="flex items-center justify-between pt-2">
-                  <p className="text-xs text-slate-400">💡 Tip: Add 2-3 essays for the best style matching</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">💡 Tip: Add 2-3 essays for the best style matching</p>
                   <button
                     onClick={handleAnalyze}
                     disabled={!canAnalyze}
-                    className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-slate-900 dark:text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Analyze Style
                   </button>
@@ -543,13 +548,13 @@ function OnboardingInner() {
               {/* Questionnaire Interface */}
               <div className="space-y-6">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-white mb-2">Quick Style Questionnaire</h3>
-                  <p className="text-sm text-slate-400">Answer these 4 questions to generate your writing style profile</p>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Quick Style Questionnaire</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">Answer these 4 questions to generate your writing style profile</p>
                 </div>
 
                 {/* Question 1: Formality */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-slate-900 dark:text-white">
                     1. How formal is your writing style?
                   </label>
                   <div className="space-y-2">
@@ -559,11 +564,11 @@ function OnboardingInner() {
                       max="10"
                       value={questionnaireAnswers.formality}
                       onChange={e => setQuestionnaireAnswers(prev => ({ ...prev, formality: parseInt(e.target.value) }))}
-                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                      className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
                     />
-                    <div className="flex justify-between text-xs text-slate-400">
+                    <div className="flex justify-between text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">
                       <span>Very Casual (1)</span>
-                      <span className="font-medium text-white">Level {questionnaireAnswers.formality}</span>
+                      <span className="font-medium text-slate-900 dark:text-white">Level {questionnaireAnswers.formality}</span>
                       <span>Very Formal (10)</span>
                     </div>
                   </div>
@@ -571,7 +576,7 @@ function OnboardingInner() {
 
                 {/* Question 2: Sentence Length */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-slate-900 dark:text-white">
                     2. How long are your typical sentences?
                   </label>
                   <div className="space-y-2">
@@ -581,11 +586,11 @@ function OnboardingInner() {
                       max="10"
                       value={questionnaireAnswers.sentenceLength}
                       onChange={e => setQuestionnaireAnswers(prev => ({ ...prev, sentenceLength: parseInt(e.target.value) }))}
-                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                      className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
                     />
-                    <div className="flex justify-between text-xs text-slate-400">
+                    <div className="flex justify-between text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">
                       <span>Very Short (1)</span>
-                      <span className="font-medium text-white">Level {questionnaireAnswers.sentenceLength}</span>
+                      <span className="font-medium text-slate-900 dark:text-white">Level {questionnaireAnswers.sentenceLength}</span>
                       <span>Very Long (10)</span>
                     </div>
                   </div>
@@ -593,7 +598,7 @@ function OnboardingInner() {
 
                 {/* Question 3: Vocabulary */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-slate-900 dark:text-white">
                     3. How complex is your vocabulary?
                   </label>
                   <div className="space-y-2">
@@ -603,11 +608,11 @@ function OnboardingInner() {
                       max="10"
                       value={questionnaireAnswers.vocabulary}
                       onChange={e => setQuestionnaireAnswers(prev => ({ ...prev, vocabulary: parseInt(e.target.value) }))}
-                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                      className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
                     />
-                    <div className="flex justify-between text-xs text-slate-400">
+                    <div className="flex justify-between text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">
                       <span>Simple Words (1)</span>
-                      <span className="font-medium text-white">Level {questionnaireAnswers.vocabulary}</span>
+                      <span className="font-medium text-slate-900 dark:text-white">Level {questionnaireAnswers.vocabulary}</span>
                       <span>Advanced Words (10)</span>
                     </div>
                   </div>
@@ -615,7 +620,7 @@ function OnboardingInner() {
 
                 {/* Question 4: Tone */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-white">
+                  <label className="text-sm font-medium text-slate-900 dark:text-white">
                     4. What's your overall writing tone?
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -629,12 +634,12 @@ function OnboardingInner() {
                         onClick={() => setQuestionnaireAnswers(prev => ({ ...prev, tone: option.value as any }))}
                         className={`p-3 rounded-lg border transition ${
                           questionnaireAnswers.tone === option.value
-                            ? 'border-brand-500 bg-brand-500/10 text-brand-300'
-                            : 'border-slate-600 bg-slate-800/40 text-slate-300 hover:border-slate-500'
+                            ? 'border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-300'
+                            : 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/40 text-slate-800 dark:text-slate-300 hover:border-slate-500'
                         }`}
                       >
                         <div className="font-medium text-sm">{option.label}</div>
-                        <div className="text-xs text-slate-400 mt-1">{option.desc}</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-1">{option.desc}</div>
                       </button>
                     ))}
                   </div>
@@ -645,7 +650,7 @@ function OnboardingInner() {
                   <button
                     onClick={() => setQuestionnaireCompleted(true)}
                     disabled={questionnaireCompleted}
-                    className="w-full px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-slate-900 dark:text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {questionnaireCompleted ? '✓ Questionnaire Completed' : 'Complete Questionnaire'}
                   </button>
@@ -662,44 +667,44 @@ function OnboardingInner() {
           {/* Analysis Results - Only show for essays mode */}
           {mode === 'essays' && analysis && (
             <div className="space-y-4">
-              <div className="bg-slate-800/30 rounded-lg p-6 space-y-4 border border-emerald-500/30">
+              <div className="bg-slate-50 dark:bg-slate-800/30 rounded-lg p-6 space-y-4 border border-emerald-500/30">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
                     <span className="text-lg">✓</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-white">Style Detected!</h3>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Style Detected!</h3>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
                   <div>
-                    <p className="text-slate-400 text-xs mb-1">Formality</p>
-                    <p className="text-white font-medium">
+                    <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs mb-1">Formality</p>
+                    <p className="text-slate-900 dark:text-white font-medium">
                       {analysis.usesContractions ? 'Casual' : 'Formal'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-slate-400 text-xs mb-1">Sentence Length</p>
-                    <p className="text-white font-medium">{Math.round(analysis.avgSentenceLength)} words avg</p>
+                    <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs mb-1">Sentence Length</p>
+                    <p className="text-slate-900 dark:text-white font-medium">{Math.round(analysis.avgSentenceLength)} words avg</p>
                   </div>
 
                   {(analysis.vocabularyComplexity ?? 0) > 0 && (
                     <div>
-                      <p className="text-slate-400 text-xs mb-1">Vocabulary</p>
-                      <p className="text-white font-medium">
+                      <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs mb-1">Vocabulary</p>
+                      <p className="text-slate-900 dark:text-white font-medium">
                         {(analysis.vocabularyComplexity ?? 0) > 0.25 ? 'Advanced' : (analysis.vocabularyComplexity ?? 0) < 0.1 ? 'Simple' : 'Moderate'}
                       </p>
                     </div>
                   )}
                   {(analysis.questionRatio ?? 0) > 0.05 && (
                     <div>
-                      <p className="text-slate-400 text-xs mb-1">Questions</p>
-                      <p className="text-white font-medium">{Math.round((analysis.questionRatio ?? 0) * 100)}% of sentences</p>
+                      <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs mb-1">Questions</p>
+                      <p className="text-slate-900 dark:text-white font-medium">{Math.round((analysis.questionRatio ?? 0) * 100)}% of sentences</p>
                     </div>
                   )}
                   {(analysis.commaPerSentence ?? 0) > 0 && (
                     <div>
-                      <p className="text-slate-400 text-xs mb-1">Comma Usage</p>
-                      <p className="text-white font-medium">{(analysis.commaPerSentence ?? 0).toFixed(1)} per sentence</p>
+                      <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs mb-1">Comma Usage</p>
+                      <p className="text-slate-900 dark:text-white font-medium">{(analysis.commaPerSentence ?? 0).toFixed(1)} per sentence</p>
                     </div>
                   )}
                 </div>
@@ -707,14 +712,14 @@ function OnboardingInner() {
                 {/* Signature words: high-frequency words + adverbs + transitions */}
                 {((analysis.highFrequencyWords?.length ?? 0) > 0 || (analysis.topAdverbs?.length ?? 0) > 0 || analysis.preferredTransitions.length > 0) && (
                   <div>
-                    <p className="text-slate-400 text-xs mb-2">Your Signature Words</p>
+                    <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs mb-2">Your Signature Words</p>
                     <div className="flex flex-wrap gap-2">
                       {[
                         ...(analysis.highFrequencyWords || []).slice(0, 5),
                         ...(analysis.topAdverbs || []).slice(0, 3),
                         ...analysis.preferredTransitions.slice(0, 2)
                       ].filter((w, i, arr) => arr.indexOf(w) === i).map((word, i) => (
-                        <span key={i} className="px-2 py-1 bg-brand-500/20 text-brand-300 rounded text-xs">
+                        <span key={i} className="px-2 py-1 bg-brand-500/20 text-brand-600 dark:text-brand-300 rounded text-xs">
                           {word}
                         </span>
                       ))}
@@ -758,7 +763,7 @@ function OnboardingInner() {
                 </div>
                 <button
                   onClick={() => setShowComparison(true)}
-                  className="w-full mt-2 px-3 py-2 text-xs rounded-md bg-blue-600 hover:bg-blue-500 text-white font-medium transition"
+                  className="w-full mt-2 px-3 py-2 text-xs rounded-md bg-blue-600 hover:bg-blue-500 text-slate-900 dark:text-white font-medium transition"
                 >
                   Show Example: Before vs After
                 </button>
@@ -784,26 +789,75 @@ function OnboardingInner() {
             </p>
           )}
         </div>
+          </div>
+          
+          {/* Sticky Right Sidebar (Style Metrics Overview) */}
+          <div className="hidden lg:block lg:col-span-1 sticky top-8 space-y-6">
+            <div className="glass-panel p-6">
+              <h3 className="font-semibold text-brand-600 dark:text-brand-300 text-lg mb-4 flex items-center gap-2">
+                <Lightbulb className="w-5 h-5" /> Style Metrics Guide
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-1">Tone</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 leading-relaxed">Captures the emotional resonance of your writing (e.g., confident, enthusiastic, objective).</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-1">Formality</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 leading-relaxed">Measures the use of contractions, slang, and complex vocabulary.</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-1">Pacing</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 leading-relaxed">Analyzes sentence lengths and rhythm to match how fast or slow your writing reads.</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-1">Descriptiveness</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 leading-relaxed">Looks at your use of adjectives and sensory details to recreate your vividness.</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200 mb-1">Lexicon</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 leading-relaxed">Builds a custom dictionary of your most frequently used and unique words.</p>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('open-style-help'))}
+                className="w-full mt-6 px-4 py-3 rounded-lg border border-brand-500/30 hover:border-brand-500/60 bg-brand-500/5 hover:bg-brand-500/10 text-brand-600 dark:text-brand-300 text-sm font-medium transition-all flex items-center justify-center gap-2 group"
+              >
+                <span>Click to learn more</span>
+                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="bg-brand-500/10 border border-brand-500/20 rounded-xl p-5 text-sm text-brand-700 dark:text-brand-200/90">
+              <p className="font-medium mb-2">Pro Tip 💡</p>
+              <p className="text-xs leading-relaxed">For the most accurate style profile, provide 2-3 unedited writing samples that truly represent your authentic voice. Make sure each sample is at least 50-100 words.</p>
+            </div>
+          </div>
+          
+        </div>
       </div>
-
       {busy && <FullScreenSpinner label="Saving your style profile..." />}
 
       {/* Before/After Comparison Modal */}
       {showComparison && analysis && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 rounded-xl border border-white/10 max-w-3xl w-full max-h-[85vh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-white/10 max-w-3xl w-full max-h-[85vh] overflow-y-auto">
             <div className="p-6 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-white">See Your Style in Action</h3>
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">See Your Style in Action</h3>
                 <button 
                   onClick={() => setShowComparison(false)}
-                  className="text-slate-400 hover:text-white transition"
+                  className="text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition"
                 >
                   ✕
                 </button>
               </div>
 
-              <p className="text-sm text-slate-300">
+              <p className="text-sm text-slate-800 dark:text-slate-300">
                 Here's how the same text looks <strong>before</strong> and <strong>after</strong> applying your style:
               </p>
 
@@ -812,11 +866,11 @@ function OnboardingInner() {
                 {/* Before */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold">1</div>
-                    <h4 className="text-sm font-semibold text-slate-300">Generic Text (Before)</h4>
+                    <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-bold">1</div>
+                    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-300">Generic Text (Before)</h4>
                   </div>
-                  <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
-                    <p className="text-sm text-slate-300 leading-relaxed">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                    <p className="text-sm text-slate-800 dark:text-slate-300 leading-relaxed">
                       The implementation of artificial intelligence in modern business practices has become increasingly prevalent. Organizations are discovering that it is essential to adapt to technological changes. The adoption of AI can help to improve efficiency and reduce operational costs significantly.
                     </p>
                   </div>
@@ -824,17 +878,17 @@ function OnboardingInner() {
 
                 {/* Arrow */}
                 <div className="flex items-center justify-center">
-                  <div className="text-brand-400 text-2xl">↓</div>
+                  <div className="text-brand-600 dark:text-brand-400 text-2xl">↓</div>
                 </div>
 
                 {/* After */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-brand-500 flex items-center justify-center text-xs font-bold text-slate-900">2</div>
-                    <h4 className="text-sm font-semibold text-brand-300">Your Style (After)</h4>
+                    <h4 className="text-sm font-semibold text-brand-600 dark:text-brand-300">Your Style (After)</h4>
                   </div>
                   <div className="bg-brand-500/10 rounded-lg p-4 border border-brand-500/30">
-                    <p className="text-sm text-white leading-relaxed">
+                    <p className="text-sm text-slate-900 dark:text-white leading-relaxed">
                       {analysis.usesContractions && analysis.personalVoice === 'second-person' ? (
                         // Casual, direct style
                         <>You're seeing AI pop up everywhere in business these days, right? It's pretty clear companies need to keep up with tech changes. The good news? AI can boost your efficiency and cut costs big time.</>
@@ -899,6 +953,8 @@ function OnboardingInner() {
           </div>
         </div>
       )}
+      
+      <StyleOptionsHelp />
     </div>
   );
 }

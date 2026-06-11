@@ -86,8 +86,8 @@ export default function UpdatePasswordPage() {
               <div className="absolute inset-0 h-16 w-16 rounded-full border-4 border-brand-500 border-t-transparent animate-spin" />
             </div>
             <div className="text-center space-y-3">
-              <p className="text-lg font-medium text-slate-200">StyleSync</p>
-              <p className="text-sm text-slate-400 tracking-wider uppercase">Loading Session</p>
+              <p className="text-lg font-medium text-slate-800 dark:text-slate-200">StyleSync</p>
+              <p className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 tracking-wider uppercase">Loading Session</p>
             </div>
           </div>
         </div>
@@ -108,37 +108,37 @@ export default function UpdatePasswordPage() {
           
           {/* Logo Branding */}
           <div className="text-center mb-3">
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent mb-2 pb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-brand-600 dark:from-brand-400 to-brand-300 bg-clip-text text-transparent mb-2 pb-1">
               StyleSync
             </h1>
-            <p className="text-slate-400 text-sm sm:text-base">Change Account Password</p>
+            <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm sm:text-base">Change Account Password</p>
           </div>
 
           {/* Form Card */}
           <div className="glass-panel p-4 lg:p-5 xl:p-6 space-y-3 lg:space-y-4">
             <div className="text-center space-y-1">
-              <h2 className="text-xl lg:text-2xl font-bold text-slate-100">Set New Password</h2>
-              <p className="text-slate-400 text-xs lg:text-sm">
+              <h2 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-slate-100">Set New Password</h2>
+              <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs lg:text-sm">
                 Enter your new password below to update your account credentials.
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 lg:space-y-4">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-slate-300">New Password</label>
+                <label className="text-sm font-medium text-slate-800 dark:text-slate-300">New Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 lg:px-4 py-3 lg:py-4 pr-12 text-sm lg:text-base placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all duration-200"
+                    className="w-full rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10 px-3 lg:px-4 py-3 lg:py-4 pr-12 text-sm lg:text-base placeholder:text-slate-600 dark:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all duration-200"
                     placeholder="Min. 6 characters"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors focus:outline-none"
+                    className="absolute right-3 lg:right-4 top-1/2 -translate-y-1/2 text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-300 transition-colors focus:outline-none"
                   >
                     {showPassword ? (
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -155,20 +155,20 @@ export default function UpdatePasswordPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-slate-300">Confirm Password</label>
+                <label className="text-sm font-medium text-slate-800 dark:text-slate-300">Confirm Password</label>
                 <input
                   type={showPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-3 lg:px-4 py-3 lg:py-4 text-sm lg:text-base placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all duration-200"
+                  className="w-full rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10 px-3 lg:px-4 py-3 lg:py-4 text-sm lg:text-base placeholder:text-slate-600 dark:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all duration-200"
                   placeholder="Repeat new password"
                 />
               </div>
 
               <button
                 disabled={loading}
-                className="w-full px-4 lg:px-6 py-3 lg:py-4 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-slate-900 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center shadow-lg hover:shadow-brand-500/25 text-sm lg:text-base mt-4"
+                className="w-full px-4 lg:px-6 py-3 lg:py-4 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-600 dark:from-brand-400 hover:to-brand-300 text-slate-900 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center shadow-lg hover:shadow-brand-500/25 text-sm lg:text-base mt-4"
               >
                 {loading ? (
                   <div className="flex items-center gap-2 lg:gap-3">

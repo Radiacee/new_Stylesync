@@ -782,17 +782,17 @@ export default function WritingGuidePage() {
     <div className="space-y-8 pb-12">
       {/* Hero Section */}
       <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-400 text-sm">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/10 border border-brand-500/30 text-brand-600 dark:text-brand-400 text-sm">
           <BookOpen className="w-4 h-4" />
           <span>Writing Guide</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold">
           Master the Art of{' '}
-          <span className="bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-brand-600 dark:from-brand-300 to-brand-500 bg-clip-text text-transparent">
             Clear Writing
           </span>
         </h1>
-        <p className="text-slate-400 max-w-2xl mx-auto">
+        <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
           Learn proven techniques and get personalized feedback on your writing style.
         </p>
       </div>
@@ -805,7 +805,7 @@ export default function WritingGuidePage() {
             className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
               activeView === 'analysis'
                 ? 'bg-brand-500 text-slate-900'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-700'
             }`}
           >
             📄 Essay Analysis
@@ -815,13 +815,13 @@ export default function WritingGuidePage() {
             className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
               activeView === 'lessons'
                 ? 'bg-brand-500 text-slate-900'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-700'
             }`}
           >
             📖 Writing Lessons
           </button>
         </div>
-        <p className="text-xs text-slate-400">Switch between your essay feedback and core writing lessons.</p>
+        <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">Switch between your essay feedback and core writing lessons.</p>
       </div>
 
       {activeView === 'analysis' && (
@@ -829,8 +829,8 @@ export default function WritingGuidePage() {
           {/* Essay Analysis Section */}
           {loading ? (
             <div className="glass-panel p-6 text-center">
-              <RefreshCw className="w-6 h-6 animate-spin text-brand-400 mx-auto mb-2" />
-              <p className="text-slate-400">Loading your profile...</p>
+              <RefreshCw className="w-6 h-6 animate-spin text-brand-600 dark:text-brand-400 mx-auto mb-2" />
+              <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Loading your profile...</p>
             </div>
           ) : profile && profileEssay ? (
             <div className="glass-panel p-0 overflow-hidden border-2 border-brand-500/30">
@@ -839,11 +839,11 @@ export default function WritingGuidePage() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 rounded-xl bg-brand-500/20">
-                      <User className="w-5 h-5 text-brand-400" />
+                      <User className="w-5 h-5 text-brand-600 dark:text-brand-400" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-white">Your Writing Analysis</h2>
-                      <p className="text-sm text-slate-400">Personalized feedback based on your profile essay</p>
+                      <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Your Writing Analysis</h2>
+                      <p className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">Personalized feedback based on your profile essay</p>
                     </div>
                   </div>
                   
@@ -853,22 +853,22 @@ export default function WritingGuidePage() {
                       <select
                         value={selectedProfileId || ''}
                         onChange={(e) => handleProfileChange(e.target.value)}
-                        className="appearance-none pl-4 pr-10 py-2.5 rounded-xl bg-slate-800/80 border border-white/20 text-sm text-white cursor-pointer hover:border-brand-500/50 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all"
+                        className="appearance-none pl-4 pr-10 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-white/20 text-sm text-slate-900 dark:text-white cursor-pointer hover:border-brand-500/50 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all"
                       >
                         {profiles.map(p => (
-                          <option key={p.id} value={p.id} className="bg-slate-800 text-white">
+                          <option key={p.id} value={p.id} className="bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white">
                             {p.name || `Profile ${p.id.slice(0, 6)}`}
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400 pointer-events-none" />
                     </div>
                   )}
                 </div>
               </div>
 
               {profile && profile.notes?.includes('Generated from questionnaire answers') && (
-                <div className="bg-slate-900/20 px-4 py-4 sm:px-5">
+                <div className="bg-white dark:bg-slate-900/20 px-4 py-4 sm:px-5">
                   <div className="w-full rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-100">
                     <p className="text-sm font-semibold">Tip for better feedback</p>
                     <p className="mt-1 text-xs text-amber-200">
@@ -879,33 +879,33 @@ export default function WritingGuidePage() {
               )}
 
               {/* Metrics Bar */}
-              <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-white/10 bg-slate-900/50">
+              <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-white/10 bg-white dark:bg-slate-900/50">
                 <div className="p-3 text-center">
-                  <p className="text-lg font-bold text-white">{essayMetrics.wordCount}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Words</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">{essayMetrics.wordCount}</p>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wide">Words</p>
                 </div>
                 <div className="p-3 text-center">
-                  <p className="text-lg font-bold text-white">{essayMetrics.sentenceCount}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Sentences</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">{essayMetrics.sentenceCount}</p>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sentences</p>
                 </div>
                 <div className="p-3 text-center">
-                  <p className="text-lg font-bold text-white">{essayMetrics.avgSentenceLength}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Avg Length</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">{essayMetrics.avgSentenceLength}</p>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wide">Avg Length</p>
                 </div>
                 <div className="p-3 text-center hidden sm:block">
-                  <p className="text-lg font-bold text-white">{essayMetrics.paragraphCount}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Paragraphs</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">{essayMetrics.paragraphCount}</p>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wide">Paragraphs</p>
                 </div>
                 <div className="p-3 text-center hidden sm:block">
-                  <p className="text-lg font-bold text-white">{essayMetrics.uniqueWords}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Unique</p>
+                  <p className="text-lg font-bold text-slate-900 dark:text-white">{essayMetrics.uniqueWords}</p>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wide">Unique</p>
                 </div>
                 <div className="p-3 text-center hidden sm:block">
                   <p className={`text-lg font-bold ${
                     essayMetrics.readability === 'Easy' ? 'text-emerald-400' :
-                    essayMetrics.readability === 'Complex' ? 'text-amber-400' : 'text-blue-400'
+                    essayMetrics.readability === 'Complex' ? 'text-black dark:text-white' : 'text-blue-400'
                   }`}>{essayMetrics.readability}</p>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wide">Readability</p>
+                  <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wide">Readability</p>
                 </div>
               </div>
 
@@ -913,21 +913,21 @@ export default function WritingGuidePage() {
               {hasRealEssay && (
                 <button
                   onClick={() => setShowMyEssay(!showMyEssay)}
-                  className="w-full flex items-center justify-between p-4 border-b border-white/10 hover:bg-slate-800/50 transition-all group"
+                  className="w-full flex items-center justify-between p-4 border-b border-white/10 hover:bg-slate-50 dark:bg-slate-800/50 transition-all group"
                 >
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg transition-colors ${
                       showMyEssay 
-                        ? 'bg-brand-500/20 text-brand-400' 
-                        : 'bg-slate-700/50 text-slate-400 group-hover:bg-slate-700'
+                        ? 'bg-brand-500/20 text-brand-600 dark:text-brand-400' 
+                        : 'bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-500 dark:text-slate-400 group-hover:bg-slate-100 dark:bg-slate-700'
                     }`}>
                       <Eye className="w-4 h-4" />
                     </div>
                     <div className="text-left">
-                      <span className="text-sm font-medium text-white block">
+                      <span className="text-sm font-medium text-slate-900 dark:text-white block">
                         {showMyEssay ? 'Hide' : 'Show'} Your Essay
                       </span>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-slate-600 dark:text-slate-500">
                         {profile.name || 'Current Profile'}
                       </span>
                     </div>
@@ -935,10 +935,10 @@ export default function WritingGuidePage() {
                   <div className={`p-1.5 rounded-lg transition-all ${
                     showMyEssay 
                       ? 'bg-brand-500/20 rotate-180' 
-                      : 'bg-slate-700/50 group-hover:bg-slate-700'
+                      : 'bg-slate-100 dark:bg-slate-700/50 group-hover:bg-slate-100 dark:bg-slate-700'
                   }`}>
                     <ChevronDown className={`w-4 h-4 transition-colors ${
-                      showMyEssay ? 'text-brand-400' : 'text-slate-400'
+                      showMyEssay ? 'text-brand-600 dark:text-brand-400' : 'text-slate-600 dark:text-slate-500 dark:text-slate-400'
                     }`} />
                   </div>
                 </button>
@@ -946,43 +946,43 @@ export default function WritingGuidePage() {
 
               {/* Essay Content */}
               {hasRealEssay && showMyEssay && (
-                <div className="p-4 bg-slate-900/30 border-b border-white/10 max-h-60 overflow-y-auto">
-                  <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">
+                <div className="p-4 bg-white dark:bg-slate-900/30 border-b border-white/10 max-h-60 overflow-y-auto">
+                  <p className="text-sm text-slate-800 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
                     {profileEssay}
                   </p>
                 </div>
               )}
 
               {/* Your Writing Style Summary */}
-              <div className="p-4 sm:p-5 border-b border-white/10 bg-slate-900/30">
-                <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                  <PenTool className="w-4 h-4 text-brand-400" />
+              <div className="p-4 sm:p-5 border-b border-white/10 bg-white dark:bg-slate-900/30">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                  <PenTool className="w-4 h-4 text-brand-600 dark:text-brand-400" />
                   Your Writing Style
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 text-center">
                     <p className={`text-sm font-semibold ${
                       styleSummary.tone === 'casual' ? 'text-emerald-400' :
-                      styleSummary.tone === 'formal' ? 'text-blue-400' : 'text-slate-300'
+                      styleSummary.tone === 'formal' ? 'text-blue-400' : 'text-slate-800 dark:text-slate-300'
                     }`}>
                       {styleSummary.tone.charAt(0).toUpperCase() + styleSummary.tone.slice(1)}
                     </p>
-                    <p className="text-[10px] text-slate-500 uppercase">Tone</p>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-500 uppercase">Tone</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 text-center">
                     <p className={`text-sm font-semibold ${styleSummary.usesContractions ? 'text-emerald-400' : 'text-blue-400'}`}>
                       {styleSummary.usesContractions ? "Uses" : "Avoids"}
                     </p>
-                    <p className="text-[10px] text-slate-500 uppercase">Contractions</p>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-500 uppercase">Contractions</p>
                   </div>
-                  <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 text-center">
                     <p className={`text-sm font-semibold ${
                       styleSummary.vocabularyLevel === 'advanced' ? 'text-purple-400' :
-                      styleSummary.vocabularyLevel === 'simple' ? 'text-emerald-400' : 'text-slate-300'
+                      styleSummary.vocabularyLevel === 'simple' ? 'text-emerald-400' : 'text-slate-800 dark:text-slate-300'
                     }`}>
                       {styleSummary.vocabularyLevel.charAt(0).toUpperCase() + styleSummary.vocabularyLevel.slice(1)}
                     </p>
-                    <p className="text-[10px] text-slate-500 uppercase">Vocabulary</p>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-500 uppercase">Vocabulary</p>
                   </div>
                 </div>
                 
@@ -1002,7 +1002,7 @@ export default function WritingGuidePage() {
               {/* Strengths Section */}
               {strengths.length > 0 && (
                 <div className="p-4 sm:p-5 border-b border-white/10">
-                  <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-400" />
                     What You're Doing Well ({strengths.length})
                   </h3>
@@ -1012,8 +1012,8 @@ export default function WritingGuidePage() {
                         <div className="flex items-start gap-3">
                           {getIssueIcon(issue.type)}
                           <div className="flex-1">
-                            <h4 className="text-sm font-medium text-white">{issue.title}</h4>
-                            <p className="text-xs text-slate-400 mt-0.5">{issue.description}</p>
+                            <h4 className="text-sm font-medium text-slate-900 dark:text-white">{issue.title}</h4>
+                            <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-0.5">{issue.description}</p>
                             {issue.examples && issue.examples.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">
                                 {issue.examples.map((ex, i) => (
@@ -1034,7 +1034,7 @@ export default function WritingGuidePage() {
               {/* Issues & Suggestions */}
               <div className="p-4 sm:p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                     <Zap className="w-4 h-4 text-yellow-400" />
                     Areas to Improve ({issuesOnly.length})
                   </h3>
@@ -1043,8 +1043,8 @@ export default function WritingGuidePage() {
                 {issuesOnly.length === 0 ? (
                   <div className="text-center py-6">
                     <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
-                    <p className="text-sm text-slate-300">Excellent! No issues detected in your writing.</p>
-                    <p className="text-xs text-slate-500">Your essay follows strong writing practices.</p>
+                    <p className="text-sm text-slate-800 dark:text-slate-300">Excellent! No issues detected in your writing.</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-500">Your essay follows strong writing practices.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1055,15 +1055,15 @@ export default function WritingGuidePage() {
                             {getIssueIcon(issue.type)}
                             <div className="flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <h4 className="text-sm font-medium text-white">{issue.title}</h4>
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-700 text-slate-300">{issue.category}</span>
+                                <h4 className="text-sm font-medium text-slate-900 dark:text-white">{issue.title}</h4>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300">{issue.category}</span>
                               </div>
-                              <p className="text-xs text-slate-400 mt-1">{issue.description}</p>
+                              <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-1">{issue.description}</p>
                               {issue.examples && issue.examples.length > 0 && (
                                 <ul className="mt-2 space-y-1">
                                   {issue.examples.map((ex, i) => (
-                                    <li key={i} className="text-xs text-slate-300 flex items-start gap-2">
-                                      <span className="text-slate-500">•</span>
+                                    <li key={i} className="text-xs text-slate-800 dark:text-slate-300 flex items-start gap-2">
+                                      <span className="text-slate-600 dark:text-slate-500">•</span>
                                       <span>{ex}</span>
                                     </li>
                                   ))}
@@ -1074,7 +1074,7 @@ export default function WritingGuidePage() {
                           {issue.lessonLink && (
                             <button
                               onClick={() => scrollToLesson(issue.lessonLink!)}
-                              className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 text-xs font-medium transition"
+                              className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-brand-500/20 hover:bg-brand-500/30 text-brand-600 dark:text-brand-400 text-xs font-medium transition"
                             >
                               Learn More
                             </button>
@@ -1089,10 +1089,10 @@ export default function WritingGuidePage() {
           ) : (
             <div className="glass-panel p-6 border-2 border-dashed border-white/20">
               <div className="text-center space-y-4">
-                <AlertCircle className="w-10 h-10 text-slate-500 mx-auto" />
+                <AlertCircle className="w-10 h-10 text-slate-600 dark:text-slate-500 mx-auto" />
                 <div>
-                  <h3 className="text-lg font-semibold text-white">No Profile Found</h3>
-                  <p className="text-sm text-slate-400 mt-1">Create a style profile with a real essay sample to get the most helpful, personalized writing guidance.</p>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white">No Profile Found</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-1">Create a style profile with a real essay sample to get the most helpful, personalized writing guidance.</p>
                 </div>
                 <Link
                   href="/style/onboarding"
@@ -1111,7 +1111,7 @@ export default function WritingGuidePage() {
         <>
           {/* Writing Contexts */}
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-white">Writing for Different Contexts</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Writing for Different Contexts</h2>
             <div className="grid items-start gap-4 sm:grid-cols-2">
               {WRITING_CONTEXTS.map(context => (
                 <button
@@ -1120,24 +1120,24 @@ export default function WritingGuidePage() {
                   className={`text-left p-4 rounded-xl border transition-all ${
                     activeContext === context.id
                       ? 'bg-brand-500/10 border-brand-500/50'
-                      : 'bg-slate-800/50 border-white/10 hover:border-white/20'
+                      : 'bg-slate-50 dark:bg-slate-800/50 border-white/10 hover:border-white/20'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`p-2 rounded-lg ${
-                      activeContext === context.id ? 'bg-brand-500/20 text-brand-400' : 'bg-slate-700 text-slate-400'
+                      activeContext === context.id ? 'bg-brand-500/20 text-brand-600 dark:text-brand-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-500 dark:text-slate-400'
                     }`}>
                       {context.icon}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-white">{context.title}</h3>
+                        <h3 className="font-semibold text-slate-900 dark:text-white">{context.title}</h3>
                         {activeContext === context.id 
-                          ? <ChevronUp className="w-4 h-4 text-slate-400" />
-                          : <ChevronDown className="w-4 h-4 text-slate-400" />
+                          ? <ChevronUp className="w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400" />
+                          : <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400" />
                         }
                       </div>
-                      <p className="text-xs text-slate-400 mt-1">{context.description}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-1">{context.description}</p>
                     </div>
                   </div>
                   
@@ -1145,7 +1145,7 @@ export default function WritingGuidePage() {
                     <div className="mt-4 pt-4 border-t border-white/10">
                       <ul className="space-y-2">
                         {context.tips.map((tip, i) => (
-                          <li key={i} className="flex items-start gap-2 text-xs text-slate-400">
+                          <li key={i} className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">
                             <CheckCircle className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
                             <span>{tip}</span>
                           </li>
@@ -1160,7 +1160,7 @@ export default function WritingGuidePage() {
 
           {/* Main Lessons */}
           <div className="space-y-4">
-        <h2 className="text-xl font-bold text-white">Core Writing Lessons</h2>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Core Writing Lessons</h2>
         <div className="space-y-4">
           {LESSONS.map(lesson => (
             <div 
@@ -1168,8 +1168,8 @@ export default function WritingGuidePage() {
               id={`lesson-${lesson.id}`}
               className={`rounded-xl border overflow-hidden transition-all scroll-mt-24 ${
                 activeLesson === lesson.id
-                  ? 'bg-slate-800/80 border-brand-500/50'
-                  : 'bg-slate-800/40 border-white/10'
+                  ? 'bg-slate-50 dark:bg-slate-800/80 border-brand-500/50'
+                  : 'bg-slate-50 dark:bg-slate-800/40 border-white/10'
               }`}
             >
               {/* Lesson Header */}
@@ -1180,19 +1180,19 @@ export default function WritingGuidePage() {
                 <div className="flex items-center gap-4">
                   <div className={`p-3 rounded-xl ${
                     activeLesson === lesson.id 
-                      ? 'bg-brand-500/20 text-brand-400' 
-                      : 'bg-slate-700 text-slate-400'
+                      ? 'bg-brand-500/20 text-brand-600 dark:text-brand-400' 
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-500 dark:text-slate-400'
                   }`}>
                     {lesson.icon}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white text-lg">{lesson.title}</h3>
-                    <p className="text-sm text-slate-400 mt-0.5">{lesson.description}</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-white text-lg">{lesson.title}</h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-0.5">{lesson.description}</p>
                   </div>
                 </div>
                 {activeLesson === lesson.id 
-                  ? <ChevronUp className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                  : <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                  ? <ChevronUp className="w-5 h-5 text-slate-600 dark:text-slate-500 dark:text-slate-400 flex-shrink-0" />
+                  : <ChevronDown className="w-5 h-5 text-slate-600 dark:text-slate-500 dark:text-slate-400 flex-shrink-0" />
                 }
               </button>
 
@@ -1210,23 +1210,23 @@ export default function WritingGuidePage() {
                       >
                         <button
                           onClick={() => toggleSection(lesson.id, sectionIndex)}
-                          className="w-full flex items-center justify-between p-4 text-left bg-slate-900/50 hover:bg-slate-900/70 transition"
+                          className="w-full flex items-center justify-between p-4 text-left bg-white dark:bg-slate-900/50 hover:bg-white dark:bg-slate-900/70 transition"
                         >
-                          <span className="font-medium text-white">{section.title}</span>
+                          <span className="font-medium text-slate-900 dark:text-white">{section.title}</span>
                           {isExpanded 
-                            ? <ChevronUp className="w-4 h-4 text-slate-400" />
-                            : <ChevronDown className="w-4 h-4 text-slate-400" />
+                            ? <ChevronUp className="w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400" />
+                            : <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400" />
                           }
                         </button>
                         
                         {isExpanded && (
-                          <div className="p-4 space-y-4 bg-slate-900/30">
-                            <p className="text-sm text-slate-300">{section.content}</p>
+                          <div className="p-4 space-y-4 bg-white dark:bg-slate-900/30">
+                            <p className="text-sm text-slate-800 dark:text-slate-300">{section.content}</p>
                             
                             {section.tips && (
                               <ul className="space-y-2">
                                 {section.tips.map((tip, i) => (
-                                  <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                                  <li key={i} className="flex items-start gap-2 text-sm text-slate-800 dark:text-slate-300">
                                     <Lightbulb className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
                                     <span>{tip}</span>
                                   </li>
@@ -1244,19 +1244,19 @@ export default function WritingGuidePage() {
                                           <AlertTriangle className="w-4 h-4 text-red-400" />
                                           <span className="text-xs font-semibold text-red-400">Before</span>
                                         </div>
-                                        <p className="text-sm text-slate-300">{example.bad}</p>
+                                        <p className="text-sm text-slate-800 dark:text-slate-300">{example.bad}</p>
                                       </div>
                                       <div className="p-3 bg-emerald-500/5">
                                         <div className="flex items-center gap-2 mb-2">
                                           <CheckCircle className="w-4 h-4 text-emerald-400" />
                                           <span className="text-xs font-semibold text-emerald-400">After</span>
                                         </div>
-                                        <p className="text-sm text-slate-300">{example.good}</p>
+                                        <p className="text-sm text-slate-800 dark:text-slate-300">{example.good}</p>
                                       </div>
                                     </div>
-                                    <div className="p-3 bg-slate-900/50 border-t border-white/10">
-                                      <p className="text-xs text-slate-400">
-                                        <span className="font-semibold text-slate-300">Why:</span> {example.explanation}
+                                    <div className="p-3 bg-white dark:bg-slate-900/50 border-t border-white/10">
+                                      <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">
+                                        <span className="font-semibold text-slate-800 dark:text-slate-300">Why:</span> {example.explanation}
                                       </p>
                                     </div>
                                   </div>
@@ -1279,9 +1279,9 @@ export default function WritingGuidePage() {
 
       {/* Bottom CTA */}
       <div className="glass-panel p-6 text-center space-y-4">
-        <FileText className="w-10 h-10 text-brand-400 mx-auto" />
-        <h2 className="text-xl font-bold text-white">Ready to Apply What You&apos;ve Learned?</h2>
-        <p className="text-slate-400 max-w-lg mx-auto">
+        <FileText className="w-10 h-10 text-brand-600 dark:text-brand-400 mx-auto" />
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Ready to Apply What You&apos;ve Learned?</h2>
+        <p className="text-slate-600 dark:text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
           Use StyleSync to paraphrase text while maintaining your unique writing style.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -1293,7 +1293,7 @@ export default function WritingGuidePage() {
           </Link>
           <Link 
             href="/style/onboarding"
-            className="px-6 py-3 rounded-lg border border-white/20 hover:border-brand-400/60 text-slate-200 font-medium transition"
+            className="px-6 py-3 rounded-lg border border-white/20 hover:border-brand-400/60 text-slate-800 dark:text-slate-200 font-medium transition"
           >
             Update Profile
           </Link>

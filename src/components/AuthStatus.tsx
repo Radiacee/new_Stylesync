@@ -131,15 +131,15 @@ export function AuthStatus() {
       {ADMIN_EMAILS.includes(email) && (
         <Link 
           href="/admin" 
-          className="px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white font-medium transition text-xs text-center"
+          className="px-3 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white dark:bg-blue-600 dark:hover:bg-blue-700 font-medium transition text-xs text-center"
         >
           Admin
         </Link>
       )}
-      <span className="text-slate-300 truncate" suppressHydrationWarning>{email}</span>
+      <span className="text-slate-800 dark:text-slate-300 truncate" suppressHydrationWarning>{email}</span>
       <button 
         onClick={() => supabase?.auth.signOut()} 
-        className="text-slate-400 hover:text-white text-left md:text-center py-1"
+        className="text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white text-left md:text-center py-1"
       >
         Sign out
       </button>

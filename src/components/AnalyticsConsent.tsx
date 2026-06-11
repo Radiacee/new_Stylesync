@@ -90,26 +90,26 @@ export default function AnalyticsConsent({ userId, onConsentChange }: AnalyticsC
   // Modal content component
   const ModalContent = () => (
     <div 
-      className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-white dark:bg-slate-900/95 backdrop-blur-xl z-50 flex items-center justify-center p-4"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="max-w-2xl w-full glass-panel p-6 sm:p-8 space-y-6">
         {/* Header */}
         <div className="text-center">
           <div className="text-4xl sm:text-5xl mb-3">📊</div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Analytics & Data Sharing</h2>
-          <p className="text-sm sm:text-base text-slate-300">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">Analytics & Data Sharing</h2>
+          <p className="text-sm sm:text-base text-slate-800 dark:text-slate-300">
             Help us improve StyleSync by understanding how the tool is used
           </p>
         </div>
 
         {/* Progress Bar */}
         <div className="space-y-2">
-          <div className="flex justify-between text-xs text-slate-400">
+          <div className="flex justify-between text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">
             <span>{currentStep} of {totalSteps}</span>
             <span>{Math.round((currentStep / totalSteps) * 100)}%</span>
           </div>
-          <div className="w-full bg-slate-700 rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
             <div 
               className="bg-gradient-to-r from-brand-500 to-purple-500 h-full transition-all duration-500 ease-out"
               style={{ width: `${(currentStep / totalSteps) * 100}%` }}
@@ -121,13 +121,13 @@ export default function AnalyticsConsent({ userId, onConsentChange }: AnalyticsC
         <div className="min-h-[300px] flex flex-col justify-between">
           {currentStep === 1 && (
             <div key="step-1" className="space-y-4 animate-fadeIn">
-              <div className="p-5 rounded-lg bg-slate-800/60 border border-white/10">
-                <div className="font-semibold text-white text-lg mb-3">📋 What data is collected?</div>
-                <ul className="space-y-2.5 ml-4 list-disc text-slate-300 text-sm sm:text-base">
+              <div className="p-5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10">
+                <div className="font-semibold text-slate-900 dark:text-white text-lg mb-3">📋 What data is collected?</div>
+                <ul className="space-y-2.5 ml-4 list-disc text-slate-800 dark:text-slate-300 text-sm sm:text-base">
                   <li>Your style settings (tone, formality, pacing, descriptiveness, directness)</li>
                   <li>Verification scores</li>
                   <li>Text lengths (character counts of input and output)</li>
-                  <li className="font-medium text-brand-300">Your sample excerpt (ONLY if you opt-in)</li>
+                  <li className="font-medium text-brand-600 dark:text-brand-300">Your sample excerpt (ONLY if you opt-in)</li>
                 </ul>
               </div>
             </div>
@@ -135,9 +135,9 @@ export default function AnalyticsConsent({ userId, onConsentChange }: AnalyticsC
 
           {currentStep === 2 && (
             <div key="step-2" className="space-y-4 animate-fadeIn">
-              <div className="p-5 rounded-lg bg-slate-800/60 border border-white/10">
-                <div className="font-semibold text-white text-lg mb-3">🎯 How is it used?</div>
-                <ul className="space-y-2.5 ml-4 list-disc text-slate-300 text-sm sm:text-base">
+              <div className="p-5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10">
+                <div className="font-semibold text-slate-900 dark:text-white text-lg mb-3">🎯 How is it used?</div>
+                <ul className="space-y-2.5 ml-4 list-disc text-slate-800 dark:text-slate-300 text-sm sm:text-base">
                   <li>To identify which style combinations work best</li>
                   <li>To suggest successful style patterns to other users</li>
                   <li>To improve the overall paraphrasing algorithm</li>
@@ -150,9 +150,9 @@ export default function AnalyticsConsent({ userId, onConsentChange }: AnalyticsC
 
           {currentStep === 3 && (
             <div key="step-3" className="space-y-4 animate-fadeIn">
-              <div className="p-5 rounded-lg bg-slate-800/60 border border-white/10">
-                <div className="font-semibold text-white text-lg mb-3">🔒 Your control & privacy:</div>
-                <ul className="space-y-2.5 ml-4 list-disc text-slate-300 text-sm sm:text-base">
+              <div className="p-5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10">
+                <div className="font-semibold text-slate-900 dark:text-white text-lg mb-3">🔒 Your control & privacy:</div>
+                <ul className="space-y-2.5 ml-4 list-disc text-slate-800 dark:text-slate-300 text-sm sm:text-base">
                   <li>Toggle sharing on or off at any time</li>
                   <li>Sample text excerpts require explicit opt-in consent</li>
                   <li>No personally identifiable information is shared</li>
@@ -166,10 +166,10 @@ export default function AnalyticsConsent({ userId, onConsentChange }: AnalyticsC
             <div key="step-4" className="space-y-6">{/* Removed animate-fadeIn */}
               <div className="p-6 rounded-lg bg-gradient-to-br from-brand-500/10 to-purple-500/10 border border-brand-500/30">
                 <div className="text-center mb-6">
-                  <div className="font-bold text-white text-xl mb-3">
+                  <div className="font-bold text-slate-900 dark:text-white text-xl mb-3">
                     📝 Share Sample Excerpt?
                   </div>
-                  <p className="text-sm text-slate-400">
+                  <p className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">
                     Choose whether to share sample text with your style settings
                   </p>
                 </div>
@@ -179,7 +179,7 @@ export default function AnalyticsConsent({ userId, onConsentChange }: AnalyticsC
                     onClick={handleToggle}
                     disabled={saving}
                     className={`relative inline-flex h-12 w-24 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
-                      consent ? 'bg-brand-500' : 'bg-slate-700'
+                      consent ? 'bg-brand-500' : 'bg-slate-100 dark:bg-slate-700'
                     } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
                     title={consent ? 'Click to disable sharing' : 'Click to enable sharing'}
                     type="button"
@@ -195,12 +195,12 @@ export default function AnalyticsConsent({ userId, onConsentChange }: AnalyticsC
                 <div className="space-y-3">
                   <div className="flex items-center justify-center gap-2 text-sm">
                     <div className={`w-3 h-3 rounded-full ${consent ? 'bg-brand-500' : 'bg-slate-500'}`}></div>
-                    <span className={`font-semibold ${consent ? 'text-brand-300' : 'text-slate-400'}`}>
+                    <span className={`font-semibold ${consent ? 'text-brand-600 dark:text-brand-300' : 'text-slate-600 dark:text-slate-500 dark:text-slate-400'}`}>
                       {consent ? '✓ Sharing enabled' : '✗ Sharing disabled'}
                     </span>
                   </div>
                   
-                  <p className="text-xs text-center text-slate-400 italic">
+                  <p className="text-xs text-center text-slate-600 dark:text-slate-500 dark:text-slate-400 italic">
                     {consent 
                       ? 'Sample text will be included with successful style combinations'
                       : 'Only style parameters will be shared (no text content)'}
@@ -208,7 +208,7 @@ export default function AnalyticsConsent({ userId, onConsentChange }: AnalyticsC
                 </div>
               </div>
 
-              <p className="text-xs text-center text-slate-500 leading-relaxed">
+              <p className="text-xs text-center text-slate-600 dark:text-slate-500 leading-relaxed">
                 By continuing, you acknowledge that you understand how analytics data is collected and used.
               </p>
             </div>
@@ -222,8 +222,8 @@ export default function AnalyticsConsent({ userId, onConsentChange }: AnalyticsC
             disabled={currentStep === 1}
             className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
               currentStep === 1
-                ? 'bg-slate-800/40 text-slate-600 cursor-not-allowed'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white'
+                ? 'bg-slate-50 dark:bg-slate-800/40 text-slate-600 cursor-not-allowed'
+                : 'bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 hover:text-slate-900 dark:text-white'
             }`}
           >
             ← Back
@@ -239,7 +239,7 @@ export default function AnalyticsConsent({ userId, onConsentChange }: AnalyticsC
           ) : (
             <button
               onClick={handleFinish}
-              className="px-8 py-2.5 rounded-lg bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-400 hover:to-purple-400 text-white font-bold transition-all shadow-lg"
+              className="px-8 py-2.5 rounded-lg bg-gradient-to-r from-brand-500 to-purple-500 hover:from-brand-600 dark:from-brand-400 hover:to-purple-400 text-slate-900 dark:text-white font-bold transition-all shadow-lg"
             >
               Continue to StyleSync ✓
             </button>
@@ -261,11 +261,11 @@ export default function AnalyticsConsent({ userId, onConsentChange }: AnalyticsC
       onClick={() => {
         setHasAcknowledged(false); // Re-show the full modal
       }}
-      className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 hover:border-brand-400/60 bg-slate-800/40 hover:bg-slate-800/60 transition-all group"
+      className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 hover:border-brand-400/60 bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-50 dark:bg-slate-800/60 transition-all group"
       title="Analytics Sharing Settings"
     >
       <span className="text-base">📊</span>
-      <span className="text-xs font-medium text-slate-400 group-hover:text-brand-300 transition-colors">
+      <span className="text-xs font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 group-hover:text-brand-600 dark:text-brand-300 transition-colors">
         Analytics
       </span>
       <div className={`w-1.5 h-1.5 rounded-full transition-colors ${consent ? 'bg-brand-500 shadow-[0_0_8px_rgba(139,92,246,0.5)]' : 'bg-slate-500'}`} 

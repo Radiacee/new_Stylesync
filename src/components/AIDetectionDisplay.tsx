@@ -38,10 +38,10 @@ export default function AIDetectionDisplay({ originalText, paraphrasedText, show
 
   if (analyzing) {
     return (
-      <div className="bg-slate-800/50 rounded-lg p-4 animate-pulse">
+      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 animate-pulse">
         <div className="flex items-center gap-3">
           <div className="w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-slate-400">Analyzing AI patterns...</span>
+          <span className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">Analyzing AI patterns...</span>
         </div>
       </div>
     );
@@ -68,7 +68,7 @@ export default function AIDetectionDisplay({ originalText, paraphrasedText, show
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="text-lg">🛡️</span>
-            <span className="font-semibold text-white text-sm">AI Detection Result</span>
+            <span className="font-semibold text-slate-900 dark:text-white text-sm">AI Detection Result</span>
           </div>
           <span className={`text-xs px-2 py-1 rounded-full ${resultColor.bg} ${resultColor.text} border ${resultColor.border}`}>
             {getVerdictLabel(paraphrasedResult.verdict)}
@@ -81,7 +81,7 @@ export default function AIDetectionDisplay({ originalText, paraphrasedText, show
             <span className={`text-3xl font-bold ${resultColor.text}`}>
               {Math.round(paraphrasedResult.humanScore * 100)}%
             </span>
-            <span className="text-sm text-slate-400">Human-like</span>
+            <span className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">Human-like</span>
             {improvement !== 0 && (
               <span className={`text-xs px-1.5 py-0.5 rounded ${
                 improvement > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
@@ -92,23 +92,23 @@ export default function AIDetectionDisplay({ originalText, paraphrasedText, show
           </div>
           
           {/* Progress Bar */}
-          <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden">
+          <div className="h-3 bg-slate-100 dark:bg-slate-700/50 rounded-full overflow-hidden">
             <div 
               className={`h-full bg-gradient-to-r ${resultColor.bar} transition-all duration-500`}
               style={{ width: `${Math.round(paraphrasedResult.humanScore * 100)}%` }}
             />
           </div>
-          <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+          <div className="flex justify-between text-[10px] text-slate-600 dark:text-slate-500 mt-1">
             <span>AI-generated</span>
             <span>Human-written</span>
           </div>
         </div>
 
         {/* Summary */}
-        <p className="text-xs text-slate-300 mb-3">{summary}</p>
+        <p className="text-xs text-slate-800 dark:text-slate-300 mb-3">{summary}</p>
 
         {/* Confidence */}
-        <div className="flex items-center gap-4 text-[10px] text-slate-400">
+        <div className="flex items-center gap-4 text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400">
           <span>Confidence: {Math.round(paraphrasedResult.confidence * 100)}%</span>
           <span>•</span>
           <span>AI Score: {Math.round(paraphrasedResult.aiScore * 100)}%</span>
@@ -120,14 +120,14 @@ export default function AIDetectionDisplay({ originalText, paraphrasedText, show
         <div className="grid grid-cols-2 gap-3">
           {/* Original */}
           <div className={`rounded-lg p-3 ${originalColor?.bg} border ${originalColor?.border}`}>
-            <div className="text-[10px] text-slate-400 mb-1">Original Input</div>
+            <div className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Original Input</div>
             <div className="flex items-baseline gap-1">
               <span className={`text-xl font-bold ${originalColor?.text}`}>
                 {Math.round(originalResult.humanScore * 100)}%
               </span>
-              <span className="text-[10px] text-slate-400">human</span>
+              <span className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400">human</span>
             </div>
-            <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden mt-2">
+            <div className="h-1.5 bg-slate-100 dark:bg-slate-700/50 rounded-full overflow-hidden mt-2">
               <div 
                 className={`h-full bg-gradient-to-r ${originalColor?.bar}`}
                 style={{ width: `${Math.round(originalResult.humanScore * 100)}%` }}
@@ -137,14 +137,14 @@ export default function AIDetectionDisplay({ originalText, paraphrasedText, show
 
           {/* Paraphrased */}
           <div className={`rounded-lg p-3 ${resultColor.bg} border ${resultColor.border}`}>
-            <div className="text-[10px] text-slate-400 mb-1">After Paraphrase</div>
+            <div className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">After Paraphrase</div>
             <div className="flex items-baseline gap-1">
               <span className={`text-xl font-bold ${resultColor.text}`}>
                 {Math.round(paraphrasedResult.humanScore * 100)}%
               </span>
-              <span className="text-[10px] text-slate-400">human</span>
+              <span className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400">human</span>
             </div>
-            <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden mt-2">
+            <div className="h-1.5 bg-slate-100 dark:bg-slate-700/50 rounded-full overflow-hidden mt-2">
               <div 
                 className={`h-full bg-gradient-to-r ${resultColor.bar}`}
                 style={{ width: `${Math.round(paraphrasedResult.humanScore * 100)}%` }}
@@ -157,7 +157,7 @@ export default function AIDetectionDisplay({ originalText, paraphrasedText, show
       {/* Detection Signals */}
       <button
         onClick={() => setShowDetails(!showDetails)}
-        className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition"
+        className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition"
       >
         <svg 
           className={`w-4 h-4 transition-transform ${showDetails ? 'rotate-90' : ''}`}
@@ -171,18 +171,18 @@ export default function AIDetectionDisplay({ originalText, paraphrasedText, show
       </button>
 
       {showDetails && (
-        <div className="space-y-3 bg-slate-800/30 rounded-lg p-3">
+        <div className="space-y-3 bg-slate-50 dark:bg-slate-800/30 rounded-lg p-3">
           {/* Breakdown Bars */}
           <div className="grid grid-cols-2 gap-3">
             {Object.entries(paraphrasedResult.breakdown).map(([key, value]) => (
               <div key={key} className="space-y-1">
                 <div className="flex justify-between text-[10px]">
-                  <span className="text-slate-400 capitalize">{key}</span>
+                  <span className="text-slate-600 dark:text-slate-500 dark:text-slate-400 capitalize">{key}</span>
                   <span className={value > 0.5 ? 'text-red-400' : 'text-emerald-400'}>
                     {value > 0.5 ? 'AI-like' : 'Human-like'}
                   </span>
                 </div>
-                <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-slate-100 dark:bg-slate-700/50 rounded-full overflow-hidden">
                   <div 
                     className={`h-full transition-all ${value > 0.5 ? 'bg-red-500/60' : 'bg-emerald-500/60'}`}
                     style={{ width: `${Math.round(value * 100)}%` }}
@@ -195,7 +195,7 @@ export default function AIDetectionDisplay({ originalText, paraphrasedText, show
           {/* Signals */}
           {paraphrasedResult.signals.length > 0 && (
             <div className="space-y-1.5 mt-3 pt-3 border-t border-white/10">
-              <div className="text-[10px] text-slate-400 font-medium">Detection Signals:</div>
+              <div className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 font-medium">Detection Signals:</div>
               {paraphrasedResult.signals.slice(0, 5).map((signal, i) => (
                 <div 
                   key={i}
@@ -212,7 +212,7 @@ export default function AIDetectionDisplay({ originalText, paraphrasedText, show
           )}
 
           {/* Info */}
-          <div className="text-[10px] text-slate-500 italic pt-2 border-t border-white/10">
+          <div className="text-[10px] text-slate-600 dark:text-slate-500 italic pt-2 border-t border-white/10">
             Note: This is a heuristic-based detection analyzing vocabulary, sentence structure, 
             and common AI writing patterns. Results are estimates and may not match all AI detectors.
           </div>

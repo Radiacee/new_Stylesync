@@ -320,10 +320,10 @@ export default function StyleProofDetailed({
       <div className="flex items-center justify-between">
         <button 
           onClick={() => setShowDetails(!showDetails)}
-          className="flex items-center gap-2 hover:text-brand-300 transition"
+          className="flex items-center gap-2 hover:text-brand-600 dark:text-brand-300 transition"
         >
           <span className="text-lg">🔬</span>
-          <span className="font-semibold text-white text-sm">Style Application Proof</span>
+          <span className="font-semibold text-slate-900 dark:text-white text-sm">Style Application Proof</span>
           <svg 
             className={`w-4 h-4 transition-transform ${showDetails ? 'rotate-180' : ''}`}
             fill="none" stroke="currentColor" viewBox="0 0 24 24"
@@ -352,12 +352,12 @@ export default function StyleProofDetailed({
             className={`p-2 rounded-lg text-center ${
               metric.match 
                 ? 'bg-emerald-500/10 border border-emerald-500/30' 
-                : 'bg-slate-800/50 border border-white/5'
+                : 'bg-slate-50 dark:bg-slate-800/50 border border-white/5'
             }`}
           >
             <div className="text-lg">{metric.icon}</div>
-            <div className="text-[10px] text-slate-400 uppercase">{metric.name}</div>
-            <div className={`text-sm font-bold ${metric.match ? 'text-emerald-400' : 'text-slate-300'}`}>
+            <div className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 uppercase">{metric.name}</div>
+            <div className={`text-sm font-bold ${metric.match ? 'text-emerald-400' : 'text-slate-800 dark:text-slate-300'}`}>
               {metric.resultValue}
             </div>
             {metric.match && <div className="text-[9px] text-emerald-500">✓ Matched</div>}
@@ -368,7 +368,7 @@ export default function StyleProofDetailed({
       {/* Specific Style Changes Applied */}
       {hasStyleChanges && (
         <div className="bg-brand-500/10 border border-brand-500/30 rounded-lg p-3">
-          <div className="text-xs font-semibold text-brand-300 mb-2">🎯 Style Changes Applied:</div>
+          <div className="text-xs font-semibold text-brand-600 dark:text-brand-300 mb-2">🎯 Style Changes Applied:</div>
           <div className="flex flex-wrap gap-2">
             {examples.contractionsApplied.map((c, i) => (
               <span key={`c-${i}`} className="text-[10px] px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded">
@@ -410,7 +410,7 @@ export default function StyleProofDetailed({
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition ${
                   activeTab === tab.id 
                     ? 'bg-brand-500 text-slate-900' 
-                    : 'bg-slate-800/50 text-slate-400 hover:text-white'
+                    : 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white'
                 }`}
               >
                 {tab.label}
@@ -427,16 +427,16 @@ export default function StyleProofDetailed({
                   className={`p-3 rounded-lg border ${
                     metric.match 
                       ? 'bg-emerald-500/5 border-emerald-500/30' 
-                      : 'bg-slate-800/30 border-white/10'
+                      : 'bg-slate-50 dark:bg-slate-800/30 border-white/10'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span>{metric.icon}</span>
-                      <span className="text-sm font-medium text-white">{metric.name}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">{metric.name}</span>
                     </div>
                     <span className={`text-xs px-2 py-0.5 rounded ${
-                      metric.match ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'
+                      metric.match ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-500 dark:text-slate-400'
                     }`}>
                       {metric.match ? '✓ Matched' : 'Different'}
                     </span>
@@ -444,22 +444,22 @@ export default function StyleProofDetailed({
                   
                   <div className="grid grid-cols-3 gap-2 text-xs mb-2">
                     <div>
-                      <div className="text-slate-500 text-[10px] uppercase">Your Style</div>
+                      <div className="text-slate-600 dark:text-slate-500 text-[10px] uppercase">Your Style</div>
                       <div className="text-blue-400 font-medium">{metric.userValue}</div>
                     </div>
                     <div>
-                      <div className="text-slate-500 text-[10px] uppercase">Original</div>
-                      <div className="text-slate-400">{metric.originalValue}</div>
+                      <div className="text-slate-600 dark:text-slate-500 text-[10px] uppercase">Original</div>
+                      <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400">{metric.originalValue}</div>
                     </div>
                     <div>
-                      <div className="text-slate-500 text-[10px] uppercase">Result</div>
-                      <div className={`font-medium ${metric.match ? 'text-emerald-400' : 'text-slate-300'}`}>
+                      <div className="text-slate-600 dark:text-slate-500 text-[10px] uppercase">Result</div>
+                      <div className={`font-medium ${metric.match ? 'text-emerald-400' : 'text-slate-800 dark:text-slate-300'}`}>
                         {metric.resultValue}
                       </div>
                     </div>
                   </div>
                   
-                  <p className="text-[11px] text-slate-400">{metric.explanation}</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-500 dark:text-slate-400">{metric.explanation}</p>
                 </div>
               ))}
             </div>
@@ -469,15 +469,15 @@ export default function StyleProofDetailed({
           {activeTab === 'comparison' && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-xs font-medium text-slate-400 mb-2 uppercase">Original Input</div>
-                <div className="p-3 bg-slate-800/50 rounded-lg text-xs leading-relaxed max-h-48 overflow-y-auto">
+                <div className="text-xs font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2 uppercase">Original Input</div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-xs leading-relaxed max-h-48 overflow-y-auto">
                   {originalHighlighted.map((item, i) => (
                     <span 
                       key={i}
                       className={
                         item.type === 'changed' ? 'bg-red-500/20 text-red-300' :
                         item.type === 'expansion' ? 'bg-yellow-500/20 text-yellow-300' :
-                        'text-slate-300'
+                        'text-slate-800 dark:text-slate-300'
                       }
                     >
                       {item.word}{' '}
@@ -486,8 +486,8 @@ export default function StyleProofDetailed({
                 </div>
               </div>
               <div>
-                <div className="text-xs font-medium text-brand-400 mb-2 uppercase">Paraphrased Result</div>
-                <div className="p-3 bg-slate-800/50 rounded-lg text-xs leading-relaxed max-h-48 overflow-y-auto">
+                <div className="text-xs font-medium text-brand-600 dark:text-brand-400 mb-2 uppercase">Paraphrased Result</div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-xs leading-relaxed max-h-48 overflow-y-auto">
                   {resultHighlighted.map((item, i) => (
                     <span 
                       key={i}
@@ -495,7 +495,7 @@ export default function StyleProofDetailed({
                         item.type === 'contraction' ? 'bg-emerald-500/30 text-emerald-300 font-medium' :
                         item.type === 'transition' ? 'bg-blue-500/30 text-blue-300 font-medium' :
                         item.type === 'added' ? 'bg-purple-500/20 text-purple-300' :
-                        'text-slate-300'
+                        'text-slate-800 dark:text-slate-300'
                       }
                     >
                       {item.word}{' '}
@@ -528,7 +528,7 @@ export default function StyleProofDetailed({
               {/* Your Style Summary */}
               <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
                 <div className="text-xs font-semibold text-blue-300 mb-2">📝 Your Detected Writing Style:</div>
-                <ul className="text-xs text-slate-300 space-y-1">
+                <ul className="text-xs text-slate-800 dark:text-slate-300 space-y-1">
                   <li>• {userStyle.usesContractions ? 'Uses contractions (casual tone)' : 'Avoids contractions (formal tone)'}</li>
                   <li>• Average sentence length: ~{Math.round(userStyle.avgSentenceLength)} words</li>
                   {userStyle.preferredTransitions.length > 0 && (
@@ -540,7 +540,7 @@ export default function StyleProofDetailed({
               {/* Specific Changes Made */}
               <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
                 <div className="text-xs font-semibold text-emerald-300 mb-2">✅ Changes Applied to Match Your Style:</div>
-                <ul className="text-xs text-slate-300 space-y-1">
+                <ul className="text-xs text-slate-800 dark:text-slate-300 space-y-1">
                   {examples.contractionsApplied.length > 0 && (
                     <li>• Converted to contractions: {examples.contractionsApplied.map(c => `"${c.from}"→"${c.to}"`).join(', ')}</li>
                   )}

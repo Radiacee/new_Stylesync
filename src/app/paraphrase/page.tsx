@@ -19,6 +19,7 @@ import StyleSelector, { type StylePreset, getStyleInstructions } from '../../com
 import WritingSuggestionsPanel from '../../components/WritingSuggestionsPanel';
 import QualitySuggestions from '../../components/QualitySuggestions';
 import ReportButton from '../../components/ReportButton';
+import MyReportsModal from '../../components/MyReportsModal';
 import ABTestingPanel from '../../components/ABTestingPanel';
 import { type StyleTransformation } from '../../lib/styleComparison';
 import { shouldCollectAnalytics, prepareAnalyticsData, submitAnalytics, getUserConsent } from '../../lib/analytics';
@@ -85,6 +86,8 @@ export default function ParaphrasePage() {
   const [styleMatch, setStyleMatch] = useState<{ overallMatch: number; issues: string[] } | null>(null); // Style match report
   const [showReviewToast, setShowReviewToast] = useState(false); // Review reminder toast
   const [rating, setRating] = useState<number | null>(null); // User rating feedback
+  const [reportsModalOpen, setReportsModalOpen] = useState(false); // My Reports modal
+  const [isPremium, setIsPremium] = useState(false); // Premium subscription status
 
   const [presetExplanation, setPresetExplanation] = useState<string>(''); // Explanation of preset style choice
 
@@ -147,6 +150,34 @@ export default function ParaphrasePage() {
         }
         setUserId(user.id);
         setAuthChecked(true);
+        
+        // Check Premium Status
+        try {
+          // Admin grants access by email, so we check the email
+          const { data, error } = await supabase
+            .from('premium_subscriptions')
+            .select('status, expires_at')
+            .eq('email', user.email)
+            .eq('status', 'active')
+            .maybeSingle();
+            
+          if (!error && data) {
+            const isExpired = data.expires_at && new Date(data.expires_at) < new Date();
+            if (!isExpired) {
+              setIsPremium(true);
+            } else {
+              setIsPremium(false);
+            }
+            
+            // Optional: update the row with user_id if it's missing
+            supabase.from('premium_subscriptions').update({ user_id: user.id }).eq('email', user.email).is('user_id', null).then();
+          } else {
+            setIsPremium(false);
+          }
+        } catch (e) {
+          // Table might not exist yet, default to false
+          setIsPremium(false);
+        }
         
         // Load user's history
         const remote = await fetchHistory();
@@ -498,9 +529,9 @@ export default function ParaphrasePage() {
         {history.length > 0 && (
           <button
             onClick={() => setHistoryOpen(!historyOpen)}
-            className={`fixed z-50 glass-panel p-3 text-brand-400 hover:text-brand-300 transition-all duration-300 ${
+            className={`fixed z-50 glass-panel p-3 text-brand-600 dark:text-brand-400 hover:text-brand-600 dark:text-brand-300 transition-all duration-300 ${
               historyOpen 
-                ? 'top-4 right-4 bg-slate-800/80 hover:bg-slate-700/80' // When open, overlay style on sidebar
+                ? 'top-4 right-4 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:bg-slate-700/80' // When open, overlay style on sidebar
                 : 'top-24 right-6 hover:bg-white/10' // When closed, normal style
             }`}
             title={historyOpen ? "Close History" : "Open History"}
@@ -517,13 +548,13 @@ export default function ParaphrasePage() {
 
       {/* History Side Navigation */}
       {history.length > 0 && (
-        <div className={`fixed top-0 right-0 h-full w-full sm:w-96 md:w-80 bg-slate-900/95 backdrop-blur-xl border-l border-white/10 transform transition-transform duration-300 ease-in-out z-40 ${
+        <div className={`fixed top-0 right-0 h-full w-full sm:w-96 md:w-80 bg-white dark:bg-slate-900/95 backdrop-blur-xl border-l border-white/10 transform transition-transform duration-300 ease-in-out z-40 ${
           historyOpen ? 'translate-x-0' : 'translate-x-full'
         }`}>
           <div className="p-6 pt-16 h-full flex flex-col">
             {/* Header with extra top padding to avoid close button overlap */}
             <div className="flex items-center justify-between mb-4 pt-2">
-              <h2 className="font-semibold text-brand-300 text-lg">History</h2>
+              <h2 className="font-semibold text-brand-600 dark:text-brand-300 text-lg">History</h2>
               {userId && (
                 <button 
                   onClick={handleDeleteAllHistory}
@@ -534,20 +565,20 @@ export default function ParaphrasePage() {
                 </button>
               )}
             </div>
-            <p className="text-xs text-slate-500 mb-4">{userId ? 'Synced to account' : 'Local only (sign in to sync)'} · {history.length} entries</p>
+            <p className="text-xs text-slate-600 dark:text-slate-500 mb-4">{userId ? 'Synced to account' : 'Local only (sign in to sync)'} · {history.length} entries</p>
             
             <div className="flex-1 overflow-auto pr-2">
               <ul className="space-y-3">
                 {history.map(h => {
                   const isExpanded = expandedHistoryId === h.id;
                   return (
-                    <li key={h.id} className="border border-white/10 rounded-lg bg-slate-800/40 overflow-hidden">
+                    <li key={h.id} className="border border-white/10 rounded-lg bg-slate-50 dark:bg-slate-800/40 overflow-hidden">
                       {/* Compact Header - Always Visible */}
                       <div className="p-3 space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <button
                             onClick={() => setExpandedHistoryId(isExpanded ? null : h.id)}
-                            className="flex-1 text-left flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                            className="flex-1 text-left flex items-center gap-2 text-xs text-slate-600 dark:text-slate-500 hover:text-slate-800 dark:text-slate-300 transition-colors"
                           >
                             <svg 
                               className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
@@ -559,7 +590,7 @@ export default function ParaphrasePage() {
                             </svg>
                             <span>
                               {new Date(h.createdAt).toLocaleString()} 
-                              {h.usedModel && <span className="ml-1 text-brand-400">●</span>} 
+                              {h.usedModel && <span className="ml-1 text-brand-600 dark:text-brand-400">●</span>} 
                               {h.pending && <span className="ml-1 text-amber-400">…</span>}
                             </span>
                           </button>
@@ -570,7 +601,7 @@ export default function ParaphrasePage() {
                                 setOutput(h.output); 
                                 setHistoryOpen(false); // Close history when loading
                               }} 
-                              className="text-xs px-2 py-1 rounded bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 hover:text-brand-300 transition-colors"
+                              className="text-xs px-2 py-1 rounded bg-brand-500/20 hover:bg-brand-500/30 text-brand-600 dark:text-brand-400 hover:text-brand-600 dark:text-brand-300 transition-colors"
                             >
                               Load
                             </button>
@@ -588,12 +619,12 @@ export default function ParaphrasePage() {
                         
                         {/* Compact Preview - One line each */}
                         {!isExpanded && (
-                          <div className="text-xs text-slate-400 space-y-1 pl-6">
+                          <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 space-y-1 pl-6">
                             <div className="truncate">
-                              <span className="text-slate-500">In:</span> {h.input}
+                              <span className="text-slate-600 dark:text-slate-500">In:</span> {h.input}
                             </div>
-                            <div className="truncate text-brand-300">
-                              <span className="text-slate-500">Out:</span> {h.output}
+                            <div className="truncate text-brand-600 dark:text-brand-300">
+                              <span className="text-slate-600 dark:text-slate-500">Out:</span> {h.output}
                             </div>
                           </div>
                         )}
@@ -603,13 +634,13 @@ export default function ParaphrasePage() {
                       {isExpanded && (
                         <div className="px-3 pb-3 space-y-3 border-t border-white/5">
                           <div className="grid gap-2 mt-3">
-                            <div className="text-xs text-slate-400">
-                              <div className="font-medium text-slate-300 mb-1">Input:</div>
-                              <div className="whitespace-pre-wrap bg-slate-900/40 rounded p-2 max-h-32 overflow-auto">{h.input}</div>
+                            <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">
+                              <div className="font-medium text-slate-800 dark:text-slate-300 mb-1">Input:</div>
+                              <div className="whitespace-pre-wrap bg-white dark:bg-slate-900/40 rounded p-2 max-h-32 overflow-auto">{h.input}</div>
                             </div>
-                            <div className="text-xs text-slate-200">
-                              <div className="font-medium text-brand-300 mb-1">Output:</div>
-                              <div className="whitespace-pre-wrap bg-slate-900/40 rounded p-2 border-l-2 border-brand-500/40 max-h-32 overflow-auto">{h.output}</div>
+                            <div className="text-xs text-slate-800 dark:text-slate-200">
+                              <div className="font-medium text-brand-600 dark:text-brand-300 mb-1">Output:</div>
+                              <div className="whitespace-pre-wrap bg-white dark:bg-slate-900/40 rounded p-2 border-l-2 border-brand-500/40 max-h-32 overflow-auto">{h.output}</div>
                             </div>
                           </div>
                           <div className="space-y-1">
@@ -624,7 +655,7 @@ export default function ParaphrasePage() {
                                 if (userId && !h.pending && !h.localOnly) updateHistoryNote(h.id, e.target.value); 
                               }}
                               rows={2}
-                              className="w-full bg-slate-900/60 border border-white/10 rounded p-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-200"
+                              className="w-full bg-white dark:bg-slate-900/60 border border-white/10 rounded p-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-brand-500 text-slate-800 dark:text-slate-200"
                             />
                           </div>
                         </div>
@@ -652,10 +683,21 @@ export default function ParaphrasePage() {
           <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
             <div className="space-y-2 sm:space-y-3 flex-1">
               <h1 className="text-2xl sm:text-3xl font-bold">Paraphrase</h1>
-              <p className="text-sm sm:text-base text-slate-300">Transform text to match your writing style</p>
+              <p className="text-sm sm:text-base text-slate-800 dark:text-slate-300">Transform text to match your writing style</p>
             </div>
-            {/* Analytics Consent - Top right */}
-            {userId && <AnalyticsConsent userId={userId} onConsentChange={setUserConsent} />}
+            {/* Action buttons - Top right */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              {userId && (
+                <button
+                  onClick={() => setReportsModalOpen(true)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  My Reports
+                </button>
+              )}
+              {userId && <AnalyticsConsent userId={userId} onConsentChange={setUserConsent} />}
+            </div>
           </div>
           {isParaphraseHistoryTableMissing() && (
             <div className="rounded border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-300 space-y-2">
@@ -675,6 +717,7 @@ export default function ParaphrasePage() {
             selectedStyle={selectedStyle}
             onStyleChange={setSelectedStyle}
             disabled={busy}
+            isPremium={isPremium}
           />
           
           <div className="space-y-4">
@@ -684,7 +727,7 @@ export default function ParaphrasePage() {
               onChange={e => setInput(e.target.value)} 
               placeholder="Paste text to paraphrase..." 
               rows={10} 
-              className="w-full rounded-lg bg-slate-800/60 border border-white/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed" 
+              className="w-full rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-white/10 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 leading-relaxed" 
             />
           </div>
 
@@ -709,7 +752,7 @@ export default function ParaphrasePage() {
                 setShowReviewToast(false);
                 setPresetExplanation('');
               }} 
-              className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-lg border border-white/10 hover:border-brand-400/60 text-slate-200 text-sm transition text-center"
+              className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-lg border border-white/10 hover:border-brand-400/60 text-slate-800 dark:text-slate-200 text-sm transition text-center"
             >
               Reset
             </button>
@@ -719,7 +762,7 @@ export default function ParaphrasePage() {
         {(error || output) && (
           <div ref={resultsRef} className="glass-panel p-4 sm:p-5 space-y-3 scroll-mt-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <h2 className="font-semibold text-brand-300 flex items-center gap-2 text-sm sm:text-base">
+              <h2 className="font-semibold text-brand-600 dark:text-brand-300 flex items-center gap-2 text-sm sm:text-base">
                 Result
               </h2>
               {output && (
@@ -729,7 +772,7 @@ export default function ParaphrasePage() {
                     className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 justify-center ${
                       copied 
                         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                        : 'bg-brand-500/20 hover:bg-brand-500/30 text-brand-400 border border-brand-500/30 hover:border-brand-400/50'
+                        : 'bg-brand-500/20 hover:bg-brand-500/30 text-brand-600 dark:text-brand-400 border border-brand-500/30 hover:border-brand-400/50'
                     }`}
                     title="Copy result to clipboard"
                   >
@@ -749,12 +792,12 @@ export default function ParaphrasePage() {
               )}
             </div>
             {error && <p className="text-xs text-amber-400">{error}</p>}
-            {output && <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-200">{output}</p>}
+            {output && <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800 dark:text-slate-200">{output}</p>}
             
             {/* User Rating Feedback */}
             {output && (
               <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/10">
-                <span className="text-xs text-slate-400">Rate this result:</span>
+                <span className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">Rate this result:</span>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map(star => (
                     <button
@@ -780,7 +823,7 @@ export default function ParaphrasePage() {
                         }
                       }}
                       className={`transition-colors ${
-                        rating && star <= rating ? 'text-yellow-400' : 'text-slate-500 hover:text-yellow-300'
+                        rating && star <= rating ? 'text-yellow-400' : 'text-slate-600 dark:text-slate-500 hover:text-yellow-300'
                       }`}
                       title={`Rate ${star} star${star > 1 ? 's' : ''}`}
                     >
@@ -788,7 +831,7 @@ export default function ParaphrasePage() {
                     </button>
                   ))}
                 </div>
-                {rating && <span className="text-xs text-slate-300 ml-2">({rating}/5)</span>}
+                {rating && <span className="text-xs text-slate-800 dark:text-slate-300 ml-2">({rating}/5)</span>}
               </div>
             )}
             
@@ -823,7 +866,7 @@ export default function ParaphrasePage() {
                   Inappropriate content detected: {moderationResult.flaggedWords.map(w => `"${w.word}" (${w.category})`).join(', ')}
                 </p>
                 {moderationResult.suggestions.length > 0 && (
-                  <ul className="mt-2 text-xs text-slate-300">
+                  <ul className="mt-2 text-xs text-slate-800 dark:text-slate-300">
                     {moderationResult.suggestions.map((s, i) => <li key={i}>• {s}</li>)}
                   </ul>
                 )}
@@ -834,8 +877,8 @@ export default function ParaphrasePage() {
               <div className="mt-4 rounded-lg border border-brand-500/30 bg-brand-500/5 p-4 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-brand-300/80">Style lock</p>
-                    <p className="text-sm text-white">Every pass is tuned to your samples.</p>
+                    <p className="text-xs uppercase tracking-wide text-brand-600 dark:text-brand-300/80">Style lock</p>
+                    <p className="text-sm text-slate-900 dark:text-white">Every pass is tuned to your samples.</p>
                   </div>
                   {metrics && (
                     <span className={`text-[10px] px-2 py-0.5 rounded border ${metrics.isHumanized ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : 'bg-amber-500/15 border-amber-500/40 text-amber-300'}`}>
@@ -845,11 +888,11 @@ export default function ParaphrasePage() {
                 </div>
 
                 {metrics && (
-                  <div className="grid grid-cols-2 gap-3 text-xs text-slate-200">
+                  <div className="grid grid-cols-2 gap-3 text-xs text-slate-800 dark:text-slate-200">
                     {styleMetricData.map(metric => (
-                      <div key={metric.label} className="bg-slate-900/40 rounded-md border border-white/5 p-2">
-                        <p className="text-[10px] uppercase tracking-wide text-slate-400">{metric.label}</p>
-                        <p className="text-base font-semibold text-white">{metric.value}</p>
+                      <div key={metric.label} className="bg-white dark:bg-slate-900/40 rounded-md border border-white/5 p-2">
+                        <p className="text-[10px] uppercase tracking-wide text-slate-600 dark:text-slate-500 dark:text-slate-400">{metric.label}</p>
+                        <p className="text-base font-semibold text-slate-900 dark:text-white">{metric.value}</p>
                       </div>
                     ))}
                   </div>
@@ -857,17 +900,17 @@ export default function ParaphrasePage() {
 
                 {actions.length > 0 && (
                   <div>
-                    <p className="text-[11px] font-semibold text-brand-200 mb-1">Micro-adjustments ({actions.length})</p>
-                    <ul className="space-y-1 text-xs text-slate-200">
+                    <p className="text-[11px] font-semibold text-brand-700 dark:text-brand-200 mb-1">Micro-adjustments ({actions.length})</p>
+                    <ul className="space-y-1 text-xs text-slate-800 dark:text-slate-200">
                       {actions.slice(0, 4).map((action, idx) => (
                         <li key={`${action.code}-${idx}`} className="flex items-start gap-2">
-                          <span className="text-brand-300">•</span>
+                          <span className="text-brand-600 dark:text-brand-300">•</span>
                           <span>{describeAction(action)}</span>
                         </li>
                       ))}
                     </ul>
                     {actions.length > 4 && (
-                      <p className="text-[10px] text-slate-500 mt-1">+{actions.length - 4} more adjustments</p>
+                      <p className="text-[10px] text-slate-600 dark:text-slate-500 mt-1">+{actions.length - 4} more adjustments</p>
                     )}
                   </div>
                 )}
@@ -884,7 +927,7 @@ export default function ParaphrasePage() {
               />
             )}
             
-            <p className="text-[10px] text-slate-500">Review output carefully. Cite sources and disclose AI assistance.</p>
+            <p className="text-[10px] text-slate-600 dark:text-slate-500">Review output carefully. Cite sources and disclose AI assistance.</p>
           </div>
         )}
 
@@ -928,7 +971,7 @@ export default function ParaphrasePage() {
       {/* Style Transformation Analysis Modal */}
       {showStyleAnalysis && styleTransformation && isMounted && createPortal(
         <div 
-          className="fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-50 overflow-y-auto"
+          className="fixed inset-0 bg-white dark:bg-slate-900/95 backdrop-blur-xl z-50 overflow-y-auto"
           onClick={() => setShowStyleAnalysis(false)}
         >
           <div className="min-h-screen flex items-center justify-center p-2 sm:p-4 md:p-6">
@@ -937,11 +980,11 @@ export default function ParaphrasePage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="glass-panel p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-slate-900/90 backdrop-blur-sm pb-4 border-b border-white/10 z-10">
-                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">Style Transformation Analysis</h3>
+                <div className="flex items-center justify-between mb-4 sm:mb-6 sticky top-0 bg-white dark:bg-slate-900/90 backdrop-blur-sm pb-4 border-b border-white/10 z-10">
+                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-900 dark:text-white">Style Transformation Analysis</h3>
                   <button 
                     onClick={() => setShowStyleAnalysis(false)}
-                    className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm font-medium transition-colors flex-shrink-0 flex items-center gap-2"
+                    className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-600 text-slate-900 dark:text-white text-sm font-medium transition-colors flex-shrink-0 flex items-center gap-2"
                   >
                     <span>Close</span>
                     <X className="w-4 h-4" />
@@ -961,36 +1004,36 @@ export default function ParaphrasePage() {
       
       <aside className="lg:col-span-2 space-y-4 order-first lg:order-last">
         <div className="glass-panel p-4">
-          <h2 className="font-semibold text-brand-300 text-sm sm:text-base mb-2">Current Style Profile</h2>
+          <h2 className="font-semibold text-brand-600 dark:text-brand-300 text-sm sm:text-base mb-2">Current Style Profile</h2>
           {profile ? (
             <div className="space-y-2">
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-300">
-                <div className="flex justify-between"><span className="text-slate-400">Tone:</span> <span className="text-white font-medium">{profile.tone}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Formality:</span> <span className="text-white font-medium">{pct(profile.formality)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Pacing:</span> <span className="text-white font-medium">{pct(profile.pacing)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Descriptiveness:</span> <span className="text-white font-medium">{pct(profile.descriptiveness)}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Directness:</span> <span className="text-white font-medium">{pct(profile.directness)}</span></div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-800 dark:text-slate-300">
+                <div className="flex justify-between"><span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Tone:</span> <span className="text-slate-900 dark:text-white font-medium">{profile.tone}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Formality:</span> <span className="text-slate-900 dark:text-white font-medium">{pct(profile.formality)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Pacing:</span> <span className="text-slate-900 dark:text-white font-medium">{pct(profile.pacing)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Descriptiveness:</span> <span className="text-slate-900 dark:text-white font-medium">{pct(profile.descriptiveness)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Directness:</span> <span className="text-slate-900 dark:text-white font-medium">{pct(profile.directness)}</span></div>
               </div>
               {profile.customLexicon.length > 0 && (
                 <div className="pt-2 border-t border-white/10">
-                  <div className="text-[10px] text-slate-400 mb-1">Keywords:</div>
+                  <div className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Keywords:</div>
                   <div className="flex flex-wrap gap-1">
                     {profile.customLexicon.map(word => (
-                      <span key={word} className="px-1.5 py-0.5 bg-brand-500/20 text-brand-300 rounded text-[10px]">{word}</span>
+                      <span key={word} className="px-1.5 py-0.5 bg-brand-500/20 text-brand-600 dark:text-brand-300 rounded text-[10px]">{word}</span>
                     ))}
                   </div>
                 </div>
               )}
               {/* {profile.notes && (
                 <div className="pt-2 border-t border-white/10">
-                  <div className="text-[10px] text-slate-400 mb-1">Notes:</div>
-                  <div className="text-xs text-slate-300 line-clamp-2">{profile.notes}</div>
+                  <div className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Notes:</div>
+                  <div className="text-xs text-slate-800 dark:text-slate-300 line-clamp-2">{profile.notes}</div>
                 </div>
               )} */}
             </div>
-          ) : <p className="text-xs text-slate-400">No profile loaded.</p>}
+          ) : <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">No profile loaded.</p>}
         </div>
-        <div className="glass-panel p-4"><StyleProfileManager onSelect={p => setProfile(p ? ensureProfileHasAnalysis(p) : null)} /></div>
+        <div className="glass-panel p-4"><StyleProfileManager onSelect={p => setProfile(p ? ensureProfileHasAnalysis(p) : null)} isPremium={isPremium} /></div>
       </aside>
         </div>
         {busy && <FullScreenSpinner label="Generating paraphrase" />}
@@ -1003,8 +1046,8 @@ export default function ParaphrasePage() {
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-slate-100">Please review the result</p>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">Always read and verify the AI-generated text before using it to ensure it perfectly matches your intent.</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Please review the result</p>
+              <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Always read and verify the AI-generated text before using it to ensure it perfectly matches your intent.</p>
             </div>
             <button
               onClick={() => setShowReviewToast(false)}
@@ -1017,6 +1060,14 @@ export default function ParaphrasePage() {
         
         {/* Style Options Help Tool */}
         <StyleOptionsHelp />
+
+        {/* My Reports Modal */}
+        {reportsModalOpen && userId && (
+          <MyReportsModal 
+            userId={userId} 
+            onClose={() => setReportsModalOpen(false)} 
+          />
+        )}
       </div>
     </div>
   );

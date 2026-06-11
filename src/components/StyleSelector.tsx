@@ -7,6 +7,7 @@ interface StyleSelectorProps {
   selectedStyle: StylePreset;
   onStyleChange: (style: StylePreset) => void;
   disabled?: boolean;
+  isPremium?: boolean;
 }
 
 const stylePresets: Record<StylePreset, { label: string; description: string; icon: string }> = {
@@ -42,38 +43,45 @@ const stylePresets: Record<StylePreset, { label: string; description: string; ic
   }
 };
 
-export default function StyleSelector({ selectedStyle, onStyleChange, disabled = false }: StyleSelectorProps) {
+export default function StyleSelector({ selectedStyle, onStyleChange, disabled = false, isPremium = true }: StyleSelectorProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   
   const selected = stylePresets[selectedStyle];
 
   return (
     <div className="relative">
-      <label className="block text-sm font-medium text-white mb-2">
-        Writing Style
-      </label>
+      <div className="flex items-center justify-between mb-2">
+        <label className="block text-sm font-medium text-slate-900 dark:text-white">
+          Writing Style
+        </label>
+        {!isPremium && (
+          <a href="/pricing" className="text-xs font-bold text-amber-500 flex items-center gap-1 hover:underline">
+            👑 Premium Required
+          </a>
+        )}
+      </div>
       
       {/* Dropdown trigger */}
       <button
         type="button"
-        onClick={() => !disabled && setIsExpanded(!isExpanded)}
-        disabled={disabled}
+        onClick={() => !disabled && isPremium && setIsExpanded(!isExpanded)}
+        disabled={disabled || !isPremium}
         className={`
           w-full flex items-center justify-between gap-3 p-3 
-          bg-slate-800/80 border border-white/10 rounded-lg
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500/50 cursor-pointer'}
+          bg-slate-50 dark:bg-slate-800/80 border border-white/10 rounded-lg
+          ${(disabled || !isPremium) ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500/50 cursor-pointer'}
           transition-all
         `}
       >
         <div className="flex items-center gap-3">
           <span className="text-xl">{selected.icon}</span>
           <div className="text-left">
-            <div className="text-sm font-medium text-white">{selected.label}</div>
-            <div className="text-xs text-slate-400">{selected.description}</div>
+            <div className="text-sm font-medium text-slate-900 dark:text-white">{selected.label}</div>
+            <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">{selected.description}</div>
           </div>
         </div>
         <svg 
-          className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-5 h-5 text-slate-600 dark:text-slate-500 dark:text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -83,7 +91,7 @@ export default function StyleSelector({ selectedStyle, onStyleChange, disabled =
       </button>
 
       {/* Dropdown menu */}
-      {isExpanded && !disabled && (
+      {isExpanded && !disabled && isPremium && (
         <>
           {/* Backdrop */}
           <div 
@@ -92,7 +100,7 @@ export default function StyleSelector({ selectedStyle, onStyleChange, disabled =
           />
           
           {/* Options */}
-          <div className="absolute z-20 w-full mt-2 bg-slate-800 border border-white/10 rounded-lg shadow-xl overflow-hidden">
+          <div className="absolute z-20 w-full mt-2 bg-slate-50 dark:bg-slate-800 border border-white/10 rounded-lg shadow-xl overflow-hidden">
             {(Object.entries(stylePresets) as [StylePreset, typeof stylePresets[StylePreset]][]).map(([key, preset]) => (
               <button
                 key={key}
@@ -105,13 +113,13 @@ export default function StyleSelector({ selectedStyle, onStyleChange, disabled =
                   w-full flex items-center gap-3 p-3 text-left transition-colors
                   ${selectedStyle === key 
                     ? 'bg-blue-500/20 border-l-2 border-blue-500' 
-                    : 'hover:bg-slate-700/50 border-l-2 border-transparent'}
+                    : 'hover:bg-slate-100 dark:bg-slate-700/50 border-l-2 border-transparent'}
                 `}
               >
                 <span className="text-xl">{preset.icon}</span>
                 <div>
-                  <div className="text-sm font-medium text-white">{preset.label}</div>
-                  <div className="text-xs text-slate-400">{preset.description}</div>
+                  <div className="text-sm font-medium text-slate-900 dark:text-white">{preset.label}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">{preset.description}</div>
                 </div>
                 {selectedStyle === key && (
                   <svg className="w-5 h-5 text-blue-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,14 +138,14 @@ export default function StyleSelector({ selectedStyle, onStyleChange, disabled =
           <button
             key={key}
             type="button"
-            onClick={() => !disabled && onStyleChange(key)}
-            disabled={disabled}
+            onClick={() => !disabled && isPremium && onStyleChange(key)}
+            disabled={disabled || !isPremium}
             className={`
               px-2.5 py-1 text-xs rounded-full flex items-center gap-1.5 transition-all
               ${selectedStyle === key 
-                ? 'bg-blue-500 text-white' 
-                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'}
-              ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                ? 'bg-blue-500 text-slate-900 dark:text-white' 
+                : 'bg-slate-100 dark:bg-slate-700/50 text-slate-800 dark:text-slate-300 hover:bg-slate-600/50'}
+              ${(disabled || !isPremium) ? 'opacity-50 cursor-not-allowed' : ''}
             `}
           >
             <span>{preset.icon}</span>
@@ -149,11 +157,11 @@ export default function StyleSelector({ selectedStyle, onStyleChange, disabled =
   );
 }
 
-// Compact version for inline use
 export function StyleChips({ 
   selectedStyle, 
   onStyleChange, 
-  disabled = false 
+  disabled = false,
+  isPremium = true
 }: StyleSelectorProps) {
   return (
     <div className="flex flex-wrap gap-2">
@@ -161,14 +169,14 @@ export function StyleChips({
         <button
           key={key}
           type="button"
-          onClick={() => !disabled && onStyleChange(key)}
-          disabled={disabled}
+          onClick={() => !disabled && isPremium && onStyleChange(key)}
+          disabled={disabled || !isPremium}
           className={`
             px-3 py-1.5 text-xs rounded-full flex items-center gap-1.5 transition-all
             ${selectedStyle === key 
-              ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25' 
-              : 'bg-slate-800/80 text-slate-300 border border-white/10 hover:border-blue-500/50'}
-            ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+              ? 'bg-blue-500 text-slate-900 dark:text-white shadow-lg shadow-blue-500/25' 
+              : 'bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-300 border border-white/10 hover:border-blue-500/50'}
+            ${(disabled || !isPremium) ? 'opacity-50 cursor-not-allowed' : ''}
           `}
         >
           <span>{preset.icon}</span>

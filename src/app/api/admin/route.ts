@@ -239,9 +239,9 @@ export async function PUT(req: NextRequest) {
   }
 
   try {
-    const { endpoint, reportId, status } = await req.json();
+    const { endpoint, reportId, reportIds, status, adminAction } = await req.json();
     
-    if (endpoint === 'reports' && reportId && status) {
+    if (endpoint === 'reports' && (reportId || reportIds) && status) {
       const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
       
       if (!serviceRoleKey) {
@@ -256,14 +256,17 @@ export async function PUT(req: NextRequest) {
         serviceRoleKey
       );
       
+      const idsToUpdate = reportIds || [reportId];
+      
       const { error } = await serviceClient
         .from('content_reports')
         .update({ 
           status, 
+          admin_action: adminAction || null,
           reviewed_by: auth.user.id,
           reviewed_at: new Date().toISOString()
         })
-        .eq('id', reportId);
+        .in('id', idsToUpdate);
       
       if (error) throw error;
       
@@ -277,5 +280,48 @@ export async function PUT(req: NextRequest) {
       { error: (error as Error).message },
       { status: 500 }
     );
+  }
+}
+
+// DELETE /api/admin - Delete resources
+export async function DELETE(req: NextRequest) {
+  const auth = await checkAdminAuth(req);
+  if (!auth) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const url = new URL(req.url);
+    const endpoint = url.searchParams.get('endpoint');
+    const reportId = url.searchParams.get('reportId');
+    const reportIdsParam = url.searchParams.get('reportIds');
+    
+    if (endpoint === 'reports' && (reportId || reportIdsParam)) {
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!serviceRoleKey) {
+        return NextResponse.json({ error: 'Service role key required for deletes' }, { status: 400 });
+      }
+      
+      const serviceClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        serviceRoleKey
+      );
+      
+      const idsToDelete = reportIdsParam ? reportIdsParam.split(',') : [reportId];
+      
+      const { error } = await serviceClient
+        .from('content_reports')
+        .delete()
+        .in('id', idsToDelete);
+      
+      if (error) throw error;
+      
+      return NextResponse.json({ success: true });
+    }
+    
+    return NextResponse.json({ error: 'Invalid endpoint or missing reportId' }, { status: 400 });
+  } catch (error) {
+    console.error('Admin delete error:', error);
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }

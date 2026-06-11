@@ -371,31 +371,31 @@ export default function QualitySuggestions({ input, output, styleType, profileSa
             <Sparkles className="w-4 h-4 text-purple-400" />
           </div>
           <div className="text-left">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
               Quality Suggestions
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300">
                 {context.domain}
               </span>
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">
               {improvements.length} improvements · {successes.length} strengths · {tips.length} tips
             </p>
           </div>
         </div>
-        {isCollapsed ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronUp className="w-4 h-4 text-slate-400" />}
+        {isCollapsed ? <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400" /> : <ChevronUp className="w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400" />}
       </button>
 
       {/* Content */}
       {!isCollapsed && (
         <div className="px-4 pb-4 space-y-3">
           {/* Context Banner */}
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-slate-800/50 border border-white/5">
-            <Info className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-white/5">
+            <Info className="w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-slate-800 dark:text-slate-300">
                 <span className="font-medium">Detected Context:</span> {context.domain.charAt(0).toUpperCase() + context.domain.slice(1)} writing for {context.audience} audience
               </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
+              <p className="text-[10px] text-slate-600 dark:text-slate-500 mt-0.5">
                 Suggestions are tailored to {context.purpose} standards
               </p>
             </div>
@@ -414,26 +414,26 @@ export default function QualitySuggestions({ input, output, styleType, profileSa
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     {getTypeIcon(suggestion.type)}
-                    <span className="text-sm font-medium text-white truncate">{suggestion.title}</span>
+                    <span className="text-sm font-medium text-slate-900 dark:text-white truncate">{suggestion.title}</span>
                     {getPriorityBadge(suggestion.priority)}
-                    <span className="text-[10px] text-slate-500 hidden sm:inline">({suggestion.category})</span>
+                    <span className="text-[10px] text-slate-600 dark:text-slate-500 hidden sm:inline">({suggestion.category})</span>
                   </div>
                   {expanded.has(suggestion.id) 
-                    ? <ChevronUp className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    : <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    ? <ChevronUp className="w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400 flex-shrink-0" />
+                    : <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400 flex-shrink-0" />
                   }
                 </button>
                 
                 {expanded.has(suggestion.id) && (
                   <div className="px-3 pb-3 pt-1 space-y-2 border-t border-white/5">
-                    <p className="text-xs text-slate-300">{suggestion.description}</p>
+                    <p className="text-xs text-slate-800 dark:text-slate-300">{suggestion.description}</p>
                     {suggestion.action && (
-                      <div className="flex items-start gap-2 p-2 rounded bg-slate-900/50">
+                      <div className="flex items-start gap-2 p-2 rounded bg-white dark:bg-slate-900/50">
                         <Zap className="w-3 h-3 text-yellow-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-slate-200">{suggestion.action}</p>
+                        <p className="text-xs text-slate-800 dark:text-slate-200">{suggestion.action}</p>
                       </div>
                     )}
-                    <p className="text-[10px] text-slate-500 italic">{suggestion.context}</p>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-500 italic">{suggestion.context}</p>
                   </div>
                 )}
               </div>
@@ -443,8 +443,8 @@ export default function QualitySuggestions({ input, output, styleType, profileSa
           {suggestions.length === 0 && (
             <div className="text-center py-4">
               <Check className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-              <p className="text-sm text-slate-300">Output looks great!</p>
-              <p className="text-xs text-slate-500">No significant quality issues detected.</p>
+              <p className="text-sm text-slate-800 dark:text-slate-300">Output looks great!</p>
+              <p className="text-xs text-slate-600 dark:text-slate-500">No significant quality issues detected.</p>
             </div>
           )}
         </div>

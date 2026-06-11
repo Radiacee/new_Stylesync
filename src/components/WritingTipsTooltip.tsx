@@ -192,7 +192,7 @@ export default function WritingTipsTooltip({ profileEssay, profileName }: Writin
         className={`p-2 rounded-lg transition-all ${
           isOpen 
             ? 'bg-yellow-500/20 text-yellow-400 ring-2 ring-yellow-500/30' 
-            : 'bg-slate-700/50 text-slate-400 hover:bg-yellow-500/10 hover:text-yellow-400'
+            : 'bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:bg-yellow-500/10 hover:text-yellow-400'
         }`}
         title="Writing Tips"
       >
@@ -201,19 +201,19 @@ export default function WritingTipsTooltip({ profileEssay, profileName }: Writin
 
       {/* Popover */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-[420px] max-h-[70vh] overflow-hidden rounded-xl bg-slate-800 border border-white/10 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute right-0 top-full mt-2 w-[420px] max-h-[70vh] overflow-hidden rounded-xl bg-slate-50 dark:bg-slate-800 border border-white/10 shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           {/* Header */}
-          <div className="sticky top-0 bg-slate-800 border-b border-white/10 p-4 flex items-center justify-between">
+          <div className="sticky top-0 bg-slate-50 dark:bg-slate-800 border-b border-white/10 p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Lightbulb className="w-5 h-5 text-yellow-400" />
-              <span className="font-semibold text-white">Writing Tips</span>
+              <span className="font-semibold text-slate-900 dark:text-white">Writing Tips</span>
               {profileName && (
-                <span className="text-xs text-slate-400">({profileName})</span>
+                <span className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">({profileName})</span>
               )}
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-white transition"
+              className="p-1 rounded hover:bg-white/10 text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition"
             >
               <X className="w-4 h-4" />
             </button>
@@ -222,40 +222,40 @@ export default function WritingTipsTooltip({ profileEssay, profileName }: Writin
           <div className="overflow-y-auto max-h-[calc(70vh-60px)]">
             {/* Essay Preview */}
             <div className="p-4 border-b border-white/5">
-              <p className="text-xs font-medium text-slate-400 mb-2">Your Profile Essay</p>
-              <div className="bg-slate-900/50 rounded-lg p-3 max-h-32 overflow-y-auto">
-                <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2">Your Profile Essay</p>
+              <div className="bg-white dark:bg-slate-900/50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                <p className="text-sm text-slate-800 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
                   {profileEssay.length > 500 ? profileEssay.slice(0, 500) + '...' : profileEssay}
                 </p>
               </div>
             </div>
 
             {/* Metrics */}
-            <div className="px-4 py-3 bg-slate-900/30 grid grid-cols-4 gap-2 text-center border-b border-white/5">
+            <div className="px-4 py-3 bg-white dark:bg-slate-900/30 grid grid-cols-4 gap-2 text-center border-b border-white/5">
               <div>
-                <p className="text-lg font-bold text-white">{analysis.metrics.wordCount}</p>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide">Words</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white">{analysis.metrics.wordCount}</p>
+                <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wide">Words</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-white">{analysis.metrics.sentenceCount}</p>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide">Sentences</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white">{analysis.metrics.sentenceCount}</p>
+                <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sentences</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-white">{analysis.metrics.avgSentenceLength}</p>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide">Avg Length</p>
+                <p className="text-lg font-bold text-slate-900 dark:text-white">{analysis.metrics.avgSentenceLength}</p>
+                <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wide">Avg Length</p>
               </div>
               <div>
                 <p className={`text-lg font-bold ${
                   analysis.metrics.readabilityScore === 'Easy' ? 'text-emerald-400' :
-                  analysis.metrics.readabilityScore === 'Complex' ? 'text-amber-400' : 'text-blue-400'
+                  analysis.metrics.readabilityScore === 'Complex' ? 'text-black dark:text-white' : 'text-blue-400'
                 }`}>{analysis.metrics.readabilityScore}</p>
-                <p className="text-[10px] text-slate-400 uppercase tracking-wide">Readability</p>
+                <p className="text-[10px] text-slate-600 dark:text-slate-500 dark:text-slate-400 uppercase tracking-wide">Readability</p>
               </div>
             </div>
 
             {/* Issues & Tips */}
             <div className="p-4 space-y-3">
-              <p className="text-xs font-medium text-slate-400 mb-2">
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2">
                 Analysis & Suggestions ({analysis.issues.length})
               </p>
               {analysis.issues.map((issue, index) => (
@@ -269,22 +269,22 @@ export default function WritingTipsTooltip({ profileEssay, profileName }: Writin
                   >
                     <div className="flex items-center gap-2">
                       {getIssueIcon(issue.type)}
-                      <span className="text-sm font-medium text-white">{issue.title}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">{issue.title}</span>
                     </div>
                     {expandedIssues.has(index) 
-                      ? <ChevronUp className="w-4 h-4 text-slate-400" />
-                      : <ChevronDown className="w-4 h-4 text-slate-400" />
+                      ? <ChevronUp className="w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400" />
+                      : <ChevronDown className="w-4 h-4 text-slate-600 dark:text-slate-500 dark:text-slate-400" />
                     }
                   </button>
                   
                   {expandedIssues.has(index) && (
                     <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
-                      <p className="text-xs text-slate-300">{issue.description}</p>
+                      <p className="text-xs text-slate-800 dark:text-slate-300">{issue.description}</p>
                       {issue.examples && issue.examples.length > 0 && (
                         <ul className="space-y-1">
                           {issue.examples.map((ex, i) => (
-                            <li key={i} className="text-xs text-slate-400 flex items-start gap-2">
-                              <span className="text-slate-500 mt-0.5">•</span>
+                            <li key={i} className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 flex items-start gap-2">
+                              <span className="text-slate-600 dark:text-slate-500 mt-0.5">•</span>
                               <span>{ex}</span>
                             </li>
                           ))}

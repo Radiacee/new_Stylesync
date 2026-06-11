@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { ConditionalLayout } from '../components/ConditionalLayout';
 import InstallPrompt from '../components/InstallPrompt';
-import SurveyButton from '../components/SurveyButton';
+import { ThemeProvider } from '../components/ThemeProvider';
 
 export const metadata = {
   title: 'StyleSync',
@@ -60,12 +60,18 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       {/* suppressHydrationWarning on body to ignore extension-injected attrs (e.g. Grammarly) */}
       <body suppressHydrationWarning>
-        <InstallPrompt />
-        <ConditionalLayout>
-          {children}
-        </ConditionalLayout>
-        <SurveyButton surveyLink="https://forms.gle/5sZTqCYnBVCGTfUM9" />
-        <Analytics />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <InstallPrompt />
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
+          <Analytics />
+        </ThemeProvider>
       </body>
     </html>
   );

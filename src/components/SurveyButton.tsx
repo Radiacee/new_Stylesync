@@ -23,9 +23,9 @@ export default function SurveyButton({ surveyLink = 'https://forms.gle/5sZTqCYnB
           aria-hidden={!isHovered}
           role="tooltip"
         >
-          <div className="w-56 p-4 rounded-lg text-xs text-white/90 bg-slate-900/90 backdrop-blur-md border border-white/10 shadow-xl">
-            <div className="font-semibold text-sm text-white">📊 User Acceptance Testing</div>
-            <div className="mt-2 text-[13px] text-white/70 leading-relaxed">Takes about 5 minutes. Your feedback helps us improve StyleSync.</div>
+          <div className="w-56 p-4 rounded-lg text-xs text-slate-900 dark:text-white/90 bg-white dark:bg-slate-900/90 backdrop-blur-md border border-white/10 shadow-xl">
+            <div className="font-semibold text-sm text-slate-900 dark:text-white">📊 User Acceptance Testing</div>
+            <div className="mt-2 text-[13px] text-slate-900 dark:text-white/70 leading-relaxed">Takes about 5 minutes. Your feedback helps us improve StyleSync.</div>
           </div>
         </div>
 

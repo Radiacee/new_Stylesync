@@ -274,7 +274,7 @@ export default function AnalyticsPage() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <div className="text-slate-400">Loading analytics...</div>
+          <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Loading analytics...</div>
         </div>
       </AdminLayout>
     );
@@ -287,7 +287,7 @@ export default function AnalyticsPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <button
             onClick={() => router.push('/admin')}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600/50 transition-colors text-sm"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 hover:text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600/50 transition-colors text-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -297,13 +297,13 @@ export default function AnalyticsPage() {
           <div className="hidden sm:block h-8 w-px bg-slate-600"></div>
           <div className="flex-1">
             <h1 className="text-2xl sm:text-3xl font-bold">Paraphrase Analytics</h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">Complete style performance data from all paraphrases</p>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-1">Complete style performance data from all paraphrases</p>
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="text-xs sm:text-sm text-slate-400">
+          <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">
             {analytics.length > 0 && (
               <span>{analytics.length} total entries</span>
             )}
@@ -319,7 +319,7 @@ export default function AnalyticsPage() {
             <button
               onClick={loadAnalytics}
               disabled={loading}
-              className="px-4 py-2 rounded-lg bg-brand-500/20 hover:bg-brand-500/30 text-brand-300 border border-brand-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="px-4 py-2 rounded-lg bg-brand-500/20 hover:bg-brand-500/30 text-brand-600 dark:text-brand-300 border border-brand-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               🔄 Refresh
             </button>
@@ -337,26 +337,26 @@ export default function AnalyticsPage() {
       {stats && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
           <div className="glass-panel p-6">
-            <div className="text-sm text-slate-400 mb-1">Total Submissions</div>
-            <div className="text-3xl font-bold text-brand-300">{stats.totalSubmissions}</div>
+            <div className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Total Submissions</div>
+            <div className="text-3xl font-bold text-brand-600 dark:text-brand-300">{stats.totalSubmissions}</div>
           </div>
           <div className="glass-panel p-6">
-            <div className="text-sm text-slate-400 mb-1">Average Score</div>
+            <div className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Average Score</div>
             <div className="text-3xl font-bold text-emerald-400">{stats.averageScore}%</div>
           </div>
           <div className="glass-panel p-6">
-            <div className="text-sm text-slate-400 mb-1">Average Rating</div>
+            <div className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Average Rating</div>
             <div className="text-3xl font-bold text-blue-400">{stats.averageRating}/5</div>
-            <div className="text-xs text-slate-500">{stats.ratingCount} ratings</div>
+            <div className="text-xs text-slate-600 dark:text-slate-500">{stats.ratingCount} ratings</div>
           </div>
           <div className="glass-panel p-6">
-            <div className="text-sm text-slate-400 mb-1">Consent Rate</div>
+            <div className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Consent Rate</div>
             <div className="text-3xl font-bold text-purple-400">{stats.consentRate}%</div>
           </div>
           <div className="glass-panel p-6">
-            <div className="text-sm text-slate-400 mb-1">Top Tone</div>
-            <div className="text-2xl font-bold text-white capitalize">{stats.topTones[0]?.tone || 'N/A'}</div>
-            <div className="text-xs text-slate-500">{stats.topTones[0]?.count || 0} uses</div>
+            <div className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Top Tone</div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-white capitalize">{stats.topTones[0]?.tone || 'N/A'}</div>
+            <div className="text-xs text-slate-600 dark:text-slate-500">{stats.topTones[0]?.count || 0} uses</div>
           </div>
         </div>
       )}
@@ -367,7 +367,7 @@ export default function AnalyticsPage() {
           {/* Timeline Chart */}
           {timelineData.length > 0 && (
             <div className="glass-panel p-6 col-span-1 md:col-span-2">
-              <h2 className="text-xl font-semibold text-brand-300 mb-4">Submissions Over Time</h2>
+              <h2 className="text-xl font-semibold text-brand-600 dark:text-brand-300 mb-4">Submissions Over Time</h2>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={timelineData}>
@@ -404,7 +404,7 @@ export default function AnalyticsPage() {
 
           {/* Average Style Settings - Radar Chart */}
           <div className="glass-panel p-6">
-            <h2 className="text-xl font-semibold text-brand-300 mb-4">Average Style Settings</h2>
+            <h2 className="text-xl font-semibold text-brand-600 dark:text-brand-300 mb-4">Average Style Settings</h2>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={styleData}>
@@ -424,7 +424,7 @@ export default function AnalyticsPage() {
           {/* Top Tones - Pie Chart */}
           {stats.topTones.length > 0 && (
             <div className="glass-panel p-6">
-              <h2 className="text-xl font-semibold text-brand-300 mb-4">Top Tones</h2>
+              <h2 className="text-xl font-semibold text-brand-600 dark:text-brand-300 mb-4">Top Tones</h2>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -465,8 +465,8 @@ export default function AnalyticsPage() {
               onClick={() => setFilter('all')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filter === 'all'
-                  ? 'bg-brand-500/30 text-brand-300 border border-brand-500/50'
-                  : 'bg-slate-800/50 text-slate-400 border border-white/10 hover:text-slate-200'
+                  ? 'bg-brand-500/30 text-brand-600 dark:text-brand-300 border border-brand-500/50'
+                  : 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-500 dark:text-slate-400 border border-white/10 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               All ({analytics.length})
@@ -475,8 +475,8 @@ export default function AnalyticsPage() {
               onClick={() => setFilter('with-consent')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filter === 'with-consent'
-                  ? 'bg-brand-500/30 text-brand-300 border border-brand-500/50'
-                  : 'bg-slate-800/50 text-slate-400 border border-white/10 hover:text-slate-200'
+                  ? 'bg-brand-500/30 text-brand-600 dark:text-brand-300 border border-brand-500/50'
+                  : 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-500 dark:text-slate-400 border border-white/10 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               With Consent ({analytics.filter(a => a.consent_given).length})
@@ -485,21 +485,21 @@ export default function AnalyticsPage() {
               onClick={() => setFilter('high-score')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filter === 'high-score'
-                  ? 'bg-brand-500/30 text-brand-300 border border-brand-500/50'
-                  : 'bg-slate-800/50 text-slate-400 border border-white/10 hover:text-slate-200'
+                  ? 'bg-brand-500/30 text-brand-600 dark:text-brand-300 border border-brand-500/50'
+                  : 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-500 dark:text-slate-400 border border-white/10 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               High Score (≥70%) ({analytics.filter(a => a.verification_score >= 70).length})
             </button>
           </div>
           <div className="flex gap-2 items-center">
-            <span className="text-sm text-slate-400">Sort by:</span>
+            <span className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">Sort by:</span>
             <button
               onClick={() => setSortBy('date')}
               className={`px-3 py-1.5 rounded text-sm transition-colors ${
                 sortBy === 'date'
-                  ? 'bg-brand-500/20 text-brand-300'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-brand-500/20 text-brand-600 dark:text-brand-300'
+                  : 'text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               Date
@@ -508,8 +508,8 @@ export default function AnalyticsPage() {
               onClick={() => setSortBy('score')}
               className={`px-3 py-1.5 rounded text-sm transition-colors ${
                 sortBy === 'score'
-                  ? 'bg-brand-500/20 text-brand-300'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-brand-500/20 text-brand-600 dark:text-brand-300'
+                  : 'text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200'
               }`}
             >
               Score
@@ -520,16 +520,16 @@ export default function AnalyticsPage() {
 
       {/* Analytics Data Table */}
       <div className="glass-panel p-6 space-y-4">
-        <h2 className="text-xl font-semibold text-brand-300">
+        <h2 className="text-xl font-semibold text-brand-600 dark:text-brand-300">
           Analytics Data ({filteredData.length})
         </h2>
         {filteredData.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-slate-400 mb-4">No analytics data available</div>
-            <div className="text-sm text-slate-500 space-y-2">
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-4">No analytics data available</div>
+            <div className="text-sm text-slate-600 dark:text-slate-500 space-y-2">
               <p>Analytics will appear here once users start paraphrasing.</p>
               <p className="mt-2">Make sure the database schema has been executed:</p>
-              <code className="block mt-2 p-2 bg-slate-900/60 rounded text-xs">
+              <code className="block mt-2 p-2 bg-white dark:bg-slate-900/60 rounded text-xs">
                 ANALYTICS_DATABASE_SCHEMA.sql
               </code>
             </div>
@@ -538,19 +538,19 @@ export default function AnalyticsPage() {
           <>
             <div className="space-y-4">
               {paginatedData.map(entry => (
-                <div key={entry.id} className="border border-white/10 rounded-lg p-4 bg-slate-800/40 space-y-3">
+                <div key={entry.id} className="border border-white/10 rounded-lg p-4 bg-slate-50 dark:bg-slate-800/40 space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3 flex-wrap">
                       <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
                         entry.verification_score >= 80 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
                         entry.verification_score >= 70 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
                         entry.verification_score >= 60 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                        'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                        'bg-slate-500/20 text-slate-600 dark:text-slate-500 dark:text-slate-400 border border-slate-500/30'
                       }`}>
                         {entry.verification_score}% Match
                       </div>
                       {entry.profile_name && (
-                        <div className="px-3 py-1 rounded-lg text-sm bg-brand-500/20 text-brand-300 border border-brand-500/30 font-medium">
+                        <div className="px-3 py-1 rounded-lg text-sm bg-brand-500/20 text-brand-600 dark:text-brand-300 border border-brand-500/30 font-medium">
                           📝 {entry.profile_name}
                         </div>
                       )}
@@ -565,60 +565,60 @@ export default function AnalyticsPage() {
                         </div>
                       )}
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-slate-600 dark:text-slate-500">
                       {new Date(entry.created_at).toLocaleString()}
                     </div>
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-2">
                     <div>
-                      <div className="text-xs text-slate-400 mb-2">Style Settings</div>
+                      <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2">Style Settings</div>
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Tone:</span>
-                          <span className="text-white capitalize">{entry.tone}</span>
+                          <span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Tone:</span>
+                          <span className="text-slate-900 dark:text-white capitalize">{entry.tone}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Formality:</span>
-                          <span className="text-white">{pct(entry.formality)}</span>
+                          <span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Formality:</span>
+                          <span className="text-slate-900 dark:text-white">{pct(entry.formality)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Pacing:</span>
-                          <span className="text-white">{pct(entry.pacing)}</span>
+                          <span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Pacing:</span>
+                          <span className="text-slate-900 dark:text-white">{pct(entry.pacing)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Descriptiveness:</span>
-                          <span className="text-white">{pct(entry.descriptiveness)}</span>
+                          <span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Descriptiveness:</span>
+                          <span className="text-slate-900 dark:text-white">{pct(entry.descriptiveness)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Directness:</span>
-                          <span className="text-white">{pct(entry.directness)}</span>
+                          <span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Directness:</span>
+                          <span className="text-slate-900 dark:text-white">{pct(entry.directness)}</span>
                         </div>
                       </div>
                     </div>
 
                     <div>
-                      <div className="text-xs text-slate-400 mb-2">Performance</div>
+                      <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2">Performance</div>
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Input Length:</span>
-                          <span className="text-white">{entry.input_length} chars</span>
+                          <span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Input Length:</span>
+                          <span className="text-slate-900 dark:text-white">{entry.input_length} chars</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-slate-400">Output Length:</span>
-                          <span className="text-white">{entry.output_length} chars</span>
+                          <span className="text-slate-600 dark:text-slate-500 dark:text-slate-400">Output Length:</span>
+                          <span className="text-slate-900 dark:text-white">{entry.output_length} chars</span>
                         </div>
                         {entry.custom_lexicon && entry.custom_lexicon.length > 0 && (
                           <div className="pt-2">
-                            <div className="text-xs text-slate-400 mb-1">Custom Lexicon:</div>
+                            <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Custom Lexicon:</div>
                             <div className="flex flex-wrap gap-1">
                               {entry.custom_lexicon.slice(0, 5).map(word => (
-                                <span key={word} className="px-2 py-0.5 bg-brand-500/20 text-brand-300 rounded text-xs">
+                                <span key={word} className="px-2 py-0.5 bg-brand-500/20 text-brand-600 dark:text-brand-300 rounded text-xs">
                                   {word}
                                 </span>
                               ))}
                               {entry.custom_lexicon.length > 5 && (
-                                <span className="text-xs text-slate-500">+{entry.custom_lexicon.length - 5} more</span>
+                                <span className="text-xs text-slate-600 dark:text-slate-500">+{entry.custom_lexicon.length - 5} more</span>
                               )}
                             </div>
                           </div>
@@ -630,15 +630,15 @@ export default function AnalyticsPage() {
                   {entry.consent_given && entry.sample_excerpt && (
                     <div className="pt-3 border-t border-white/10">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs text-slate-400">Sample Excerpt (Shared with Consent)</div>
+                        <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">Sample Excerpt (Shared with Consent)</div>
                         <button
                           onClick={() => toggleExcerpt(entry.id)}
-                          className="text-xs text-brand-400 hover:text-brand-300 transition-colors flex items-center gap-1"
+                          className="text-xs text-brand-600 dark:text-brand-400 hover:text-brand-600 dark:text-brand-300 transition-colors flex items-center gap-1"
                         >
                           {expandedExcerpts.has(entry.id) ? '▲ Collapse' : '▼ Expand'}
                         </button>
                       </div>
-                      <div className={`text-sm text-slate-300 bg-slate-900/60 rounded p-3 transition-all ${
+                      <div className={`text-sm text-slate-800 dark:text-slate-300 bg-white dark:bg-slate-900/60 rounded p-3 transition-all ${
                         expandedExcerpts.has(entry.id) ? 'max-h-96 overflow-auto' : 'max-h-24 overflow-hidden'
                       }`}>
                         {entry.sample_excerpt}
@@ -652,14 +652,14 @@ export default function AnalyticsPage() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                <div className="text-sm text-slate-400">
+                <div className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">
                   Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredData.length)} of {filteredData.length} entries
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-1.5 rounded text-sm bg-slate-700/50 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded text-sm bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-100 dark:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     ← Previous
                   </button>
@@ -670,7 +670,7 @@ export default function AnalyticsPage() {
                       const showEllipsis = (page === 2 && currentPage > 3) || (page === totalPages - 1 && currentPage < totalPages - 2);
                       
                       if (showEllipsis) {
-                        return <span key={page} className="px-2 text-slate-500">...</span>;
+                        return <span key={page} className="px-2 text-slate-600 dark:text-slate-500">...</span>;
                       }
                       
                       if (!showPage) return null;
@@ -681,8 +681,8 @@ export default function AnalyticsPage() {
                           onClick={() => setCurrentPage(page)}
                           className={`px-3 py-1.5 rounded text-sm transition-colors ${
                             currentPage === page
-                              ? 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
-                              : 'bg-slate-700/50 hover:bg-slate-700 text-slate-300'
+                              ? 'bg-brand-500/20 text-brand-600 dark:text-brand-300 border border-brand-500/30'
+                              : 'bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300'
                           }`}
                         >
                           {page}
@@ -693,7 +693,7 @@ export default function AnalyticsPage() {
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-1.5 rounded text-sm bg-slate-700/50 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-1.5 rounded text-sm bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-100 dark:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Next →
                   </button>

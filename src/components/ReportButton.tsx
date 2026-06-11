@@ -78,9 +78,9 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
         onClick={() => setShowModal(true)}
         className={`transition-colors ${className} ${
           variant === 'icon' 
-            ? 'p-1.5 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400' 
+            ? 'p-1.5 rounded hover:bg-red-500/20 text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-red-400' 
             : variant === 'text'
-            ? 'text-xs text-slate-400 hover:text-red-400'
+            ? 'text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-red-400'
             : 'px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30'
         }`}
         title="Report inappropriate content"
@@ -103,12 +103,12 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
 
       {/* Full Screen Modal - Rendered via Portal */}
       {showModal && mounted && createPortal(
-        <div className="fixed inset-0 bg-slate-900/98 backdrop-blur-xl z-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-white dark:bg-slate-900/98 backdrop-blur-xl z-50 overflow-y-auto">
           <div className="min-h-screen flex flex-col">
             {/* Header */}
-            <div className="sticky top-0 bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4 z-10">
+            <div className="sticky top-0 bg-white dark:bg-slate-900/95 backdrop-blur-sm border-b border-white/10 px-6 py-4 z-10">
               <div className="max-w-2xl mx-auto flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-white flex items-center gap-3">
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
                     <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
@@ -118,7 +118,7 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
                 </h3>
                 <button 
                   onClick={() => setShowModal(false)}
-                  className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
+                  className="p-2 rounded-lg text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-white/10 transition"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -137,8 +137,8 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <h4 className="text-2xl font-semibold text-white mb-3">Report Submitted</h4>
-                    <p className="text-slate-300 mb-8">Thank you for helping keep our community safe.</p>
+                    <h4 className="text-2xl font-semibold text-slate-900 dark:text-white mb-3">Report Submitted</h4>
+                    <p className="text-slate-800 dark:text-slate-300 mb-8">Thank you for helping keep our community safe.</p>
                     <button
                       onClick={() => {
                         setShowModal(false);
@@ -146,7 +146,7 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
                         setDescription('');
                         setReportType('inappropriate_content');
                       }}
-                      className="px-6 py-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition"
+                      className="px-6 py-3 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-600 text-slate-900 dark:text-white font-medium transition"
                     >
                       Close
                     </button>
@@ -155,7 +155,7 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
                   <div className="space-y-8">
                     {/* Report Type Selection */}
                     <div className="space-y-4">
-                      <label className="text-lg font-medium text-white">What type of issue are you reporting?</label>
+                      <label className="text-lg font-medium text-slate-900 dark:text-white">What type of issue are you reporting?</label>
                       <div className="grid gap-3">
                         {reportTypes.map(type => (
                           <div 
@@ -164,7 +164,7 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
                             className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition ${
                               reportType === type.value 
                                 ? 'border-red-500 bg-red-500/10' 
-                                : 'border-white/10 hover:border-white/20 bg-slate-800/50'
+                                : 'border-white/10 hover:border-white/20 bg-slate-50 dark:bg-slate-800/50'
                             }`}
                           >
                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
@@ -175,8 +175,8 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
                               )}
                             </div>
                             <div className="flex-1">
-                              <div className="text-base font-medium text-white">{type.label}</div>
-                              <div className="text-sm text-slate-400">{type.description}</div>
+                              <div className="text-base font-medium text-slate-900 dark:text-white">{type.label}</div>
+                              <div className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">{type.description}</div>
                             </div>
                           </div>
                         ))}
@@ -185,24 +185,24 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
 
                     {/* Content Preview */}
                     <div className="space-y-3">
-                      <label className="text-lg font-medium text-white">Content being reported</label>
-                      <div className="bg-slate-800/60 border border-white/10 rounded-xl p-4 max-h-48 overflow-y-auto">
-                        <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">{contentText.slice(0, 500)}{contentText.length > 500 ? '...' : ''}</p>
+                      <label className="text-lg font-medium text-slate-900 dark:text-white">Content being reported</label>
+                      <div className="bg-slate-50 dark:bg-slate-800/60 border border-white/10 rounded-xl p-4 max-h-48 overflow-y-auto">
+                        <p className="text-sm text-slate-800 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{contentText.slice(0, 500)}{contentText.length > 500 ? '...' : ''}</p>
                       </div>
                     </div>
 
                     {/* Additional Description */}
                     <div className="space-y-3">
-                      <label className="text-lg font-medium text-white">Additional details <span className="text-slate-500 font-normal">(optional)</span></label>
+                      <label className="text-lg font-medium text-slate-900 dark:text-white">Additional details <span className="text-slate-600 dark:text-slate-500 font-normal">(optional)</span></label>
                       <textarea
                         value={description}
                         onChange={e => setDescription(e.target.value)}
                         placeholder="Provide any additional context about this report..."
                         rows={4}
-                        className="w-full bg-slate-800/60 border border-white/10 rounded-xl px-4 py-3 text-base text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
+                        className="w-full bg-slate-50 dark:bg-slate-800/60 border border-white/10 rounded-xl px-4 py-3 text-base text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition"
                         maxLength={1000}
                       />
-                      <p className="text-sm text-slate-500">{description.length}/1000 characters</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-500">{description.length}/1000 characters</p>
                     </div>
 
                     {/* Error Message */}
@@ -218,19 +218,19 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
 
             {/* Footer Actions */}
             {!submitted && (
-              <div className="sticky bottom-0 bg-slate-900/95 backdrop-blur-sm border-t border-white/10 px-6 py-4">
+              <div className="sticky bottom-0 bg-white dark:bg-slate-900/95 backdrop-blur-sm border-t border-white/10 px-6 py-4">
                 <div className="max-w-2xl mx-auto">
                   <div className="flex gap-4">
                     <button
                       onClick={() => setShowModal(false)}
-                      className="flex-1 px-6 py-3 rounded-xl border border-white/10 text-slate-300 hover:border-white/20 hover:bg-white/5 transition font-medium"
+                      className="flex-1 px-6 py-3 rounded-xl border border-white/10 text-slate-800 dark:text-slate-300 hover:border-white/20 hover:bg-white/5 transition font-medium"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSubmit}
                       disabled={submitting}
-                      className="flex-1 px-6 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-6 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-slate-900 dark:text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {submitting ? (
                         <span className="flex items-center justify-center gap-2">
@@ -243,7 +243,7 @@ export default function ReportButton({ contentText, userId, variant = 'icon', cl
                       ) : 'Submit Report'}
                     </button>
                   </div>
-                  <p className="text-xs text-slate-500 text-center mt-4">
+                  <p className="text-xs text-slate-600 dark:text-slate-500 text-center mt-4">
                     Reports are reviewed by our team. False reports may result in action against your account.
                   </p>
                 </div>

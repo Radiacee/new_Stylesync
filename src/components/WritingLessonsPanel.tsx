@@ -166,12 +166,12 @@ export default function WritingLessonsPanel({ userEssay, onClose }: WritingLesso
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
           <span className="text-xl">✨</span>
           Writing Improvement Center
         </h3>
         {onClose && (
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition">✕</button>
+          <button onClick={onClose} className="text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition">✕</button>
         )}
       </div>
 
@@ -182,7 +182,7 @@ export default function WritingLessonsPanel({ userEssay, onClose }: WritingLesso
           className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
             activeTab === 'lessons'
               ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
+              : 'text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-white/5'
           }`}
         >
           📖 Writing Lessons
@@ -192,7 +192,7 @@ export default function WritingLessonsPanel({ userEssay, onClose }: WritingLesso
           className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
             activeTab === 'essay'
               ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
+              : 'text-slate-600 dark:text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-white/5'
           }`}
         >
           📄 Your Essay {essayAnalysis && `(${essayAnalysis.wordCount} words)`}
@@ -210,8 +210,8 @@ export default function WritingLessonsPanel({ userEssay, onClose }: WritingLesso
                 onClick={() => setSelectedLesson(lesson.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                   selectedLesson === lesson.id
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-white/10'
+                    ? 'bg-blue-500 text-slate-900 dark:text-white'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-700 border border-white/10'
                 }`}
               >
                 {lesson.icon} {lesson.title}
@@ -220,13 +220,13 @@ export default function WritingLessonsPanel({ userEssay, onClose }: WritingLesso
           </div>
 
           {/* Current Lesson Content */}
-          <div className="bg-slate-800/50 rounded-lg border border-white/10 p-4 space-y-4">
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-white/10 p-4 space-y-4">
             <div>
-              <h4 className="text-base font-semibold text-white flex items-center gap-2">
+              <h4 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                 <span className="text-xl">{currentLesson.icon}</span>
                 {currentLesson.title}
               </h4>
-              <p className="text-sm text-slate-400 mt-1">{currentLesson.description}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mt-1">{currentLesson.description}</p>
             </div>
 
             {/* Tips */}
@@ -236,7 +236,7 @@ export default function WritingLessonsPanel({ userEssay, onClose }: WritingLesso
                 {currentLesson.tips.map((tip, i) => (
                   <li 
                     key={i} 
-                    className="flex items-start gap-2 text-sm text-slate-300 bg-slate-900/50 rounded-lg p-2.5 border border-white/5"
+                    className="flex items-start gap-2 text-sm text-slate-800 dark:text-slate-300 bg-white dark:bg-slate-900/50 rounded-lg p-2.5 border border-white/5"
                   >
                     <span className="text-blue-400 font-bold">{i + 1}.</span>
                     <span>{tip}</span>
@@ -277,17 +277,17 @@ export default function WritingLessonsPanel({ userEssay, onClose }: WritingLesso
             <>
               {/* Quick Stats */}
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-slate-800/50 rounded-lg p-3 border border-white/10 text-center">
-                  <div className="text-2xl font-bold text-white">{essayAnalysis.wordCount}</div>
-                  <div className="text-xs text-slate-400">Words</div>
+                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-white/10 text-center">
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">{essayAnalysis.wordCount}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">Words</div>
                 </div>
-                <div className="bg-slate-800/50 rounded-lg p-3 border border-white/10 text-center">
-                  <div className="text-2xl font-bold text-white">{essayAnalysis.sentenceCount}</div>
-                  <div className="text-xs text-slate-400">Sentences</div>
+                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-white/10 text-center">
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">{essayAnalysis.sentenceCount}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">Sentences</div>
                 </div>
-                <div className="bg-slate-800/50 rounded-lg p-3 border border-white/10 text-center">
-                  <div className="text-2xl font-bold text-white">{essayAnalysis.avgSentenceLength}</div>
-                  <div className="text-xs text-slate-400">Avg Words/Sent</div>
+                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-white/10 text-center">
+                  <div className="text-2xl font-bold text-slate-900 dark:text-white">{essayAnalysis.avgSentenceLength}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">Avg Words/Sent</div>
                 </div>
               </div>
 
@@ -315,9 +315,9 @@ export default function WritingLessonsPanel({ userEssay, onClose }: WritingLesso
 
               {/* Essay Preview */}
               <div>
-                <h5 className="text-sm font-semibold text-slate-300 mb-2">Your Essay:</h5>
-                <div className="bg-slate-900/50 rounded-lg p-4 border border-white/10 max-h-64 overflow-y-auto">
-                  <p className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed">{userEssay}</p>
+                <h5 className="text-sm font-semibold text-slate-800 dark:text-slate-300 mb-2">Your Essay:</h5>
+                <div className="bg-white dark:bg-slate-900/50 rounded-lg p-4 border border-white/10 max-h-64 overflow-y-auto">
+                  <p className="text-sm text-slate-800 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">{userEssay}</p>
                 </div>
               </div>
 
@@ -341,7 +341,7 @@ export default function WritingLessonsPanel({ userEssay, onClose }: WritingLesso
               </div>
             </>
           ) : (
-            <div className="text-center py-8 text-slate-400">
+            <div className="text-center py-8 text-slate-600 dark:text-slate-500 dark:text-slate-400">
               <p className="text-lg mb-2">📝</p>
               <p className="text-sm">Paste your essay in the input field below to see analysis here.</p>
             </div>

@@ -42,14 +42,14 @@ export default function StyleComparisonPanel({
   };
 
   return (
-    <div className={`bg-slate-900 rounded-xl border border-white/10 ${className}`}>
+    <div className={`bg-white dark:bg-slate-900 rounded-xl border border-white/10 ${className}`}>
       {/* Header */}
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold text-white">Style Transformation Analysis</h3>
+          <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Style Transformation Analysis</h3>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-sm text-slate-400">Style Alignment</div>
+              <div className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400">Style Alignment</div>
               <div className={`text-2xl font-bold ${transformation.alignmentScore >= 0.8 ? 'text-green-400' : 
                 transformation.alignmentScore >= 0.6 ? 'text-blue-400' :
                 transformation.alignmentScore >= 0.4 ? 'text-yellow-400' : 'text-red-400'}`}>
@@ -61,62 +61,62 @@ export default function StyleComparisonPanel({
         
         {/* Text Length Comparison */}
         <div className="grid grid-cols-3 gap-4 text-sm">
-          <div className="bg-slate-800/50 rounded-lg p-3">
-            <div className="text-slate-400 mb-1">User Sample</div>
-            <div className="text-white font-medium">{transformation.userStyle.avgSentenceLength.toFixed(0)} avg words/sentence</div>
-            <div className="text-slate-400 text-xs">{originalText.split(' ').length} words total</div>
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">User Sample</div>
+            <div className="text-slate-900 dark:text-white font-medium">{transformation.userStyle.avgSentenceLength.toFixed(0)} avg words/sentence</div>
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs">{originalText.split(' ').length} words total</div>
           </div>
-          <div className="bg-slate-800/50 rounded-lg p-3">
-            <div className="text-slate-400 mb-1">Original Text</div>
-            <div className="text-white font-medium">{transformation.originalAnalysis.avgSentenceLength.toFixed(0)} avg words/sentence</div>
-            <div className="text-slate-400 text-xs">{originalText.split(' ').length} words total</div>
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Original Text</div>
+            <div className="text-slate-900 dark:text-white font-medium">{transformation.originalAnalysis.avgSentenceLength.toFixed(0)} avg words/sentence</div>
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs">{originalText.split(' ').length} words total</div>
           </div>
-          <div className="bg-slate-800/50 rounded-lg p-3">
-            <div className="text-slate-400 mb-1">Paraphrased</div>
-            <div className="text-white font-medium">{transformation.paraphrasedAnalysis.avgSentenceLength.toFixed(0)} avg words/sentence</div>
-            <div className="text-slate-400 text-xs">{paraphrasedText.split(' ').length} words total</div>
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3">
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Paraphrased</div>
+            <div className="text-slate-900 dark:text-white font-medium">{transformation.paraphrasedAnalysis.avgSentenceLength.toFixed(0)} avg words/sentence</div>
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs">{paraphrasedText.split(' ').length} words total</div>
           </div>
         </div>
       </div>
 
       {/* Detailed Comparison Table */}
       <div className="p-6">
-        <h4 className="text-lg font-medium text-white mb-4">Detailed Metrics Comparison</h4>
+        <h4 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Detailed Metrics Comparison</h4>
         <div className="overflow-x-auto -mx-6 px-6">
           <table className="w-full min-w-[800px]">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="text-left py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">Category</th>
-                <th className="text-left py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">Metric</th>
-                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">User</th>
-                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">Original</th>
-                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">Result</th>
-                <th className="text-left py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 min-w-[200px]">Change</th>
-                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-400 whitespace-nowrap">Alignment</th>
+                <th className="text-left py-3 px-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 whitespace-nowrap">Category</th>
+                <th className="text-left py-3 px-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 whitespace-nowrap">Metric</th>
+                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 whitespace-nowrap">User</th>
+                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 whitespace-nowrap">Original</th>
+                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 whitespace-nowrap">Result</th>
+                <th className="text-left py-3 px-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 min-w-[200px]">Change</th>
+                <th className="text-center py-3 px-2 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 whitespace-nowrap">Alignment</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {transformation.detailedComparison.map((comparison, index) => (
-                <tr key={index} className="hover:bg-slate-800/20 transition-colors">
+                <tr key={index} className="hover:bg-slate-50 dark:bg-slate-800/20 transition-colors">
                   <td className="py-4 px-2">
                     <div className="flex items-center gap-2">
                       <span className="text-xs">{getImpactIcon(comparison.impact)}</span>
-                      <span className="text-xs sm:text-sm text-slate-300 whitespace-nowrap">{comparison.category}</span>
+                      <span className="text-xs sm:text-sm text-slate-800 dark:text-slate-300 whitespace-nowrap">{comparison.category}</span>
                     </div>
                   </td>
-                  <td className="py-4 px-2 text-xs sm:text-sm text-white font-medium whitespace-nowrap">
+                  <td className="py-4 px-2 text-xs sm:text-sm text-slate-900 dark:text-white font-medium whitespace-nowrap">
                     {comparison.metric}
                   </td>
-                  <td className="py-4 px-2 text-center text-xs sm:text-sm text-slate-300 font-mono whitespace-nowrap">
+                  <td className="py-4 px-2 text-center text-xs sm:text-sm text-slate-800 dark:text-slate-300 font-mono whitespace-nowrap">
                     {comparison.userValue}
                   </td>
-                  <td className="py-4 px-2 text-center text-xs sm:text-sm text-slate-300 font-mono whitespace-nowrap">
+                  <td className="py-4 px-2 text-center text-xs sm:text-sm text-slate-800 dark:text-slate-300 font-mono whitespace-nowrap">
                     {comparison.originalValue}
                   </td>
-                  <td className="py-4 px-2 text-center text-xs sm:text-sm text-white font-mono font-medium whitespace-nowrap">
+                  <td className="py-4 px-2 text-center text-xs sm:text-sm text-slate-900 dark:text-white font-mono font-medium whitespace-nowrap">
                     {comparison.paraphrasedValue}
                   </td>
-                  <td className="py-4 px-2 text-xs sm:text-sm text-slate-300 min-w-[200px] max-w-[300px]">
+                  <td className="py-4 px-2 text-xs sm:text-sm text-slate-800 dark:text-slate-300 min-w-[200px] max-w-[300px]">
                     {comparison.changeDescription}
                   </td>
                   <td className="py-4 px-2 text-center">
@@ -133,18 +133,18 @@ export default function StyleComparisonPanel({
 
       {/* Transformation Insights */}
       <div className="p-6 border-t border-white/10">
-        <h4 className="text-lg font-medium text-white mb-4">Transformation Insights</h4>
+        <h4 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Transformation Insights</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Sentence Structure */}
           {transformation.transformationInsights.sentenceStructure.length > 0 && (
             <div>
-              <h5 className="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
+              <h5 className="text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2">
                 📝 Sentence Structure
               </h5>
               <ul className="space-y-1">
                 {transformation.transformationInsights.sentenceStructure.map((insight, index) => (
-                  <li key={index} className="text-sm text-slate-300 pl-4 border-l-2 border-blue-500/30">
+                  <li key={index} className="text-sm text-slate-800 dark:text-slate-300 pl-4 border-l-2 border-blue-500/30">
                     {insight}
                   </li>
                 ))}
@@ -155,12 +155,12 @@ export default function StyleComparisonPanel({
           {/* Vocabulary Changes */}
           {transformation.transformationInsights.vocabularyChanges.length > 0 && (
             <div>
-              <h5 className="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
+              <h5 className="text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2">
                 📚 Vocabulary Changes
               </h5>
               <ul className="space-y-1">
                 {transformation.transformationInsights.vocabularyChanges.map((insight, index) => (
-                  <li key={index} className="text-sm text-slate-300 pl-4 border-l-2 border-green-500/30">
+                  <li key={index} className="text-sm text-slate-800 dark:text-slate-300 pl-4 border-l-2 border-green-500/30">
                     {insight}
                   </li>
                 ))}
@@ -171,12 +171,12 @@ export default function StyleComparisonPanel({
           {/* Formality Shifts */}
           {transformation.transformationInsights.formalityShifts.length > 0 && (
             <div>
-              <h5 className="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
+              <h5 className="text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2">
                 🎩 Formality Adjustments
               </h5>
               <ul className="space-y-1">
                 {transformation.transformationInsights.formalityShifts.map((insight, index) => (
-                  <li key={index} className="text-sm text-slate-300 pl-4 border-l-2 border-purple-500/30">
+                  <li key={index} className="text-sm text-slate-800 dark:text-slate-300 pl-4 border-l-2 border-purple-500/30">
                     {insight}
                   </li>
                 ))}
@@ -187,12 +187,12 @@ export default function StyleComparisonPanel({
           {/* Personality Adjustments */}
           {transformation.transformationInsights.personalityAdjustments.length > 0 && (
             <div>
-              <h5 className="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
+              <h5 className="text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2">
                 👤 Voice & Personality
               </h5>
               <ul className="space-y-1">
                 {transformation.transformationInsights.personalityAdjustments.map((insight, index) => (
-                  <li key={index} className="text-sm text-slate-300 pl-4 border-l-2 border-yellow-500/30">
+                  <li key={index} className="text-sm text-slate-800 dark:text-slate-300 pl-4 border-l-2 border-yellow-500/30">
                     {insight}
                   </li>
                 ))}
@@ -203,12 +203,12 @@ export default function StyleComparisonPanel({
           {/* Technical Modifications */}
           {transformation.transformationInsights.technicalModifications.length > 0 && (
             <div>
-              <h5 className="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
+              <h5 className="text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2">
                 ⚙️ Technical Improvements
               </h5>
               <ul className="space-y-1">
                 {transformation.transformationInsights.technicalModifications.map((insight, index) => (
-                  <li key={index} className="text-sm text-slate-300 pl-4 border-l-2 border-orange-500/30">
+                  <li key={index} className="text-sm text-slate-800 dark:text-slate-300 pl-4 border-l-2 border-orange-500/30">
                     {insight}
                   </li>
                 ))}
@@ -219,12 +219,12 @@ export default function StyleComparisonPanel({
           {/* Readability Improvements */}
           {transformation.transformationInsights.readabilityImprovements.length > 0 && (
             <div>
-              <h5 className="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
+              <h5 className="text-sm font-medium text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2">
                 📈 Readability Changes
               </h5>
               <ul className="space-y-1">
                 {transformation.transformationInsights.readabilityImprovements.map((insight, index) => (
-                  <li key={index} className="text-sm text-slate-300 pl-4 border-l-2 border-cyan-500/30">
+                  <li key={index} className="text-sm text-slate-800 dark:text-slate-300 pl-4 border-l-2 border-cyan-500/30">
                     {insight}
                   </li>
                 ))}
@@ -235,18 +235,18 @@ export default function StyleComparisonPanel({
       </div>
 
       {/* User Style Summary */}
-      <div className="p-6 border-t border-white/10 bg-slate-800/20">
-        <h4 className="text-lg font-medium text-white mb-4">Your Writing Style Profile</h4>
+      <div className="p-6 border-t border-white/10 bg-slate-50 dark:bg-slate-800/20">
+        <h4 className="text-lg font-medium text-slate-900 dark:text-white mb-4">Your Writing Style Profile</h4>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
           <div>
-            <div className="text-slate-400 mb-1">Sentence Length</div>
-            <div className="text-white font-medium">{Math.round(transformation.userStyle.avgSentenceLength)} words</div>
-            <div className="text-slate-400 text-xs">average per sentence</div>
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Sentence Length</div>
+            <div className="text-slate-900 dark:text-white font-medium">{Math.round(transformation.userStyle.avgSentenceLength)} words</div>
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs">average per sentence</div>
           </div>
           <div>
-            <div className="text-slate-400 mb-1">Contractions</div>
-            <div className="text-white font-medium">{transformation.userStyle.usesContractions ? 'Yes' : 'No'}</div>
-            <div className="text-slate-400 text-xs">{transformation.userStyle.usesContractions ? 'casual style' : 'formal style'}</div>
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-1">Contractions</div>
+            <div className="text-slate-900 dark:text-white font-medium">{transformation.userStyle.usesContractions ? 'Yes' : 'No'}</div>
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-xs">{transformation.userStyle.usesContractions ? 'casual style' : 'formal style'}</div>
           </div>
 
         </div>
@@ -254,10 +254,10 @@ export default function StyleComparisonPanel({
         {/* Preferred Transitions */}
         {transformation.userStyle.preferredTransitions.length > 0 && (
           <div className="mt-4 pt-4 border-t border-white/5">
-            <div className="text-slate-400 text-sm mb-2">Your Preferred Transitions</div>
+            <div className="text-slate-600 dark:text-slate-500 dark:text-slate-400 text-sm mb-2">Your Preferred Transitions</div>
             <div className="flex flex-wrap gap-2">
               {transformation.userStyle.preferredTransitions.slice(0, 5).map((transition, index) => (
-                <span key={index} className="px-2 py-1 bg-brand-500/20 text-brand-300 rounded text-xs">
+                <span key={index} className="px-2 py-1 bg-brand-500/20 text-brand-600 dark:text-brand-300 rounded text-xs">
                   {transition}
                 </span>
               ))}

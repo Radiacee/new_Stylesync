@@ -133,10 +133,10 @@ export default function AuthConfirmPage() {
       <div className="flex min-h-screen items-center justify-center p-6 relative z-10">
         <div className="w-full max-w-md glass-panel p-12 space-y-8 animate-fade-in-up">
           <div className="text-center space-y-4">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-brand-400 to-brand-300 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-brand-600 dark:from-brand-400 to-brand-300 bg-clip-text text-transparent">
               StyleSync
             </h1>
-            <p className="text-base text-slate-400">Email Confirmation</p>
+            <p className="text-base text-slate-600 dark:text-slate-500 dark:text-slate-400">Email Confirmation</p>
           </div>
 
           {status === 'loading' && (
@@ -146,8 +146,8 @@ export default function AuthConfirmPage() {
                 <div className="absolute inset-0 rounded-full border-4 border-brand-500 border-t-transparent animate-spin" />
               </div>
               <div className="space-y-4">
-                <p className="text-slate-200 font-medium text-lg">Processing Authentication</p>
-                <p className="text-base text-slate-400">{message}</p>
+                <p className="text-slate-800 dark:text-slate-200 font-medium text-lg">Processing Authentication</p>
+                <p className="text-base text-slate-600 dark:text-slate-500 dark:text-slate-400">{message}</p>
               </div>
             </div>
           )}
@@ -161,7 +161,7 @@ export default function AuthConfirmPage() {
               </div>
               <div className="space-y-4">
                 <p className="text-emerald-400 font-semibold text-xl">Success!</p>
-                <p className="text-slate-300 text-base">{message}</p>
+                <p className="text-slate-800 dark:text-slate-300 text-base">{message}</p>
               </div>
             </div>
           )}
@@ -176,11 +176,11 @@ export default function AuthConfirmPage() {
               <div className="space-y-6">
                 <div className="space-y-4">
                   <p className="text-red-400 font-semibold text-xl">Authentication Failed</p>
-                  <p className="text-slate-300 text-base">{message}</p>
+                  <p className="text-slate-800 dark:text-slate-300 text-base">{message}</p>
                 </div>
                 <button
                   onClick={() => router.push('/auth/sign-in')}
-                  className="w-full px-6 py-4 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-400 hover:to-brand-300 text-slate-900 font-semibold transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-brand-500/25 text-base"
+                  className="w-full px-6 py-4 rounded-lg bg-gradient-to-r from-brand-500 to-brand-400 hover:from-brand-600 dark:from-brand-400 hover:to-brand-300 text-slate-900 font-semibold transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-brand-500/25 text-base"
                 >
                   Return to Sign In
                 </button>

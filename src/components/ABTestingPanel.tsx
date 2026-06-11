@@ -84,7 +84,7 @@ export default function ABTestingPanel({ paraphrasedText }: ABTestingPanelProps)
         onClick={() => {
           setShowPanel(!showPanel);
         }}
-        className="w-full py-3 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
+        className="w-full py-3 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 text-slate-900 dark:text-white rounded-lg font-medium transition-all duration-300 flex items-center justify-center gap-2"
       >
         <Microscope className="w-4 h-4" />
         <span>{showPanel ? 'Hide' : 'Show'} A/B/C Style Comparison</span>
@@ -92,7 +92,7 @@ export default function ABTestingPanel({ paraphrasedText }: ABTestingPanelProps)
 
       {showPanel && (
         <div className="mt-4 space-y-4">
-          <p className="text-sm text-slate-400 mb-4">
+          <p className="text-sm text-slate-600 dark:text-slate-500 dark:text-slate-400 mb-4">
             Compare how different style settings treat the paraphrased result.
           </p>
 
@@ -103,18 +103,18 @@ export default function ABTestingPanel({ paraphrasedText }: ABTestingPanelProps)
           ) : versions ? (
             <div className="flex flex-col gap-4">
               {/* Version A: Professional */}
-              <div className="bg-slate-800/40 border border-white/10 rounded-xl p-4">
+              <div className="bg-slate-50 dark:bg-slate-800/40 border border-white/10 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <Circle className="w-5 h-5 text-slate-400" />
+                  <Circle className="w-5 h-5 text-slate-600 dark:text-slate-500 dark:text-slate-400" />
                   <div>
-                    <h4 className="font-semibold text-white">Version A: Professional</h4>
-                    <p className="text-xs text-slate-500">Clear business style</p>
+                    <h4 className="font-semibold text-slate-900 dark:text-white">Version A: Professional</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-500">Clear business style</p>
                   </div>
                 </div>
-                <div className="bg-slate-900/60 rounded-lg p-3 text-sm text-slate-300 min-h-[120px]">
+                <div className="bg-white dark:bg-slate-900/60 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-300 min-h-[120px]">
                   {versions.professional}
                 </div>
-                <div className="mt-3 text-xs text-slate-500">
+                <div className="mt-3 text-xs text-slate-600 dark:text-slate-500">
                   Restyled from the generated result
                 </div>
               </div>
@@ -125,10 +125,10 @@ export default function ABTestingPanel({ paraphrasedText }: ABTestingPanelProps)
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                   <div>
                     <h4 className="font-semibold text-emerald-400">Version B: Your Style</h4>
-                    <p className="text-xs text-slate-400">Current paraphrased result</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-500 dark:text-slate-400">Current paraphrased result</p>
                   </div>
                 </div>
-                <div className="bg-slate-900/60 rounded-lg p-3 text-sm text-slate-300 min-h-[120px]">
+                <div className="bg-white dark:bg-slate-900/60 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-300 min-h-[120px]">
                   {versions.withStyle}
                 </div>
                 <div className="mt-3 text-xs text-emerald-400 font-medium flex items-center gap-1">
@@ -137,18 +137,18 @@ export default function ABTestingPanel({ paraphrasedText }: ABTestingPanelProps)
               </div>
 
               {/* Version C: Casual Style */}
-              <div className="bg-slate-800/40 border border-white/10 rounded-xl p-4">
+              <div className="bg-slate-50 dark:bg-slate-800/40 border border-white/10 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <RotateCw className="w-5 h-5 text-slate-400" />
+                  <RotateCw className="w-5 h-5 text-slate-600 dark:text-slate-500 dark:text-slate-400" />
                   <div>
-                    <h4 className="font-semibold text-white">Version C: Casual</h4>
-                    <p className="text-xs text-slate-500">Relaxed result style</p>
+                    <h4 className="font-semibold text-slate-900 dark:text-white">Version C: Casual</h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-500">Relaxed result style</p>
                   </div>
                 </div>
-                <div className="bg-slate-900/60 rounded-lg p-3 text-sm text-slate-300 min-h-[120px]">
+                <div className="bg-white dark:bg-slate-900/60 rounded-lg p-3 text-sm text-slate-800 dark:text-slate-300 min-h-[120px]">
                   {versions.casual}
                 </div>
-                <div className="mt-3 text-xs text-slate-500">
+                <div className="mt-3 text-xs text-slate-600 dark:text-slate-500">
                   Restyled from the generated result
                 </div>
               </div>
@@ -163,11 +163,11 @@ export default function ABTestingPanel({ paraphrasedText }: ABTestingPanelProps)
 
           {versions && (
             <div className="mt-4 p-4 bg-brand-900/20 border border-brand-500/30 rounded-lg">
-              <h5 className="text-brand-300 font-medium mb-2 flex items-center gap-2">
+              <h5 className="text-brand-600 dark:text-brand-300 font-medium mb-2 flex items-center gap-2">
                 <Lightbulb className="w-4 h-4" />
                 What This Proves
               </h5>
-              <ul className="text-sm text-slate-300 space-y-1">
+              <ul className="text-sm text-slate-800 dark:text-slate-300 space-y-1">
                 <li>- <strong>Version A</strong> shows a professional style treatment of the paraphrased result</li>
                 <li>- <strong>Version B</strong> shows the exact generated result</li>
                 <li>- <strong>Version C</strong> shows a casual style treatment of that same result</li>
