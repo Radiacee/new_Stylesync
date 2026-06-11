@@ -16,6 +16,7 @@ export default function AdminSubscriptions() {
   const fetchSubscriptions = async () => {
     try {
       setLoading(true);
+      if (!supabase) return;
       const { data, error } = await supabase
         .from('premium_subscriptions')
         .select('*')
@@ -62,7 +63,7 @@ export default function AdminSubscriptions() {
       // Since it's a demo app, let's assume we can grant it based on finding their style_profiles 
       // to get their user_id, or we just store the email and let the paraphrase page match by user.email.
       // Let's modify the Paraphrase check to just check `premium_subscriptions` by email if user_id is null.
-      
+      if (!supabase) return;
       const { data: profileData } = await supabase
         .from('style_profiles')
         .select('user_id')
@@ -99,6 +100,7 @@ export default function AdminSubscriptions() {
   const handleRevoke = async (id: string) => {
     if (!confirm('Are you sure you want to revoke premium access for this user?')) return;
     try {
+      if (!supabase) return;
       await supabase.from('premium_subscriptions').delete().eq('id', id);
       fetchSubscriptions();
     } catch (e) {
